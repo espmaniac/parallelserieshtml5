@@ -337,8 +337,6 @@ canvas.addEventListener('mousedown', function(event) {
   const mousePos = screenToWorldSpace(mouseX, mouseY);
 
   menu.style.display = "none";
-  
-  var hitNodes = [];
 
   if (event.button === 0) { // left btn
     if (selectedComponents.length)
@@ -357,12 +355,6 @@ canvas.addEventListener('mousedown', function(event) {
         break;
       } else {
         component.selected = false;
-        if (tool === "WIRE") {
-          let hit = component.hitNode(mousePos.x,mousePos.y);
-          if (hit)
-            hitNodes.push(hit);
-
-        }
       }
     }
 
@@ -386,25 +378,6 @@ canvas.addEventListener('mousedown', function(event) {
         wire.x1 = snapToGrid(mousePos.x);
         wire.y1 = snapToGrid(mousePos.y);
 
-        for (let i = 0; i < hitNodes.length; ++i) {
-          connectNodes(wire.node1, hitNodes[i]);
-        }
-
-				for (let i = 0; i < wires.length; ++i) {
-					let w = wires[i];
-					let hit = w.hitTest(wire.x1, wire.y1);
-					if (hit) {
-						// wire.x2 && wire.y2 underfied here
-						let node = w.hitNode(wire.x1, wire.y1);
-						if (node != null)
-							connectNodes(wire.node1, node);
-						else { // junction
-							connectNodes(wire.node1, w.node1);
-							connectNodes(wire.node1, w.node2);
-						}
-					}
-				}
-
         wires.push(wire);
         isDragging = true;
     }
@@ -420,7 +393,6 @@ canvas.addEventListener('mousedown', function(event) {
   renderAll();
     
 });
-
 
 
 canvas.addEventListener('mousemove', function(event) {
@@ -467,17 +439,22 @@ canvas.addEventListener('mouseup', function(event) {
         let snap = snapToAngle({x: wire.x1, y: wire.y1}, {x: mousePos.x, y: mousePos.y});
         wire.x2 = snapToGrid(snap.x);
         wire.y2 = snapToGrid(snap.y);
-        if (wire.x1 === wire.x2 && wire.y1 === wire.y2)
-            wires.pop();
+        if (wire.x1 === wire.x2 && wire.y1 === wire.y2) {
+          wires.pop();
+        }
 				
 				else {
         	for (let i in components) {
           	let component = components[i];
-          	let hit = component.hitNode(wire.x2,wire.y2);
+            let leftWireHit = component.hitNode(wire.x1,wire.y1);
+            let rightWireHit = component.hitNode(wire.x2,wire.y2);
           
-          	if (hit) {  
-            	connectNodes(wire.node2, hit);
-          	} else { // junction
+          	if (leftWireHit) {  
+            	connectNodes(wire.node1, leftWireHit);
+          	}
+            else if (rightWireHit) {
+              connectNodes(wire.node2, rightWireHit);
+            } else { // junction
 							let nodeCompLeft = component.getNodeLeft();
 							let nodeCompRight = component.getNodeRight();
 							let node1Intersect = wire.hitTest(nodeCompLeft.x, nodeCompLeft.y);
@@ -496,20 +473,27 @@ canvas.addEventListener('mouseup', function(event) {
 
         	for (let i = 0; i < wires.length - 1; ++i) {
           	let w = wires[i];
-          	let hit = w.hitTest(wire.x2, wire.y2); // snap.x snap.y
-          	if (hit) {
+            let hitRight = w.hitTest(wire.x2, wire.y2);
+            let hitLeft = w.hitTest(wire.x1, wire.y1);
+          	if (hitRight) {
 							let node = w.hitNode(wire.x2, wire.y2)
-							
 							if (node != null)
 								connectNodes(wire.node2, node);
-
 							else { // junction
             		connectNodes(wire.node2, w.node1);
             		connectNodes(wire.node2, w.node2);
 							}
 
 
-          	}
+          	} else if (hitLeft) {
+              let node = w.hitNode(wire.x1, wire.y1)
+							if (node != null)
+								connectNodes(wire.node1, node);
+							else { // junction
+            		connectNodes(wire.node1, w.node1);
+            		connectNodes(wire.node1, w.node2);
+							}
+            }
         	}
 				}
 
