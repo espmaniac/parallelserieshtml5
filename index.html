@@ -1,0 +1,82 @@
+<!--
+    github: https://github.com/espmaniac/parallelserieshtml5
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParallelSeries</title>
+    <meta name="keywords" content="ParallelSeries, equivalent resistance, equivalent capacitance, equivalent inductance, delta star transform, parallel connection, series connection, resistance calculator, capacitance calculator, inductance calculator, resistor network solver, capacitor network solver, inductor network solver">
+    <link rel="icon" href="logo/favicon.svg" sizes="any" type="image/svg+xml">
+    <link rel="shortcut icon" href="logo/favicon16x16.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="logo/favicon32x32.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="logo/favicon96x96.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="logo/favicon180x180.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="logo/favicon512x512.ico" type="image/x-icon">
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+
+    <div id="chooseComponent">
+        <h1>Choose a component</h1>
+        <div id="components">
+            <button id="resistor" ></button>
+            <button id="capacitor"></button>
+            <button id="inductor"></button>
+        </div>
+    </div>
+    
+    <div id="header">
+        <div id="left">
+            <button id="open">Open</button>
+            <button id="save">Save</button>
+            <button id="matrix">Matrix</button>
+            <button id="calculate">Calculate</button>
+        </div>
+
+        <a href="https://github.com/espmaniac" target="_blank"><img src="icons/github.png" alt="github" srcset="" id="github"></a>
+
+        <div id="right">
+            <button id="clear">Clear</button>
+        </div>        
+    </div>
+
+    <div id="scheme">
+        <div id="tools">
+            <button id="cursorTool" class="active">
+                <img src="icons/cursor.svg" alt="" srcset="" width="40" height="20">
+            </button>
+            <button id="selectionTool">
+                <img src="icons/selection.svg" alt="" srcset="" width="40" height="20">
+            </button>
+            <button id="wireTool">
+                <img src="icons/wire.svg" alt="" srcset="" width="40" height="20">
+            </button>
+            <button id="addComponent">
+                <img src="" alt="" srcset="" width="40" height="20">
+            </button>
+
+        </div>
+
+        <canvas id="myCanvas"></canvas>
+
+    </div>
+
+    <div id="form">
+        <textarea name="" id="inp" cols="1" rows="1" placeholder="expression"></textarea>
+        <button id="calc"> = </button>
+    </div>
+    <div id="answer">
+        <h2 id="result">Answer: 42</h2>
+    </div>
+
+    <div id="contextMenu"></div>
+    
+    <script src="parallelseries.js" defer></script>
+    <script src="component.js" defer></script>
+    <script src="main.js" defer></script>
+    <script src="node.js" defer></script>
+    <script src="wire.js" defer></script>
+</body>
+</html>

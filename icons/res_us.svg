@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_Слой_1" data-name="Слой 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40.1 12.6">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+        stroke: #1d1d1b;
+        stroke-miterlimit: 10;
+      }
+    </style>
+  </defs>
+  <line class="cls-1" y1="6.45" x2="7" y2="6.45"/>
+  <line class="cls-1" x1="40.1" y1="6.45" x2="31.1" y2="6.45"/>
+  <line class="cls-1" x1="6.53" y1="6.45" x2="8.52" y2="12.45"/>
+  <line class="cls-1" x1="8.43" y1="12.15" x2="12.3" y2=".3"/>
+  <line class="cls-1" x1="12.25" y1=".7" x2="14.19" y2="12.3"/>
+  <line class="cls-1" x1="14.19" y1="12.15" x2="18.06" y2=".3"/>
+  <line class="cls-1" x1="18.01" y1=".7" x2="19.95" y2="12.3"/>
+  <line class="cls-1" x1="20" y1="12.08" x2="23.87" y2=".23"/>
+  <line class="cls-1" x1="23.83" y1=".63" x2="25.76" y2="12.22"/>
+  <line class="cls-1" x1="25.75" y1="12" x2="29.62" y2=".16"/>
+  <line class="cls-1" x1="29.61" y1=".47" x2="31.59" y2="6.47"/>
+</svg>
