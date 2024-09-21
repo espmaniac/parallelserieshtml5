@@ -234,7 +234,7 @@ function drawGrid() {
   for (let i = 0; i <= numCellsY; i++) {
     let y = gridOffsetY + i * gridSize;
     ctx.moveTo(0, y);
-	  ctx.lineTo(canvas.width, y );
+	  ctx.lineTo(canvas.width, y);
   }
 
   ctx.stroke();
@@ -536,6 +536,7 @@ canvas.addEventListener('mouseup', function(event) {
         	for (let i = 0; i < wires.length - 1; ++i) { // last wire == current
             let w = wires[i];
             connectWireWire(wire, w);
+            connectWireWire(w, wire);
         	}
 				}
 
@@ -592,6 +593,7 @@ btnClear.addEventListener("click", function() {
     selectedWires = [];
     selectedComponents = [];
   }
+  renderAll();
 });
 
 renderAll();
