@@ -13,6 +13,7 @@ class Wire {
     this.node2.parent = this;
 
     this.nodesOnLine = [];
+    this.nodesOnLineCount = 0;
 
     connectNodes(this.node1, this.node2, "0");
   }

@@ -6,6 +6,7 @@ class Node {
 
     this.parent = null;
     this.connections = []; // {.value}
+    this.junctions = [];
   }
 }
 
@@ -28,6 +29,17 @@ function findNode(node1, node2) {
   return -1;
 }
 
+function checkJunctionConnection(node1, node2) {
+  for (let i = 0; i < node1.junctions.length; ++i) {
+    for (let n = 0; n < node1.junctions[i].nodes.length; ++n) {
+      if (node1.junctions[i].nodes[n] === node2)  {
+        return {jInd: i, nInd: n};
+      }
+    }
+  }
+  return {jInd: -1, nInd: -1};
+}
+
 function disconnectNodes(node1, node2) {
   let ind1 = findNode(node1, node2);
   let ind2 = findNode(node2, node1);
@@ -44,6 +56,19 @@ function deleteNode(node) {
     let goodNode = node.connections[i];
     let ind = findNode(goodNode.node, node);
     goodNode.node.connections.splice(ind, 1);
+
+    if (goodNode.node.junctions.length > 0) {
+      let junction = checkJunctionConnection(goodNode.node, node);
+      
+      if (junction.jInd >= 0 && junction.nInd >= 0) {
+        if ((goodNode.node.junctions[junction.jInd].nodes.length - 1) >= 3) {
+          goodNode.node.junctions[junction.jInd].nodes.splice(junction.nInd, 1);
+        } else {
+          //goodNode.node.junction[junction.jInd].onDelete();
+          deleteJunction(goodNode.node.junctions[junction.jInd]);
+        }
+      }
+    }
 
   }
   node.connections.length = 0; // clear

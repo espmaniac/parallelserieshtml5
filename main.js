@@ -31,6 +31,7 @@ var components = [];
 var selectedComponents = [];
 var wires = [];
 var selectedWires = [];
+var junctions = [];
 
 const cellSize = 20; // grid size
 
@@ -250,13 +251,16 @@ function renderAll() {
   ctx.scale(zoom, zoom);
   ctx.translate(offsetX, offsetY);   
 
-  for (var i in components) {
+  for (var i in components)
     components[i].draw();
-  }
 
 
   for (let i = 0; i < wires.length; ++i)
     wires[i].draw();
+
+
+  for (let i = 0; i < junctions.length; ++i)
+    junctions[i].draw();
       
 }
 
@@ -287,8 +291,8 @@ function deleteSelected() {
 
 
   for (let i = 0, j = 0; i < selectedWires.length; ++i) {
-		let index = selectedWires[i] - j;		
-		wires[index].onDelete();
+    let index = selectedWires[i] - j;		
+    wires[index].onDelete();
     wires.splice(index, 1);
 
     ++j;
@@ -453,17 +457,47 @@ function connectComponentComponent(compn1, compn2) {
   let c2leftNodePos = compn2.getNodeLeft();
   let hitNodeLeft = compn1.hitNode(c2leftNodePos.x, c2leftNodePos.y);
 
-  if (hitNodeLeft !== null){
+  if (hitNodeLeft != null){
     connectNodes(hitNodeLeft, compn2.node1);
   } 
 
   let c2rightNodePos = compn2.getNodeRight();
   let hitNodeRight = compn1.hitNode(c2rightNodePos.x, c2rightNodePos.y);
 
-  if (hitNodeRight !== null) {
+  if (hitNodeRight != null) {
     connectNodes(hitNodeRight, compn2.node2);
   }
 
+}
+
+function connectJunctionNode(j, n) {
+  for (let i = 0; i < n.junctions.length; ++i) {
+    if (n.junctions[i] === j) return;
+  }
+  n.junctions.push(j);
+  for (let i = 0; i < j.nodes.length; ++i) {
+      if (j.nodes[i] === n) return;
+  }
+  j.nodes.push(n);
+}
+
+function deleteJunction(j) {
+  if (!j) return;
+  for (let i = 0; i < junctions.length; ++i) {
+    if (junctions[i] === j) {
+      j.onDelete();
+      junctions.splice(i, 1);
+      return;
+    }
+  }
+}
+
+function junctionAt(x,y, jArr) {
+  for (let i = 0; i < jArr.length; ++i) {
+    if (jArr[i].hitTest(x,y)) return jArr[i];
+  }
+
+  return null;
 }
 
 function connectWireWire(wire, w) {
@@ -477,20 +511,95 @@ function connectWireWire(wire, w) {
 
   if (hitRight) {
     let node = w.hitNode(wire.x2, wire.y2); // whether the point wire.x2 wire.y2 lies on (w.x1 w.y1) || (w.x2 w.y2)
-    if (node != null)
+    if (node != null) {
       connectNodes(wire.node2, node);
+      
+      if ((node.connections.length - w.nodesOnLineCount) >= 3) { // junction
+        let hitJunctionNode = junctionAt(wire.x2, wire.y2, node.junctions);
+        let hitJunctionWireNode = junctionAt(wire.x2, wire.y2, wire.node2.junctions);
+        if (hitJunctionNode) {
+          connectJunctionNode(hitJunctionNode, wire.node2);
+        }
+        else if (hitJunctionWireNode)
+          connectJunctionNode(hitJunctionWireNode, node);
+        else {
+
+          let junction = new Junction();
+          junction.x = wire.x2;
+          junction.y = wire.y2;
+          connectJunctionNode(junction, wire.node2);
+          connectJunctionNode(junction, node);
+          junctions.push(junction);
+
+        }
+      }
+    }
     else { // junction // T like connection
       connectNodes(wire.node2, w.node1);
       connectNodes(wire.node2, w.node2);
+
+      let hitJunction = junctionAt(wire.x2, wire.y2, w.node1.junctions);
+
+      if (hitJunction) {
+        connectJunctionNode(hitJunction, wire.node2);
+      }
+      else {
+        let junction = new Junction();
+        junction.x = wire.x2;
+        junction.y = wire.y2;
+        connectJunctionNode(junction, wire.node2);
+        connectJunctionNode(junction, w.node1);
+        connectJunctionNode(junction, w.node2);
+        junctions.push(junction);
+      }
+      w.nodesOnLineCount++;
     }
   } 
   else if (hitLeft) {
     let node = w.hitNode(wire.x1, wire.y1); // whether the point wire.x1 wire.y1 lies on (w.x1 w.y1) || (w.x2 w.y2)
-    if (node != null)
+    if (node != null) {
       connectNodes(wire.node1, node);
+      if ((node.connections.length - w.nodesOnLineCount) >= 3) { // junction
+        let hitJunctionNode = junctionAt(wire.x1, wire.y1, node.junctions);
+        let hitJunctionWireNode = junctionAt(wire.x1, wire.y1, wire.node1.junctions);
+        if (hitJunctionNode) {
+          connectJunctionNode(hitJunctionNode, wire.node1);
+        }
+        else if (hitJunctionWireNode)
+          connectJunctionNode(hitJunctionWireNode, node);
+        else {
+
+          let junction = new Junction();
+          junction.x = wire.x1;
+          junction.y = wire.y1;
+          connectJunctionNode(junction, wire.node1);
+          connectJunctionNode(junction, node);
+          junctions.push(junction);
+
+        }
+      }
+    }
     else { // junction // T like connection
       connectNodes(wire.node1, w.node1);
       connectNodes(wire.node1, w.node2);
+      
+      let hitJunction = junctionAt(wire.x1, wire.y1, w.node1.junctions);
+
+      if (hitJunction) {
+        connectJunctionNode(hitJunction, wire.node1);
+      }
+
+      else {
+        let junction = new Junction();
+        junction.x = wire.x1;
+        junction.y = wire.y1;
+        connectJunctionNode(junction, wire.node1);
+        connectJunctionNode(junction, w.node1);
+        connectJunctionNode(junction, w.node2);
+        junctions.push(junction);
+      }
+
+      w.nodesOnLineCount++;
     }
   }
 }
