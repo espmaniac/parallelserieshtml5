@@ -116,12 +116,12 @@ chooseInductor.addEventListener("click", function() {
 
     
     ctx.arc(this.x + 10, this.y + this.height / 2, 6, -Math.PI,
-      0);
+    0);
 
     ctx.arc(this.x + 20, this.y + this.height / 2, 6, -Math.PI,
-      0);
+    0);
     ctx.arc(this.x + 30, this.y + this.height / 2, 6, -Math.PI,
-      0);
+    0);
 
 
 
@@ -538,10 +538,15 @@ function connectWireWire(wire, w) {
       connectNodes(wire.node2, w.node1);
       connectNodes(wire.node2, w.node2);
 
-      let hitJunction = junctionAt(wire.x2, wire.y2, w.node1.junctions);
+      let hitJunction = junctionAt(wire.x2, wire.y2, w.node1.junctions); // any node
+      let hitJunctionWireNode = junctionAt(wire.x2, wire.y2, wire.node2.junctions);
 
       if (hitJunction) {
         connectJunctionNode(hitJunction, wire.node2);
+      }
+      else if (hitJunctionWireNode) {
+        connectJunctionNode(hitJunctionWireNode, w.node1);
+        connectJunctionNode(hitJunctionWireNode, w.node2);
       }
       else {
         let junction = new Junction();
@@ -583,10 +588,15 @@ function connectWireWire(wire, w) {
       connectNodes(wire.node1, w.node1);
       connectNodes(wire.node1, w.node2);
       
-      let hitJunction = junctionAt(wire.x1, wire.y1, w.node1.junctions);
+      let hitJunction = junctionAt(wire.x2, wire.y2, w.node1.junctions); // any node
+      let hitJunctionWireNode = junctionAt(wire.x2, wire.y2, wire.node2.junctions);
 
       if (hitJunction) {
-        connectJunctionNode(hitJunction, wire.node1);
+        connectJunctionNode(hitJunction, wire.node2);
+      }
+      else if (hitJunctionWireNode) {
+        connectJunctionNode(hitJunctionWireNode, w.node1);
+        connectJunctionNode(hitJunctionWireNode, w.node2);
       }
 
       else {
