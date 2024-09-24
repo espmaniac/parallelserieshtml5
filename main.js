@@ -589,7 +589,7 @@ function connectWireWire(wire, w) {
       connectNodes(wire.node1, w.node2);
       
       let hitJunction = junctionAt(wire.x1, wire.y1, w.node1.junctions); // any node
-      let hitJunctionWireNode = junctionAt(wire.x1, wire.y1, wire.node2.junctions);
+      let hitJunctionWireNode = junctionAt(wire.x1, wire.y1, wire.node1.junctions);
 
       if (hitJunction) {
         connectJunctionNode(hitJunction, wire.node1);
