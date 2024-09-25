@@ -1,6 +1,7 @@
 
 class Component {
   constructor(name, value, x, y) {
+    this.className = "Component";
     this.name = name;
     this.value = value;
     this.x = x;

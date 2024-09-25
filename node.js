@@ -55,10 +55,24 @@ function deleteNode(node) {
   for (let i = 0; i < node.connections.length; ++i) {
     let goodNode = node.connections[i];
     let ind = findNode(goodNode.node, node);
+
+    if (ind < 0) continue;
+
     goodNode.node.connections.splice(ind, 1);
+
+    if (goodNode.node.parent.className === "Wire") {
+      let nodeOnLine = goodNode.node.parent.nodesOnLine.findIndex(function(n) {
+        return n === node;
+      });
+      if (nodeOnLine >= 0) {
+        goodNode.node.parent.nodesOnLine.splice(nodeOnLine, 1);
+      }
+      
+    }
 
     if (goodNode.node.junctions.length > 0) {
       let junction = checkJunctionConnection(goodNode.node, node);
+
       
       if (junction.jInd >= 0 && junction.nInd >= 0) {
         if ((goodNode.node.junctions[junction.jInd].nodes.length - 1) >= 3) {

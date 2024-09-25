@@ -1,5 +1,6 @@
 class Wire {
   constructor() {
+    this.className = "Wire";
     this.x1 = 0;
     this.y1 = 0;
     this.x2 = NaN;
@@ -13,7 +14,6 @@ class Wire {
     this.node2.parent = this;
 
     this.nodesOnLine = [];
-    this.nodesOnLineCount = 0;
 
     connectNodes(this.node1, this.node2, "0");
   }
