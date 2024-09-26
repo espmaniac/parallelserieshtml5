@@ -88,19 +88,27 @@ class Component {
     return false;
   }
 
-  hitNode(x, y) { // interpolate?
-    let rotatedPoint = rotatePoint(
-      {x: x, y: y}, 
-      {x: this.rotationPointX(), y: this.rotationPointY()}, 
-      -this.angle
-    );
+  hitNode(x, y) {
 
-    rotatedPoint.x = snapToGrid(rotatedPoint.x);
-    rotatedPoint.y = snapToGrid(rotatedPoint.y);
+    let rotateLeftNode = this.getNodeLeft();
 
-    if ((rotatedPoint.x === (this.x-this.width)) && (rotatedPoint.y === this.y + this.height / 2)) return this.node1;
+    let rotateRightNode = this.getNodeRight();
 
-    if ((rotatedPoint.x === (this.x + this.width * 2)) && (rotatedPoint.y === (this.y + this.height / 2))) return this.node2;
+    let r = 5;
+
+    let dx1 = x - rotateLeftNode.x;
+    let dx2 = x - rotateRightNode.x;
+
+    let dy1 = y - rotateLeftNode.y;
+    let dy2 = y - rotateRightNode.y;
+
+    let dist1 = Math.sqrt((dx1 * dx1) + (dy1 * dy1));
+    let dist2 = Math.sqrt((dx2 * dx2) + (dy2 * dy2));
+
+
+    if (dist1 <= r) return this.node1;
+
+    if (dist2 <= r) return this.node2;
 
     return null;
   }
@@ -109,7 +117,7 @@ class Component {
       return rotatePoint(
         {x: this.x - this.width, y: this.y + this.height / 2}, 
         {x: this.rotationPointX(), y: this.rotationPointY()}, 
-        -this.angle
+        this.angle
       );
   }
 
@@ -117,7 +125,7 @@ class Component {
       return rotatePoint(
         {x: this.x + this.width * 2, y: this.y + this.height / 2}, 
         {x: this.rotationPointX(), y: this.rotationPointY()},
-        -this.angle);
+        this.angle);
   }
 
   onDelete() {
