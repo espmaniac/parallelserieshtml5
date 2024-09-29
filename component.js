@@ -22,12 +22,10 @@ class Component {
   }
 
   rotationPointX() {
-    //return this.x;
     return this.x + this.width/2; 
   }
 
   rotationPointY() { 
-    //return this.y;
     return this.y + this.height/2; 
   }
 
@@ -114,23 +112,30 @@ class Component {
   }
 
   getNodeLeft() {
-      return rotatePoint(
-        {x: this.x - this.width, y: this.y + this.height / 2}, 
-        {x: this.rotationPointX(), y: this.rotationPointY()}, 
-        this.angle
-      );
+    let pos = rotatePoint(
+      {x: this.x - this.width, y: this.y + this.height / 2}, 
+      {x: this.rotationPointX(), y: this.rotationPointY()}, 
+      this.angle
+    );
+    pos.x = snapToGrid(pos.x);
+    pos.y = snapToGrid(pos.y);
+    return pos;
   }
 
   getNodeRight() {
-      return rotatePoint(
-        {x: this.x + this.width * 2, y: this.y + this.height / 2}, 
-        {x: this.rotationPointX(), y: this.rotationPointY()},
-        this.angle);
+    let pos = rotatePoint(
+      {x: this.x + this.width * 2, y: this.y + this.height / 2}, 
+      {x: this.rotationPointX(), y: this.rotationPointY()},
+      this.angle
+    );
+    pos.x = snapToGrid(pos.x);
+    pos.y = snapToGrid(pos.y);
+    return pos;
   }
 
   onDelete() {
-      deleteNode(this.node1);
-      deleteNode(this.node2);
-    }
+    deleteNode(this.node1);
+    deleteNode(this.node2);
+  }
 
   }

@@ -1,11 +1,10 @@
 class Node {
   constructor() {
-    //this.parent = null;
     //this.x = 0;
     //this.y = 0;
 
     this.parent = null;
-    this.connections = []; // {.value}
+    this.connections = [];
     this.junctions = [];
   }
 }
@@ -86,4 +85,5 @@ function deleteNode(node) {
 
   }
   node.connections.length = 0; // clear
+  node.junctions = [];
 }
