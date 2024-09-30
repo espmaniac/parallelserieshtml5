@@ -69,21 +69,18 @@ function deleteNode(node) {
       
     }
 
-    if (goodNode.node.junctions.length > 0) {
-      let junction = checkJunctionConnection(goodNode.node, node);
-
-      
-      if (junction.jInd >= 0 && junction.nInd >= 0) {
-        if ((goodNode.node.junctions[junction.jInd].nodes.length - 1) >= 3) {
-          goodNode.node.junctions[junction.jInd].nodes.splice(junction.nInd, 1);
-        } else {
-          //goodNode.node.junction[junction.jInd].onDelete();
-          deleteJunction(goodNode.node.junctions[junction.jInd]);
-        }
-      }
-    }
-
   }
+
+  for (let i = 0; i < node.junctions.length; ++i) {
+    let junction = node.junctions[i];
+    let ind = junction.nodes.findIndex(function(n) {
+      return n === node;
+    });
+    if (ind >= 0 && ((junction.nodes.length - 1) >= 3)) 
+      junction.nodes.splice(ind, 1);
+    else deleteJunction(junction);
+  }
+
   node.connections.length = 0; // clear
   node.junctions = [];
 }
