@@ -44,19 +44,34 @@
 
     <div id="scheme">
         <div id="tools">
-            <button id="cursorTool" class="active">
-                <img src="icons/cursor.svg" alt="" srcset="" width="40" height="20">
-            </button>
-            <button id="selectionTool">
-                <img src="icons/selection.svg" alt="" srcset="" width="40" height="20">
-            </button>
-            <button id="wireTool">
-                <img src="icons/wire.svg" alt="" srcset="" width="40" height="20">
-            </button>
-            <button id="addComponent">
-                <img src="" alt="" srcset="" width="40" height="20">
-            </button>
-
+            <div id="mainTools">
+              <button id="cursorTool" class="active">
+                  <img src="icons/cursor.svg" alt="" srcset="" width="40" height="20">
+              </button>
+              <button id="selectionTool">
+                  <img src="icons/selection.svg" alt="" srcset="" width="40" height="20">
+              </button>
+              <button id="wireTool">
+                  <img src="icons/wire.svg" alt="" srcset="" width="40" height="20">
+              </button>
+              <button id="addComponent">
+                  <img src="" alt="" srcset="" width="40" height="20">
+              </button>
+            </div>
+            <div id="nodeTools">
+              <button id="startNode">
+                <img src="icons/node.svg" alt="" width="40" height="20">
+                <p>StartNode</p>
+              </button>
+              <button id="junction">
+                <img src="icons/junction.svg" alt="" width="40" height="20">
+                <p>Junction</p>
+              </button>
+              <button id="endNode">
+                <img src="icons/node.svg" alt="" width="40" height="20">
+                <p>EndNode</p>
+              </button>
+            </div>
         </div>
 
         <canvas id="myCanvas"></canvas>

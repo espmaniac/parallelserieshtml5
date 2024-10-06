@@ -135,18 +135,22 @@ chooseInductor.addEventListener("click", function() {
   chooseComponent.remove();
   });
 
-  let tools = document.getElementById("tools");
+  let mainTools = document.getElementById("mainTools");
+  let nodeTools = document.getElementById("nodeTools");
   let cursorTool = document.getElementById("cursorTool");
   let wireTool = document.getElementById("wireTool");
 
   function removeActive() {
-    for (let i = 0; i < tools.children.length; ++i) {
-      tools.children[i].classList.remove("active");
+    for (let i = 0; i < mainTools.children.length; ++i) {
+      mainTools.children[i].classList.remove("active");
+    }
+    for (let i = 0; i < nodeTools.children.length; ++i) {
+      nodeTools.children[i].classList.remove("active");
     }
   }
 
   cursorTool.addEventListener("click", function() {
-    removeActive()
+    removeActive();
     this.classList.add("active");
     tool = "SELECT";
   });
@@ -154,7 +158,7 @@ chooseInductor.addEventListener("click", function() {
   
   wireTool.addEventListener("click", function() {
     tool = "WIRE";
-    removeActive()
+    removeActive();
     this.classList.add("active");
   });
 
@@ -674,7 +678,7 @@ canvas.addEventListener('wheel', (event) => {
   const mousePosBefore = screenToWorldSpace(mouseX, mouseY);
 
   event.preventDefault();
-  //const oldZoom = zoom;
+  const oldZoom = zoom;
   
   const delta = Math.sign(event.deltaY);
   zoom -= delta * 0.25;
@@ -685,6 +689,12 @@ canvas.addEventListener('wheel', (event) => {
 
   //offsetX = ((offsetX - mouseX) * (zoom / oldZoom)) + mouseX;
   //offsetY = ((offsetY - mouseY) * (zoom / oldZoom)) + mouseY;
+
+  
+  mouseOffsetX -= (mouseX / oldZoom);
+  mouseOffsetX += (mouseX / zoom);
+  mouseOffsetY -= (mouseY / oldZoom);
+  mouseOffsetY += (mouseY / zoom);
 
   offsetX -= mousePosBefore.x - mousePosAfter.x;
   offsetY -= mousePosBefore.y - mousePosAfter.y;
