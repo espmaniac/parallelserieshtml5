@@ -4,8 +4,6 @@ class Component {
     this.className = "Component";
     this.name = name;
     this.value = value;
-    this.x = x;
-    this.y = y;
     this.width = cellSize * 2;
     this.height = cellSize;
     this.angle = 0;
@@ -18,6 +16,7 @@ class Component {
     this.node2.parent = this;
 
     connectNodes(this.node1, this.node2, this.value);
+    this.move(x, y);
       
   }
 
@@ -73,6 +72,31 @@ class Component {
     //drawCirc(this.rotationPointX(), this.rotationPointY()); // rotation point
   }
 
+  move(x, y, onMove) {
+    this.x = x;
+    this.y = y;
+
+    if (onMove) return;
+
+    /* update onMouseUp */
+    let rotateLeft = rotatePoint(
+      {x: this.x - this.width, y: this.y + this.height / 2}, 
+      {x: this.rotationPointX(), y: this.rotationPointY()}, 
+      this.angle
+    );
+    this.node1.x = snapToGrid(rotateLeft.x);
+    this.node1.y = snapToGrid(rotateLeft.y);
+
+    let rotateRight = rotatePoint(
+      {x: this.x + this.width * 2, y: this.y + this.height / 2}, 
+      {x: this.rotationPointX(), y: this.rotationPointY()},
+      this.angle
+    );
+
+    this.node2.x = snapToGrid(rotateRight.x);
+    this.node2.y = snapToGrid(rotateRight.y);
+  }
+
   hitTest(x, y) {
     let rotatedPoint = rotatePoint(
       {x: x, y: y}, 
@@ -87,18 +111,13 @@ class Component {
   }
 
   hitNode(x, y) {
-
-    let rotateLeftNode = this.getNodeLeft();
-
-    let rotateRightNode = this.getNodeRight();
-
     let r = 5;
 
-    let dx1 = x - rotateLeftNode.x;
-    let dx2 = x - rotateRightNode.x;
+    let dx1 = x - this.node1.x;
+    let dx2 = x - this.node2.x;
 
-    let dy1 = y - rotateLeftNode.y;
-    let dy2 = y - rotateRightNode.y;
+    let dy1 = y - this.node1.y;
+    let dy2 = y - this.node2.y;
 
     let dist1 = Math.sqrt((dx1 * dx1) + (dy1 * dy1));
     let dist2 = Math.sqrt((dx2 * dx2) + (dy2 * dy2));
@@ -109,28 +128,6 @@ class Component {
     if (dist2 <= r) return this.node2;
 
     return null;
-  }
-
-  getNodeLeft() {
-    let pos = rotatePoint(
-      {x: this.x - this.width, y: this.y + this.height / 2}, 
-      {x: this.rotationPointX(), y: this.rotationPointY()}, 
-      this.angle
-    );
-    pos.x = snapToGrid(pos.x);
-    pos.y = snapToGrid(pos.y);
-    return pos;
-  }
-
-  getNodeRight() {
-    let pos = rotatePoint(
-      {x: this.x + this.width * 2, y: this.y + this.height / 2}, 
-      {x: this.rotationPointX(), y: this.rotationPointY()},
-      this.angle
-    );
-    pos.x = snapToGrid(pos.x);
-    pos.y = snapToGrid(pos.y);
-    return pos;
   }
 
   onDelete() {

@@ -1,7 +1,7 @@
 class Node {
   constructor() {
-    //this.x = 0;
-    //this.y = 0;
+    this.x = null;
+    this.y = null;
 
     this.parent = null;
     this.connections = [];

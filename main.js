@@ -383,9 +383,8 @@ canvas.addEventListener('mousedown', function(event) {
 
     if (tool === "WIRE" && selectedComponents.length <= 0) {
       let wire = new Wire();
-      wire.x1 = snapToGrid(mousePos.x);
-      wire.y1 = snapToGrid(mousePos.y);
-
+      wire.node1.x = snapToGrid(mousePos.x); 
+      wire.node1.y = snapToGrid(mousePos.y);
       wires.push(wire);
       isDragging = true;
     }
@@ -409,15 +408,21 @@ canvas.addEventListener('mousemove', function(event) {
   
   if (isDragging) {
     if (selectedComponents.length > 0) {
-      selectedComponents[0].x = (mouseX  / zoom) - mouseOffsetX;
-      selectedComponents[0].y = (mouseY / zoom) - mouseOffsetY;
+      selectedComponents[0].move(
+        (mouseX  / zoom) - mouseOffsetX,
+        (mouseY / zoom) - mouseOffsetY,
+        true, // onMove
+      );
     } else {
       let mousePoss = screenToWorldSpace(mouseX, mouseY);
       let wire = wires[wires.length - 1];
-      let mouseTo = snapToAngle({x: wire.x1, y: wire.y1}, {x: mousePoss.x, y: mousePoss.y});
+      let mouseTo = snapToAngle(
+        {x: wire.node1.x, y: wire.node1.y}, 
+        {x: mousePoss.x, y: mousePoss.y}
+      );
         
-      wire.x2 = snapToGrid(mouseTo.x);
-      wire.y2 = snapToGrid(mouseTo.y);
+      wire.node2.x = snapToGrid(mouseTo.x);
+      wire.node2.y = snapToGrid(mouseTo.y);
     }
   }
   else if (isPanning) {
@@ -431,30 +436,28 @@ canvas.addEventListener('mousemove', function(event) {
 });
 
 function connectComponentLine(component, wire) {
-  let leftWireHit = component.hitNode(wire.x1,wire.y1);
-  let rightWireHit = component.hitNode(wire.x2,wire.y2);
+  let leftWireHit = component.hitNode(wire.node1.x,wire.node1.y);
+  let rightWireHit = component.hitNode(wire.node2.x,wire.node2.y);
 
   if (leftWireHit) {  
     connectNodes(wire.node1, leftWireHit);
     if (leftWireHit.connections.length >= 3)
-      junction(wire.x1, wire.y1, wire.node1, leftWireHit);
+      junction(wire.node1.x, wire.node1.y, wire.node1, leftWireHit);
   }
   else if (rightWireHit) {
     connectNodes(wire.node2, rightWireHit);
     if (rightWireHit.connections.length >= 3)
-      junction(wire.x2, wire.y2, wire.node2, rightWireHit);
+      junction(wire.node2.x, wire.node2.y, wire.node2, rightWireHit);
 
   } else { // junction // T like connection
-    let nodeCompLeft = component.getNodeLeft();
-    let nodeCompRight = component.getNodeRight();
-    let node1Intersect = wire.hitTest(nodeCompLeft.x, nodeCompLeft.y); // does the component point lie on the line?
-    let node2Intersect = wire.hitTest(nodeCompRight.x, nodeCompRight.y);
+    let node1Intersect = wire.hitTest(component.node1.x, component.node1.y); // does the component point lie on the line?
+    let node2Intersect = wire.hitTest(component.node2.x, component.node2.y);
 
     if (node1Intersect) {
       connectNodes(component.node1, wire.node1);
       connectNodes(component.node1, wire.node2);
-      junction(nodeCompLeft.x, nodeCompLeft.y, component.node1, wire.node1);
-      junction(nodeCompLeft.x, nodeCompLeft.y, component.node1, wire.node2);
+      junction(component.node1.x, component.node1.y, component.node1, wire.node1);
+      junction(component.node1.x, component.node1.y, component.node1, wire.node2);
 
       if(!wire.nodesOnLine.find(
         function(n) {
@@ -465,8 +468,8 @@ function connectComponentLine(component, wire) {
     if (node2Intersect) {
       connectNodes(component.node2, wire.node1);
       connectNodes(component.node2, wire.node2);
-      junction(nodeCompRight.x, nodeCompRight.y, component.node2, wire.node1);
-      junction(nodeCompRight.x, nodeCompRight.y, component.node2, wire.node2);
+      junction(component.node2.x, component.node2.y, component.node2, wire.node1);
+      junction(component.node2.x, component.node2.y, component.node2, wire.node2);
 
       if(!wire.nodesOnLine.find(
         function(n) {
@@ -479,24 +482,22 @@ function connectComponentLine(component, wire) {
 function connectComponentComponent(compn1, compn2) {
   if (compn1 === compn2) return;
   
-  let c2leftNodePos = compn2.getNodeLeft();
-  let hitNodeLeft = compn1.hitNode(c2leftNodePos.x, c2leftNodePos.y);
+  let hitNodeLeft = compn1.hitNode(compn2.node1.x, compn2.node1.y);
 
   if (hitNodeLeft != null){
     connectNodes(hitNodeLeft, compn2.node1);
 
     if (hitNodeLeft.connections.length >= 3)
-      junction(c2leftNodePos.x, c2leftNodePos.y, hitNodeLeft, compn2.node1);
+      junction(compn2.node1.x, compn2.node1.y, hitNodeLeft, compn2.node1);
   } 
 
-  let c2rightNodePos = compn2.getNodeRight();
-  let hitNodeRight = compn1.hitNode(c2rightNodePos.x, c2rightNodePos.y);
+  let hitNodeRight = compn1.hitNode(compn2.node2.x, compn2.node2.y);
 
   if (hitNodeRight != null) {
     connectNodes(hitNodeRight, compn2.node2);
 
     if (hitNodeRight.connections.length >= 3)
-      junction(c2rightNodePos.x, c2rightNodePos.y, hitNodeRight, compn2.node2);
+      junction(compn2.node2.x, compn2.node2.y, hitNodeRight, compn2.node2);
   }
 
 }
@@ -554,37 +555,37 @@ function junctionAt(x,y, jArr) {
 function connectWireWire(wire, w) {
   if (wire === w) return; 
 
-  // Do the points wire.x1 wire.y1 && wire.x2 wire.y2 lie on the line w?
+  // Do the points wire.node1.x wire.node1.y && wire.node2.x wire.node2.y lie on the line w?
 
-  let hitRight = w.hitTest(wire.x2, wire.y2);
-  let hitLeft = w.hitTest(wire.x1, wire.y1);
+  let hitRight = w.hitTest(wire.node2.x, wire.node2.y);
+  let hitLeft = w.hitTest(wire.node1.x, wire.node1.y);
 
 
   if (hitRight) {
-    let node = w.hitNode(wire.x2, wire.y2); // whether the point wire.x2 wire.y2 lies on (w.x1 w.y1) || (w.x2 w.y2)
+    let node = w.hitNode(wire.node2.x, wire.node2.y); // whether the point wire.node2.x wire.node2.y lies on (w.x1 w.y1) || (w.x2 w.y2)
     if (node != null) {
       connectNodes(wire.node2, node);
       
       if ((node.connections.length - w.nodesOnLine.length) >= 3) { // junction
-        junction(wire.x2, wire.y2, node, wire.node2);
+        junction(wire.node2.x, wire.node2.y, node, wire.node2);
       }
     }
     else { // junction // T like connection
       connectNodes(wire.node2, w.node1);
       connectNodes(wire.node2, w.node2);
 
-      junction(wire.x2, wire.y2, w.node1, wire.node2);
-      junction(wire.x2, wire.y2, w.node2, wire.node2);
+      junction(wire.node2.x, wire.node2.y, w.node1, wire.node2);
+      junction(wire.node2.x, wire.node2.y, w.node2, wire.node2);
 
       w.nodesOnLine.push(wire.node2);
     }
   } 
   else if (hitLeft) {
-    let node = w.hitNode(wire.x1, wire.y1); // whether the point wire.x1 wire.y1 lies on (w.x1 w.y1) || (w.x2 w.y2)
+    let node = w.hitNode(wire.node1.x, wire.node1.y); // whether the point wire.node1.x wire.node1.y lies on (w.x1 w.y1) || (w.x2 w.y2)
     if (node != null) {
       connectNodes(wire.node1, node);
       if ((node.connections.length - w.nodesOnLine.length) >= 3) { // junction
-        junction(wire.x1, wire.y1, node, wire.node1);
+        junction(wire.node1.x, wire.node1.y, node, wire.node1);
       }
     }
     else { // junction // T like connection
@@ -592,8 +593,8 @@ function connectWireWire(wire, w) {
       connectNodes(wire.node1, w.node2);
 
       
-      junction(wire.x1, wire.y1, w.node1, wire.node1);
-      junction(wire.x1, wire.y1, w.node2, wire.node1);
+      junction(wire.node1.x, wire.node1.y, w.node1, wire.node1);
+      junction(wire.node1.x, wire.node1.y, w.node2, wire.node1);
 
 
       w.nodesOnLine.push(wire.node1);
@@ -609,12 +610,16 @@ canvas.addEventListener('mouseup', function(event) {
     if (isDragging) {
       if (selectedComponents.length > 0) {
         let component = selectedComponents[0];
-        component.x = snapToGrid(mouseX / zoom - mouseOffsetX);
-        component.y = snapToGrid(mouseY / zoom - mouseOffsetY);
 
         deleteNode(component.node1); // delete all connection
         deleteNode(component.node2); // delete all connection
         connectNodes(component.node1, component.node2);
+
+        component.move(
+          snapToGrid((mouseX / zoom) - mouseOffsetX),
+          snapToGrid((mouseY / zoom) - mouseOffsetY),
+          false, // onMove
+        );
 
         for (let i = 0; i < wires.length; ++i) {
           connectComponentLine(component, wires[i]);
@@ -628,22 +633,25 @@ canvas.addEventListener('mouseup', function(event) {
         // Some connected nodes may have more than or equal to 3 connections and no junction
         // this solution seems to fix that problem
         if (component.node1.connections.length >= 3) {
-          let pos = component.getNodeLeft();
+          let pos = component.node1;
           junction(pos.x, pos.y, component.node1, component.node1.connections[1].node);
         }
 
         if (component.node2.connections.length >= 3) {
-          let pos = component.getNodeRight();
+          let pos = component.node2;
           junction(pos.x, pos.y, component.node2, component.node2.connections[1].node);
         }
 
       } 
       else {
         let wire = wires[wires.length - 1];
-        let snap = snapToAngle({x: wire.x1, y: wire.y1}, {x: mousePos.x, y: mousePos.y});
-        wire.x2 = snapToGrid(snap.x);
-        wire.y2 = snapToGrid(snap.y);
-        if (wire.x1 === wire.x2 && wire.y1 === wire.y2) {
+        let snap = snapToAngle(
+          {x: wire.node1.x, y: wire.node1.y}, 
+          {x: mousePos.x, y: mousePos.y}
+        );
+        wire.node2.x = snapToGrid(snap.x);
+        wire.node2.y = snapToGrid(snap.y);
+        if (wire.node1.x === wire.node2.x && wire.node1.y === wire.node2.y) {
           wires.pop();
         }
         else {
