@@ -60,7 +60,6 @@ class Component {
 
     ctx.fillText(this.value, this.x + (this.width - valueMetric.width) / 2, this.y - (valueMetric.actualBoundingBoxAscent + valueMetric.actualBoundingBoxDescent) / 2);
     ctx.fillText(this.name, this.x + (this.width - nameMetric.width) / 2, this.y - (nameMetric.actualBoundingBoxAscent + nameMetric.actualBoundingBoxDescent) * 2);
-
     ctx.restore();
   }
 
@@ -71,6 +70,10 @@ class Component {
     if (onMove) return;
 
     /* update onMouseUp */
+    this.update();
+  }
+
+  update() {
     let rotateLeft = rotatePoint(
       {x: this.x - this.width, y: this.y + this.height / 2}, 
       {x: this.rotationPointX(), y: this.rotationPointY()}, 

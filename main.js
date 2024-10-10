@@ -273,6 +273,11 @@ document.addEventListener('keypress', function(e) { // rotate
 
     selectedComponents[0].angle += 45;
     selectedComponents[0].angle %= 360;
+
+    if (!isDragging) {
+      selectedComponents[0].update();
+      updateComponentConnections(selectedComponents[0]);
+    }
  
     renderAll();
   } 
@@ -533,6 +538,33 @@ function junction(x,y, node1,node2) {
   }
 }
 
+function updateComponentConnections(component) {
+  deleteNode(component.node1); // delete all connection
+  deleteNode(component.node2); // delete all connection
+  connectNodes(component.node1, component.node2);
+
+  for (let i = 0; i < wires.length; ++i) {
+    connectComponentLine(component, wires[i]);
+  }
+
+  for (let i in components) {
+    connectComponentComponent(component, components[i]);
+
+  }
+
+  // Some connected nodes may have more than or equal to 3 connections and no junction
+  // this solution seems to fix that problem
+  if (component.node1.connections.length >= 3) {
+    let pos = component.node1;
+    junction(pos.x, pos.y, component.node1, component.node1.connections[1].node);
+  }
+
+  if (component.node2.connections.length >= 3) {
+    let pos = component.node2;
+    junction(pos.x, pos.y, component.node2, component.node2.connections[1].node);
+  }
+}
+
 function deleteJunction(j) {
   if (!j) return;
   for (let i = 0; i < junctions.length; ++i) {
@@ -611,36 +643,13 @@ canvas.addEventListener('mouseup', function(event) {
       if (selectedComponents.length > 0) {
         let component = selectedComponents[0];
 
-        deleteNode(component.node1); // delete all connection
-        deleteNode(component.node2); // delete all connection
-        connectNodes(component.node1, component.node2);
-
         component.move(
           snapToGrid((mouseX / zoom) - mouseOffsetX),
           snapToGrid((mouseY / zoom) - mouseOffsetY),
           false, // onMove
         );
 
-        for (let i = 0; i < wires.length; ++i) {
-          connectComponentLine(component, wires[i]);
-        }
-
-        for (let i in components) {
-          connectComponentComponent(component, components[i]);
-
-        }
-
-        // Some connected nodes may have more than or equal to 3 connections and no junction
-        // this solution seems to fix that problem
-        if (component.node1.connections.length >= 3) {
-          let pos = component.node1;
-          junction(pos.x, pos.y, component.node1, component.node1.connections[1].node);
-        }
-
-        if (component.node2.connections.length >= 3) {
-          let pos = component.node2;
-          junction(pos.x, pos.y, component.node2, component.node2.connections[1].node);
-        }
+        updateComponentConnections(component);
 
       } 
       else {

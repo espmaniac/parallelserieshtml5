@@ -9,13 +9,13 @@ class Node {
   }
 
   hitTest(x, y) {
-    let r = 5;
-    let dx1 = x - this.x;
-    let dy1 = y - this.y;
+    const r = 5;
+    let dx = x - this.x;
+    let dy = y - this.y;
 
-    let dist1 = Math.sqrt((dx1 * dx1) + (dy1 * dy1));
+    let dist = Math.sqrt((dx * dx) + (dy * dy));
     
-    return (dist1 <= 5);
+    return (dist <= r);
   }
 }
 
