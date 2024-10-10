@@ -58,18 +58,10 @@ class Component {
     let nameMetric = ctx.measureText(this.name);
     let valueMetric = ctx.measureText(this.value);
 
-    /* ALIGN text left */
-    //ctx.fillText(this.value, this.x, this.y - (valueMetric.actualBoundingBoxAscent + valueMetric.actualBoundingBoxDescent) / 2);
-    //ctx.fillText(this.name, this.x, this.y - (nameMetric.actualBoundingBoxAscent + nameMetric.actualBoundingBoxDescent) * 2);
-    /* ALIGN text left*/
-
-
     ctx.fillText(this.value, this.x + (this.width - valueMetric.width) / 2, this.y - (valueMetric.actualBoundingBoxAscent + valueMetric.actualBoundingBoxDescent) / 2);
     ctx.fillText(this.name, this.x + (this.width - nameMetric.width) / 2, this.y - (nameMetric.actualBoundingBoxAscent + nameMetric.actualBoundingBoxDescent) * 2);
 
     ctx.restore();
-
-    //drawCirc(this.rotationPointX(), this.rotationPointY()); // rotation point
   }
 
   move(x, y, onMove) {
@@ -111,23 +103,7 @@ class Component {
   }
 
   hitNode(x, y) {
-    let r = 5;
-
-    let dx1 = x - this.node1.x;
-    let dx2 = x - this.node2.x;
-
-    let dy1 = y - this.node1.y;
-    let dy2 = y - this.node2.y;
-
-    let dist1 = Math.sqrt((dx1 * dx1) + (dy1 * dy1));
-    let dist2 = Math.sqrt((dx2 * dx2) + (dy2 * dy2));
-
-
-    if (dist1 <= r) return this.node1;
-
-    if (dist2 <= r) return this.node2;
-
-    return null;
+    return this.node1.hitTest(x,y) ? this.node1 : (this.node2.hitTest(x,y) ? this.node2 : null);
   }
 
   onDelete() {

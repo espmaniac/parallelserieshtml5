@@ -7,6 +7,16 @@ class Node {
     this.connections = [];
     this.junctions = [];
   }
+
+  hitTest(x, y) {
+    let r = 5;
+    let dx1 = x - this.x;
+    let dy1 = y - this.y;
+
+    let dist1 = Math.sqrt((dx1 * dx1) + (dy1 * dy1));
+    
+    return (dist1 <= 5);
+  }
 }
 
 function connectNodes(node1, node2, value="0") {

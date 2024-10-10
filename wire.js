@@ -52,9 +52,7 @@ class Wire {
   }
 
   hitNode(x,y) {
-    if (x === this.node1.x && y === this.node1.y) return this.node1;
-    if (x === this.node2.x && y === this.node2.y) return this.node2;
-    return null;
+    return this.node1.hitTest(x,y) ? this.node1 : this.node2.hitTest(x,y) ? this.node2 : null;
   }
 
   onDelete() {
