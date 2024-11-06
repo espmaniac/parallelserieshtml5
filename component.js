@@ -1,9 +1,10 @@
-
 class Component {
   constructor(name, value, x, y) {
     this.className = "Component";
-    this.name = name;
-    this.value = value;
+    this.name = new Text(name);
+    this.name.parent = this;
+    this.value = new Text(value);
+    this.value.parent = this;
     this.width = cellSize * 2;
     this.height = cellSize;
     this.angle = 0;
@@ -14,6 +15,7 @@ class Component {
 
     this.node1.parent = this;
     this.node2.parent = this;
+
 
     connectNodes(this.node1, this.node2, this.value);
     this.move(x, y);
@@ -29,6 +31,12 @@ class Component {
   }
 
   drawComponent() {}
+
+  select(s) {
+    this.selected = s;
+    this.name.selected = s;
+    this.value.selected = s;
+  }
 
   draw() {
     ctx.save();
@@ -52,20 +60,23 @@ class Component {
 
     ctx.closePath();
     ctx.stroke();
-
-    ctx.font = "bold 12px sans-serif";
-    
-    let nameMetric = ctx.measureText(this.name);
-    let valueMetric = ctx.measureText(this.value);
-
-    ctx.fillText(this.value, this.x + (this.width - valueMetric.width) / 2, this.y - (valueMetric.actualBoundingBoxAscent + valueMetric.actualBoundingBoxDescent) / 2);
-    ctx.fillText(this.name, this.x + (this.width - nameMetric.width) / 2, this.y - (nameMetric.actualBoundingBoxAscent + nameMetric.actualBoundingBoxDescent) * 2);
     ctx.restore();
+    
+    
+    this.name.draw();
+    this.value.draw();
+    
   }
 
   move(x, y, onMove) {
     this.x = x;
     this.y = y;
+
+    this.value.x = this.x;
+    this.value.y = this.y;
+
+    this.name.x = this.x;
+    this.name.y = this.y - 10;
 
     if (onMove) return;
 
@@ -74,6 +85,8 @@ class Component {
   }
 
   update() {
+    
+
     let rotateLeft = rotatePoint(
       {x: this.x - this.width, y: this.y + this.height / 2}, 
       {x: this.rotationPointX(), y: this.rotationPointY()}, 
@@ -90,6 +103,16 @@ class Component {
 
     this.node2.x = snapToGrid(rotateRight.x);
     this.node2.y = snapToGrid(rotateRight.y);
+
+  }
+
+  rotate(angle) {
+    this.angle += angle;
+    this.angle %= 360;
+
+    this.name.rotate(angle);
+    this.value.rotate(angle);
+    
   }
 
   hitTest(x, y) {
