@@ -247,6 +247,8 @@ function drawGrid() {
   ctx.restore();
 }
 
+
+
 function renderAll() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0,0, canvas.width, canvas.height);
@@ -271,8 +273,7 @@ function renderAll() {
 document.addEventListener('keypress', function(e) { // rotate
   if (e.key === 'r' && selectedComponents.length > 0) {
 
-    selectedComponents[0].angle += 45;
-    selectedComponents[0].angle %= 360;
+    selectedComponents[0].rotate(45);
 
     if (!isDragging) {
       selectedComponents[0].update();
@@ -284,7 +285,7 @@ document.addEventListener('keypress', function(e) { // rotate
 
   if (e.key === 'e' && selectedComponents.length > 0) {
     let newValue = prompt(`new ${selectedComponents[0].name} value`);
-    selectedComponents[0].value = newValue;
+    selectedComponents[0].value.value = newValue;
 
     renderAll();
   }
@@ -292,9 +293,9 @@ document.addEventListener('keypress', function(e) { // rotate
 
 function deleteSelected() {
   if (selectedComponents.length > 0) {
-    selectedComponents[0].selected = false;
+    selectedComponents[0].select(false);
     selectedComponents[0].onDelete();
-    delete components[selectedComponents[0].name];
+    delete components[selectedComponents[0].name.value];
     selectedComponents.length = 0;
   }
 
@@ -353,7 +354,7 @@ canvas.addEventListener('mousedown', function(event) {
 
   if (event.button === 0) { // left btn
     if (selectedComponents.length)
-        selectedComponents[0].selected = false;
+        selectedComponents[0].select(false);
     selectedComponents.length = 0;
     selectedWires.length = 0;
     for (let i in components) {
@@ -362,12 +363,12 @@ canvas.addEventListener('mousedown', function(event) {
       { 
         isDragging = true;
         selectedComponents.push(component);
-        component.selected = true;
+        component.select(true);
         mouseOffsetX = mouseX / zoom - component.x;
         mouseOffsetY = mouseY / zoom - component.y;
         break;
       } else {
-        component.selected = false;
+        component.select(false);
       }
     }
 
