@@ -12,8 +12,10 @@ var isMouseHover = false;
 var panOffX = 0;
 var panOffY = 0;
 
-var mouseOffsetX = 0;
-var mouseOffsetY = 0;
+var cursorOffsetX = 0;
+var cursorOffsetY = 0;
+
+var touches = null;
 
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 3;
@@ -196,6 +198,20 @@ function screenToWorldSpace(screenX, screenY) {
   return {x: worldX, y: worldY};
 }
 
+function rotatePoint(point, center, angle) {
+  let angleRad = angle * Math.PI / 180;
+  
+  let sinAngle = Math.sin(angleRad);
+  let cosAngle = Math.cos(angleRad);
+  
+  let translatedX = point.x - center.x;
+  let translatedY = point.y - center.y;
+  
+  let rotatedX = translatedX * cosAngle - translatedY * sinAngle;
+  let rotatedY = translatedX * sinAngle + translatedY * cosAngle;
+  
+  return { x: rotatedX + center.x, y: rotatedY + center.y };
+}
 
 var btnAdd = document.getElementById("addComponent");
 btnAdd.addEventListener("click", function() {
@@ -318,23 +334,8 @@ document.addEventListener("keyup", function(e) { // delete
 
     renderAll();
   }
-})
+});
 
-
-function rotatePoint(point, center, angle) {
-  let angleRad = angle * Math.PI / 180;
-  
-  let sinAngle = Math.sin(angleRad);
-  let cosAngle = Math.cos(angleRad);
-  
-  let translatedX = point.x - center.x;
-  let translatedY = point.y - center.y;
-  
-  let rotatedX = translatedX * cosAngle - translatedY * sinAngle;
-  let rotatedY = translatedX * sinAngle + translatedY * cosAngle;
-  
-  return { x: rotatedX + center.x, y: rotatedY + center.y };
-}
 
 canvas.addEventListener("mouseleave", function (event) {
   isMouseHover = false;
@@ -344,57 +345,108 @@ canvas.addEventListener("mouseover", function (event) {
   isMouseHover = true;
 }, false);
 
+function trySelectComponent(cursorX, cursorY) {
+  if (isDragging) return;
+
+
+  const virtualPos = screenToWorldSpace(cursorX, cursorY);
+
+  if (selectedComponents.length)
+    selectedComponents[0].select(false);
+  selectedComponents.length = 0;
+  selectedWires.length = 0;
+
+  for (let i in components) {
+    let component = components[i];
+    if (component.hitTest(virtualPos.x, virtualPos.y))
+    { 
+      isDragging = true;
+      selectedComponents.push(component);
+      component.select(true);
+      cursorOffsetX = cursorX / zoom - component.x;
+      cursorOffsetY = cursorY / zoom - component.y;
+      break;
+    } else {
+      component.select(false);
+    }
+  }
+}
+
+function trySelectWires(cursorX, cursorY) {
+  const virtualPos = screenToWorldSpace(cursorX, cursorY);
+
+  for (let i = 0;  i < wires.length; ++i) {
+    let wire = wires[i];
+
+    if (!isDragging) {
+      wire.selected = wire.hitTest(virtualPos.x, virtualPos.y);
+      if (wire.selected && selectedWires.length <= 0) {selectedWires.push(i);}
+      else
+        wire.selected = false; // multiple selection at the same point
+    }
+    else
+      wire.selected = false;
+  }
+}
+
+function tryDrawWireFrom(cursorX, cursorY) {
+  const virtualPos = screenToWorldSpace(cursorX, cursorY);
+
+  if (tool === "WIRE" && selectedComponents.length <= 0) {
+    let wire = new Wire();
+    wire.node1.x = snapToGrid(virtualPos.x); 
+    wire.node1.y = snapToGrid(virtualPos.y);
+    wires.push(wire);
+    isDragging = true;
+  }
+}
+
+function tryDrawWireTo(cursorX, cursorY, finish) {
+  const virtualPos = screenToWorldSpace(cursorX, cursorY);
+  let wire = wires[wires.length - 1];
+  let cursorTo = snapToAngle(
+    {x: wire.node1.x, y: wire.node1.y}, 
+    {x: virtualPos.x, y: virtualPos.y}
+  );
+    
+  wire.node2.x = snapToGrid(cursorTo.x);
+  wire.node2.y = snapToGrid(cursorTo.y);
+
+  if (!finish) return;
+
+
+  if (wire.node1.x === wire.node2.x && wire.node1.y === wire.node2.y) {
+    wires.pop();
+  }
+  else {
+    for (let i in components) {
+      let component = components[i];
+      connectComponentLine(component, wire);
+    }
+
+    for (let i = 0; i < wires.length - 1; ++i) { // last wire == current
+      let w = wires[i];
+      connectWireWire(wire, w);
+      connectWireWire(w, wire);
+      // one wire can be T-connected to another wire
+    }
+  }
+}
+
 canvas.addEventListener('mousedown', function(event) {
   const mouseX = event.clientX - canvas.getBoundingClientRect().left;
   const mouseY = event.clientY - canvas.getBoundingClientRect().top;
 
-  const mousePos = screenToWorldSpace(mouseX, mouseY);
-
   menu.style.display = "none";
 
   if (event.button === 0) { // left btn
-    if (selectedComponents.length)
-        selectedComponents[0].select(false);
-    selectedComponents.length = 0;
-    selectedWires.length = 0;
-    for (let i in components) {
-      let component = components[i];
-      if (tool === "SELECT" && component.hitTest(mousePos.x, mousePos.y))
-      { 
-        isDragging = true;
-        selectedComponents.push(component);
-        component.select(true);
-        mouseOffsetX = mouseX / zoom - component.x;
-        mouseOffsetY = mouseY / zoom - component.y;
-        break;
-      } else {
-        component.select(false);
-      }
+
+    if (tool === "SELECT") {
+      trySelectComponent(mouseX, mouseY);
+      trySelectWires(mouseX, mouseY);
     }
 
-    
-    for (let i = 0;  i < wires.length; ++i) {
-      let wire = wires[i];
-
-      if (tool === "SELECT" && !isDragging) {
-        wire.selected = wire.hitTest(mousePos.x, mousePos.y);
-        if (wire.selected && selectedWires.length <= 0) {selectedWires.push(i);}
-        else
-          wire.selected = false; // multiple selection at the same point
-      }
-      else
-        wire.selected = false;
-    }
-    
-
-    if (tool === "WIRE" && selectedComponents.length <= 0) {
-      let wire = new Wire();
-      wire.node1.x = snapToGrid(mousePos.x); 
-      wire.node1.y = snapToGrid(mousePos.y);
-      wires.push(wire);
-      isDragging = true;
-    }
-
+    tryDrawWireFrom(mouseX, mouseY);
 
   } 
   else if (event.button === 1) { // right button
@@ -403,6 +455,7 @@ canvas.addEventListener('mousedown', function(event) {
     panOffY = mouseY;
     event.preventDefault();
   }
+
   renderAll();
     
 });
@@ -414,21 +467,9 @@ canvas.addEventListener('mousemove', function(event) {
   
   if (isDragging) {
     if (selectedComponents.length > 0) {
-      selectedComponents[0].move(
-        (mouseX  / zoom) - mouseOffsetX,
-        (mouseY / zoom) - mouseOffsetY,
-        true, // onMove
-      );
+      dragComponent(mouseX, mouseY, true);
     } else {
-      let mousePoss = screenToWorldSpace(mouseX, mouseY);
-      let wire = wires[wires.length - 1];
-      let mouseTo = snapToAngle(
-        {x: wire.node1.x, y: wire.node1.y}, 
-        {x: mousePoss.x, y: mousePoss.y}
-      );
-        
-      wire.node2.x = snapToGrid(mouseTo.x);
-      wire.node2.y = snapToGrid(mouseTo.y);
+      tryDrawWireTo(mouseX, mouseY, false);
     }
   }
   else if (isPanning) {
@@ -635,48 +676,35 @@ function connectWireWire(wire, w) {
   }
 }
 
+function dragComponent(cursorX, cursorY, onMove) {
+  let component = selectedComponents[0];
+
+  let posX = (cursorX / zoom) - cursorOffsetX;
+  let posY = (cursorY / zoom) - cursorOffsetY;
+
+  if (!onMove) {
+    posX = snapToGrid(posX);
+    posY = snapToGrid(posY);
+  }
+
+  component.move(posX, posY, onMove);
+
+  if (!onMove)
+    updateComponentConnections(component);
+}
+
 canvas.addEventListener('mouseup', function(event) {
     let mouseX = event.clientX - canvas.getBoundingClientRect().left;
     let mouseY = event.clientY - canvas.getBoundingClientRect().top;
-    const mousePos = screenToWorldSpace(mouseX, mouseY);
     
     if (isDragging) {
       if (selectedComponents.length > 0) {
-        let component = selectedComponents[0];
-
-        component.move(
-          snapToGrid((mouseX / zoom) - mouseOffsetX),
-          snapToGrid((mouseY / zoom) - mouseOffsetY),
-          false, // onMove
-        );
-
-        updateComponentConnections(component);
+        dragComponent(mouseX, mouseY, false);
 
       } 
       else {
-        let wire = wires[wires.length - 1];
-        let snap = snapToAngle(
-          {x: wire.node1.x, y: wire.node1.y}, 
-          {x: mousePos.x, y: mousePos.y}
-        );
-        wire.node2.x = snapToGrid(snap.x);
-        wire.node2.y = snapToGrid(snap.y);
-        if (wire.node1.x === wire.node2.x && wire.node1.y === wire.node2.y) {
-          wires.pop();
-        }
-        else {
-          for (let i in components) {
-          	let component = components[i];
-            connectComponentLine(component, wire);
-          }
+        tryDrawWireTo(mouseX, mouseY, true);
 
-        	for (let i = 0; i < wires.length - 1; ++i) { // last wire == current
-            let w = wires[i];
-            connectWireWire(wire, w);
-            connectWireWire(w, wire);
-            // one wire can be T-connected to another wire
-        	}
-				}
 
       }
       isDragging = false;
@@ -689,7 +717,7 @@ canvas.addEventListener('mouseup', function(event) {
     renderAll();
 });
 
-canvas.addEventListener('wheel', (event) => {
+canvas.addEventListener('wheel', (event) => { // ZOOM
   let mouseX = event.clientX - canvas.getBoundingClientRect().left;
   let mouseY = event.clientY - canvas.getBoundingClientRect().top;
 
@@ -709,16 +737,138 @@ canvas.addEventListener('wheel', (event) => {
   //offsetY = ((offsetY - mouseY) * (zoom / oldZoom)) + mouseY;
 
   
-  mouseOffsetX -= (mouseX / oldZoom);
-  mouseOffsetX += (mouseX / zoom);
-  mouseOffsetY -= (mouseY / oldZoom);
-  mouseOffsetY += (mouseY / zoom);
+  cursorOffsetX -= (mouseX / oldZoom);
+  cursorOffsetX += (mouseX / zoom);
+  cursorOffsetY -= (mouseY / oldZoom);
+  cursorOffsetY += (mouseY / zoom);
 
   offsetX -= mousePosBefore.x - mousePosAfter.x;
   offsetY -= mousePosBefore.y - mousePosAfter.y;
 
   renderAll();
 
+});
+
+canvas.addEventListener("touchstart", function(event){
+  event.preventDefault();
+
+  touches = event.touches;
+
+  let pointerX = event.touches[0].clientX - canvas.getBoundingClientRect().left;
+  let pointerY = event.touches[0].clientY - canvas.getBoundingClientRect().top;
+
+  if (tool === "SELECT") {
+
+    trySelectComponent(pointerX, pointerY);
+    trySelectWires(pointerX, pointerY);
+
+    if (!selectedComponents.length && !selectedWires.length) {
+      isPanning = true;
+      panOffX = pointerX;
+      panOffY = pointerY;
+    }
+
+  }
+
+  tryDrawWireFrom(pointerX, pointerY);
+});
+
+canvas.addEventListener("touchmove", function(event) {
+  event.preventDefault();
+
+  let pointerX = event.touches[0].clientX - canvas.getBoundingClientRect().left;
+  let pointerY = event.touches[0].clientY - canvas.getBoundingClientRect().top;
+
+  if (event.touches.length <= 1) {
+
+    if (isDragging) {
+      if (selectedComponents.length > 0) {
+        dragComponent(pointerX, pointerY, true);
+      }
+      else {
+        tryDrawWireTo(pointerX, pointerY, false);
+      }
+    }
+    else if (isPanning) {
+      offsetX -= (panOffX - pointerX) / zoom;
+      offsetY -= (panOffY - pointerY) / zoom;
+
+      panOffX = pointerX;
+      panOffY = pointerY;
+    }
+  
+  }
+
+  if (event.touches.length > 1) { // ZOOM
+      
+
+    let calcDistance = function(x1,y1, x2, y2) {
+      return Math.sqrt(
+        Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2)
+      );
+    }
+
+
+    let distancePreviousTouches = calcDistance(touches[0].clientX, touches[0].clientY, 
+      touches[1].clientX, touches[1].clientY);
+    let distanceCurrentTouches = calcDistance(event.touches[0].clientX, event.touches[0].clientY, 
+      event.touches[1].clientX, event.touches[1].clientY);
+
+    let prevMidX = (touches[0].clientX + touches[1].clientX) / 2;
+    let prevMidY = (touches[0].clientY + touches[1].clientY) / 2;
+
+    let prev = screenToWorldSpace(prevMidX, prevMidY);
+
+    zoom *= (distanceCurrentTouches / distancePreviousTouches);
+    zoom = Math.max(MIN_SCALE, Math.min(zoom, MAX_SCALE));
+
+
+    let midX = (event.touches[0].clientX + event.touches[1].clientX) / 2;
+    let midY = (event.touches[0].clientY + event.touches[1].clientY) / 2;
+
+    let current = screenToWorldSpace(midX, midY);
+
+    cursorOffsetX += current.x - prev.x;
+    cursorOffsetY += current.y - prev.y;
+
+
+    offsetX += current.x - prev.x;
+    offsetY += current.y - prev.y;
+
+      
+  }
+
+  touches = event.touches;
+
+
+  renderAll();
+
+});
+
+canvas.addEventListener("touchend", function(event) {
+  event.preventDefault();
+
+  let pointerX = event.changedTouches[0].clientX - canvas.getBoundingClientRect().left;
+  let pointerY = event.changedTouches[0].clientY - canvas.getBoundingClientRect().top;
+
+  // don't stop panning, dragging, drawing if there are fingers on the screen
+  if (touches.length !== event.changedTouches.length) return;
+
+  if (isDragging) {
+    if (selectedComponents.length > 0) {
+      dragComponent(pointerX, pointerY, false);
+    } 
+    else {
+      tryDrawWireTo(pointerX, pointerY, true);
+    }
+
+    isDragging = false;
+  }
+  else if (isPanning) {
+    isPanning = false;
+  }
+
+  renderAll();
 });
 
 window.onresize = function() {
