@@ -872,8 +872,12 @@ canvas.addEventListener("touchend", function(event) {
 });
 
 window.onresize = function() {
+  offsetX += (window.innerWidth - canvas.width) / 2 / zoom;
+  offsetY += (window.innerHeight - canvas.height) / 2 / zoom;
+
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+
   renderAll();
 };
 
