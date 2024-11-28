@@ -779,6 +779,12 @@ canvas.addEventListener("touchmove", function(event) {
   let pointerX = event.touches[0].clientX - canvas.getBoundingClientRect().left;
   let pointerY = event.touches[0].clientY - canvas.getBoundingClientRect().top;
 
+  if (touches.length !== event.touches.length) {
+    panOffX = pointerX;
+    panOffY = pointerY;
+
+  }
+
   if (event.touches.length <= 1) {
 
     if (isDragging) {
@@ -792,9 +798,6 @@ canvas.addEventListener("touchmove", function(event) {
     else if (isPanning) {
       offsetX -= (panOffX - pointerX) / zoom;
       offsetY -= (panOffY - pointerY) / zoom;
-
-      panOffX = pointerX;
-      panOffY = pointerY;
     }
   
   }
@@ -835,8 +838,14 @@ canvas.addEventListener("touchmove", function(event) {
     offsetX += current.x - prev.x;
     offsetY += current.y - prev.y;
 
+    
+
       
   }
+
+
+  panOffX = pointerX;
+  panOffY = pointerY;
 
   touches = event.touches;
 
