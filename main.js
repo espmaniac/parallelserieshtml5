@@ -45,6 +45,17 @@ var choosenComponent = {name: "", shortName: "", defaultValue: ""};
 
 var count = 1; // component index
 
+
+menu.addEventListener("click", function(event) {
+  let target = event.target;
+  
+  if (target.children.length <= 0) {
+    menu.style.display = "none";
+  }
+
+});
+
+
 window.onload = function() {
   input.style.height = input.offsetHeight + "px";
   textAreaAutoHeight();
@@ -433,6 +444,13 @@ function tryDrawWireTo(cursorX, cursorY, finish) {
   }
 }
 
+canvas.addEventListener("contextmenu", function(event) {
+  event.preventDefault();
+  menu.style.display = "block";
+  menu.style.left = event.clientX + "px";
+  menu.style.top = event.clientY + "px";
+});
+
 canvas.addEventListener('mousedown', function(event) {
   const mouseX = event.clientX - canvas.getBoundingClientRect().left;
   const mouseY = event.clientY - canvas.getBoundingClientRect().top;
@@ -449,12 +467,13 @@ canvas.addEventListener('mousedown', function(event) {
     tryDrawWireFrom(mouseX, mouseY);
 
   } 
-  else if (event.button === 1) { // right button
+  if (event.button === 1) { // wheel button
     isPanning = true;
     panOffX = mouseX;
     panOffY = mouseY;
     event.preventDefault();
   }
+
 
   renderAll();
     
@@ -465,19 +484,28 @@ canvas.addEventListener('mousemove', function(event) {
   let mouseX = event.clientX - canvas.getBoundingClientRect().left;
   let mouseY = event.clientY - canvas.getBoundingClientRect().top;
   
-  if (isDragging) {
+  if (isPanning) {
+    let prev = screenToWorldSpace(mouseX, mouseY);
+
+    offsetX -= (panOffX - mouseX) / zoom;
+    offsetY -= (panOffY - mouseY) / zoom;
+    panOffX = mouseX;
+    panOffY = mouseY;
+
+    let current = screenToWorldSpace(mouseX, mouseY);
+    cursorOffsetX -= current.x - prev.x;
+    cursorOffsetY -= current.y - prev.y;
+    
+  }
+
+  else if (isDragging) {
     if (selectedComponents.length > 0) {
       dragComponent(mouseX, mouseY, true);
     } else {
       tryDrawWireTo(mouseX, mouseY, false);
     }
   }
-  else if (isPanning) {
-    offsetX -= (panOffX - mouseX) / zoom;
-    offsetY -= (panOffY - mouseY) / zoom;
-    panOffX = mouseX;
-    panOffY = mouseY;
-  }
+
 
   renderAll();
 });
@@ -696,8 +724,8 @@ function dragComponent(cursorX, cursorY, onMove) {
 canvas.addEventListener('mouseup', function(event) {
     let mouseX = event.clientX - canvas.getBoundingClientRect().left;
     let mouseY = event.clientY - canvas.getBoundingClientRect().top;
-    
-    if (isDragging) {
+
+    if (event.button === 0 && isDragging) {
       if (selectedComponents.length > 0) {
         dragComponent(mouseX, mouseY, false);
 
@@ -710,7 +738,7 @@ canvas.addEventListener('mouseup', function(event) {
       isDragging = false;
     }
 
-    else if (isPanning) {
+    if (event.button === 1 && isPanning) {
       isPanning = false;
     }
 
@@ -769,6 +797,8 @@ canvas.addEventListener("touchstart", function(event){
     }
 
   }
+
+  console.log(event);
 
   tryDrawWireFrom(pointerX, pointerY);
 });
@@ -834,12 +864,8 @@ canvas.addEventListener("touchmove", function(event) {
     cursorOffsetX += current.x - prev.x;
     cursorOffsetY += current.y - prev.y;
 
-
     offsetX += current.x - prev.x;
     offsetY += current.y - prev.y;
-
-    
-
       
   }
 
@@ -848,7 +874,6 @@ canvas.addEventListener("touchmove", function(event) {
   panOffY = pointerY;
 
   touches = event.touches;
-
 
   renderAll();
 
