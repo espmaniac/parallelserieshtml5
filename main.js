@@ -403,7 +403,7 @@ function trySelectWires(cursorX, cursorY) {
 function tryDrawWireFrom(cursorX, cursorY) {
   const virtualPos = screenToWorldSpace(cursorX, cursorY);
 
-  if (tool === "WIRE" && selectedComponents.length <= 0) {
+  if (tool === "WIRE" && selectedComponents.length <= 0 && !isDragging) {
     let wire = new Wire();
     wire.node1.x = snapToGrid(virtualPos.x); 
     wire.node1.y = snapToGrid(virtualPos.y);
@@ -732,8 +732,6 @@ canvas.addEventListener('mouseup', function(event) {
       } 
       else {
         tryDrawWireTo(mouseX, mouseY, true);
-
-
       }
       isDragging = false;
     }
@@ -798,8 +796,6 @@ canvas.addEventListener("touchstart", function(event){
 
   }
 
-  console.log(event);
-
   tryDrawWireFrom(pointerX, pointerY);
 });
 
@@ -815,26 +811,8 @@ canvas.addEventListener("touchmove", function(event) {
 
   }
 
-  if (event.touches.length <= 1) {
-
-    if (isDragging) {
-      if (selectedComponents.length > 0) {
-        dragComponent(pointerX, pointerY, true);
-      }
-      else {
-        tryDrawWireTo(pointerX, pointerY, false);
-      }
-    }
-    else if (isPanning) {
-      offsetX -= (panOffX - pointerX) / zoom;
-      offsetY -= (panOffY - pointerY) / zoom;
-    }
-  
-  }
-
   if (event.touches.length > 1) { // ZOOM
-      
-
+    
     let calcDistance = function(x1,y1, x2, y2) {
       return Math.sqrt(
         Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2)
@@ -867,8 +845,21 @@ canvas.addEventListener("touchmove", function(event) {
     offsetX += current.x - prev.x;
     offsetY += current.y - prev.y;
       
+  } 
+
+  if (isPanning && event.touches.length <= 1) {
+    offsetX -= (panOffX - pointerX) / zoom;
+    offsetY -= (panOffY - pointerY) / zoom;
   }
 
+  else if (isDragging) {
+    if (selectedComponents.length > 0) {
+      dragComponent(pointerX, pointerY, true);
+    }
+    else {
+      tryDrawWireTo(pointerX, pointerY, false);
+    }
+  }
 
   panOffX = pointerX;
   panOffY = pointerY;
@@ -888,6 +879,7 @@ canvas.addEventListener("touchend", function(event) {
   // don't stop panning, dragging, drawing if there are fingers on the screen
   if (touches.length !== event.changedTouches.length) return;
 
+
   if (isDragging) {
     if (selectedComponents.length > 0) {
       dragComponent(pointerX, pointerY, false);
@@ -898,7 +890,7 @@ canvas.addEventListener("touchend", function(event) {
 
     isDragging = false;
   }
-  else if (isPanning) {
+  if (isPanning) {
     isPanning = false;
   }
 
