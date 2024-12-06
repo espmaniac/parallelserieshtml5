@@ -245,7 +245,7 @@ function drawGrid() {
   // Calculate the number of cells that fit in the visible area
   const numCellsX = Math.ceil(canvas.width / gridSize);
   const numCellsY = Math.ceil(canvas.height / gridSize);
-			
+
   gridOffsetX = offsetX * zoom % gridSize;
   gridOffsetY = offsetY * zoom % gridSize;
 
@@ -260,13 +260,13 @@ function drawGrid() {
     let x = gridOffsetX + i * gridSize;
     ctx.moveTo(x, 0);
     ctx.lineTo(x, canvas.height);
-	}
+  }
 
   // draw horizontal lines
   for (let i = 0; i <= numCellsY; i++) {
     let y = gridOffsetY + i * gridSize;
     ctx.moveTo(0, y);
-	  ctx.lineTo(canvas.width, y);
+    ctx.lineTo(canvas.width, y);
   }
 
   ctx.stroke();
@@ -401,9 +401,11 @@ function trySelectWires(cursorX, cursorY) {
 }
 
 function tryDrawWireFrom(cursorX, cursorY) {
+  if (isDragging) return;
+
   const virtualPos = screenToWorldSpace(cursorX, cursorY);
 
-  if (tool === "WIRE" && selectedComponents.length <= 0 && !isDragging) {
+  if (tool === "WIRE" && selectedComponents.length <= 0) {
     let wire = new Wire();
     wire.node1.x = snapToGrid(virtualPos.x); 
     wire.node1.y = snapToGrid(virtualPos.y);
@@ -778,6 +780,7 @@ canvas.addEventListener('wheel', (event) => { // ZOOM
 canvas.addEventListener("touchstart", function(event){
   event.preventDefault();
 
+
   touches = event.touches;
 
   let pointerX = event.touches[0].clientX - canvas.getBoundingClientRect().left;
@@ -790,11 +793,12 @@ canvas.addEventListener("touchstart", function(event){
 
     if (!selectedComponents.length && !selectedWires.length) {
       isPanning = true;
-      panOffX = pointerX;
-      panOffY = pointerY;
     }
 
   }
+
+  panOffX = pointerX;
+  panOffY = pointerY;
 
   tryDrawWireFrom(pointerX, pointerY);
 });
@@ -844,12 +848,19 @@ canvas.addEventListener("touchmove", function(event) {
 
     offsetX += current.x - prev.x;
     offsetY += current.y - prev.y;
+
       
   } 
 
-  if (isPanning && event.touches.length <= 1) {
+  if (isPanning  && event.touches.length <= 1) {
+    let prev = screenToWorldSpace(pointerX, pointerY);
+
     offsetX -= (panOffX - pointerX) / zoom;
     offsetY -= (panOffY - pointerY) / zoom;
+    
+    let current = screenToWorldSpace(pointerX, pointerY);
+    cursorOffsetX -= current.x - prev.x;
+    cursorOffsetY -= current.y - prev.y;
   }
 
   else if (isDragging) {
