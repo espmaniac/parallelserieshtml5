@@ -154,17 +154,18 @@ var toolmgr = {
         } /*</zoom>*/ 
 
 
-        if (scheme.isPanning  && event.touches.length <= 1) {
-            scheme.Pan(pointerX, pointerY);
-        }
+        
 
-        else if (scheme.isDragging) {
+        if (scheme.isDragging) {
             if (scheme.selectedComponents.length > 0) {
                 scheme.dragComponent(pointerX, pointerY, true);
             }
             else {
                 scheme.tryDrawWireTo(pointerX, pointerY, false);
             }
+        }
+        else if (scheme.isPanning  && event.touches.length <= 1) {
+            scheme.Pan(pointerX, pointerY);
         }
 
         scheme.panOffX = pointerX;
