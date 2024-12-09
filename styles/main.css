@@ -55,16 +55,16 @@ body, html {
 }
 
 #resistor {
-    background-image: url("icons/res_eu.svg");
+    background-image: url("../icons/res_eu.svg");
 }
 
 #capacitor {
-    background-image: url("icons/capacitor.svg");
+    background-image: url("../icons/capacitor.svg");
 }
 
 
 #inductor {
-    background-image: url("icons/inductor.svg");
+    background-image: url("../icons/inductor.svg");
 }
 
 #header {
