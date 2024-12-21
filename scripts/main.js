@@ -54,8 +54,6 @@ window.onload = function() {
     
 
       context_menu.setPos(left, top);
-    
-      context_menu.noIntersect();
     }
 
     scheme.renderAll();
@@ -72,15 +70,6 @@ window.onload = function() {
     }
   
   });
-
-  context_menu.element.addEventListener("mouseover", function(event) {
-    let target = event.target;
-    
-    context_menu.noIntersect();
-
-    
-  });
-
 
   canvas.addEventListener("contextmenu", toolmgr.onContextMenu);
   
