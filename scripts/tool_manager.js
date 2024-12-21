@@ -90,12 +90,14 @@ var toolmgr = {
     onTouchStart(event) {
         event.preventDefault();
 
+        context_menu.hide();
+
         cursor.touches = event.touches;
 
         let pointerX = event.touches[0].clientX - canvas.getBoundingClientRect().left;
         let pointerY = event.touches[0].clientY - canvas.getBoundingClientRect().top;
 
-        let touchTime =new Date().getTime();
+        let touchTime = new Date().getTime();
         
 
         if (scheme.tool === "SELECT") {
@@ -252,11 +254,6 @@ var toolmgr = {
                 scheme.deleteSelected();
             }));
 
-            let bla = new Menu("Bla");
-            let another = new Menu("another");
-            bla.addItem(another);
-            another.addItem(new Item("sdfdsf"));
-            context_menu.main_menu.addItem(bla);
         }
 
         else if (scheme.selectedWires.length) {

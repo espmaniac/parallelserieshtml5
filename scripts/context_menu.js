@@ -1,7 +1,7 @@
 class Menu {
     constructor(text) {
         this.className = "Menu";
-        this.element = document.createElement("ul"); // element.getBoundingClientRect() -> width && height
+        this.element = document.createElement("ul");
         this.items = [];
         this.submenus = [];
         this.parent = null;
