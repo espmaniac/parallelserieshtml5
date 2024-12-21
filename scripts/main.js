@@ -3,7 +3,6 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-var menu = document.getElementById("contextMenu");
 
 var choosenComponent = {name: "", shortName: "", defaultValue: ""};
 
@@ -13,16 +12,8 @@ var cursor =  {
   touches: null,
   offsetX: 0,
   offsetY: 0,
+  lastTouch: null
 };
-
-menu.addEventListener("click", function(event) {
-  let target = event.target;
-  
-  if (target.children.length <= 0) {
-    menu.style.display = "none";
-  }
-
-});
 
 
 window.onload = function() {
@@ -46,14 +37,6 @@ window.onload = function() {
     scheme.isMouseHover = true;
   }, false);
 
-  
-  canvas.addEventListener("contextmenu", function(event) {
-    event.preventDefault();
-    menu.style.display = "block";
-    menu.style.left = event.clientX + "px";
-    menu.style.top = event.clientY + "px";
-  });
-
 
   window.onresize = function() {
     scheme.offsetX += (window.innerWidth - canvas.width) / 2 / scheme.zoom;
@@ -64,6 +47,29 @@ window.onload = function() {
   
     scheme.renderAll();
   };
+
+  context_menu.element = document.getElementById("contextMenu");
+  context_menu.main_menu.element = document.getElementById("ctxUL");
+
+  context_menu.element.addEventListener("click", function(event) {
+    let target = event.target;
+    
+    if (target.children.length <= 0) {
+      context_menu.hide();
+    }
+  
+  });
+
+  context_menu.element.addEventListener("mouseover", function(event) {
+    let target = event.target;
+    
+    context_menu.noIntersect();
+
+    
+  });
+
+
+  canvas.addEventListener("contextmenu", toolmgr.onContextMenu);
   
 
   input.style.height = input.offsetHeight + "px";

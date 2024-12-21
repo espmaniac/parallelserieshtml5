@@ -4,8 +4,8 @@ var toolmgr = {
     onMouseDown(event) {
       const mouseX = event.clientX - canvas.getBoundingClientRect().left;
       const mouseY = event.clientY - canvas.getBoundingClientRect().top;
-    
-      menu.style.display = "none";
+
+      context_menu.hide();
     
       if (event.button === 0) { // left btn
     
@@ -90,11 +90,13 @@ var toolmgr = {
     onTouchStart(event) {
         event.preventDefault();
 
-
         cursor.touches = event.touches;
 
         let pointerX = event.touches[0].clientX - canvas.getBoundingClientRect().left;
         let pointerY = event.touches[0].clientY - canvas.getBoundingClientRect().top;
+
+        let touchTime =new Date().getTime();
+        
 
         if (scheme.tool === "SELECT") {
 
@@ -107,10 +109,20 @@ var toolmgr = {
 
         }
 
+        if ((touchTime - cursor.lastTouch) < 300) { // double tap
+            canvas.dispatchEvent(new MouseEvent("contextmenu", {
+                bubbles: true,
+                cancelable: true,
+                clientX: pointerX,
+                clientY: pointerY
+            }));
+        }
+
         scheme.panOffX = pointerX;
         scheme.panOffY = pointerY;
 
         scheme.tryDrawWireFrom(pointerX, pointerY);
+        cursor.lastTouch = touchTime;
     },
 
     onTouchMove(event) {
@@ -178,7 +190,6 @@ var toolmgr = {
 
     onTouchEnd(event) {
         event.preventDefault();
-
         let pointerX = event.changedTouches[0].clientX - canvas.getBoundingClientRect().left;
         let pointerY = event.changedTouches[0].clientY - canvas.getBoundingClientRect().top;
 
@@ -201,43 +212,63 @@ var toolmgr = {
         }
 
         scheme.renderAll();
+    },
+
+    onContextMenu(event) {
+        event.preventDefault();
+
+        context_menu.clear();
+
+        context_menu.setPos(event.clientX, event.clientY);
+
+                
+        if (scheme.selectedComponents.length) {
+
+
+            context_menu.main_menu.addItem(new Item("Edit Value", function() {
+                let newValue = prompt(`new ${scheme.selectedComponents[0].name.value} value`);
+                
+                scheme.selectedComponents[0].value.value = newValue;
+                scheme.renderAll();
+            }));
+
+            context_menu.main_menu.addItem(new Item("Rotate -45", function() {
+                let c = scheme.selectedComponents[0];
+                c.rotate(-45);
+                c.update();
+                updateComponentConnections(c);
+                scheme.renderAll();
+            }));
+
+            context_menu.main_menu.addItem(new Item("Rotate +45", function() {
+                let c = scheme.selectedComponents[0];
+                c.rotate(45);
+                c.update();
+                updateComponentConnections(c);
+                scheme.renderAll();
+            }));
+
+            context_menu.main_menu.addItem(new Item("Delete", function() {
+                scheme.deleteSelected();
+            }));
+
+            let bla = new Menu("Bla");
+            let another = new Menu("another");
+            bla.addItem(another);
+            another.addItem(new Item("sdfdsf"));
+            context_menu.main_menu.addItem(bla);
+        }
+
+        else if (scheme.selectedWires.length) {
+
+            context_menu.main_menu.addItem(new Item("Delete", function() {
+                scheme.deleteSelected();
+            }));
+        }
+
+
+        context_menu.show();
     }
 
 };   
   
-
-
-
-/*
-
-document.addEventListener('keypress', function(e) { // rotate
-  if (e.key === 'r' && selectedComponents.length > 0) {
-
-    selectedComponents[0].rotate(45);
-
-    if (!isDragging) {
-      selectedComponents[0].update();
-      updateComponentConnections(selectedComponents[0]);
-    }
- 
-    renderAll();
-  } 
-
-  if (e.key === 'e' && selectedComponents.length > 0) {
-    let newValue = prompt(`new ${selectedComponents[0].name} value`);
-    selectedComponents[0].value.value = newValue;
-
-    renderAll();
-  }
-});
-
-*/
-
-document.addEventListener("keyup", function(e) { // delete
-    if (((e.keyCode === 46) || (e.keyCode === 8)) && scheme.isMouseHover) {
-  
-      scheme.deleteSelected();
-  
-    }
-});
-
