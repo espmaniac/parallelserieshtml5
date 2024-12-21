@@ -39,12 +39,25 @@ window.onload = function() {
 
 
   window.onresize = function() {
-    scheme.offsetX += (window.innerWidth - canvas.width) / 2 / scheme.zoom;
-    scheme.offsetY += (window.innerHeight - canvas.height) / 2 / scheme.zoom;
+    let windowDifX = (window.innerWidth - canvas.width) / 2;
+    let windowDifY = (window.innerHeight - canvas.height) / 2;
+    scheme.offsetX += windowDifX / scheme.zoom;
+    scheme.offsetY += windowDifY / scheme.zoom;
+    
   
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-  
+
+    if (!context_menu.hidden()) {
+      let left = context_menu.element.getBoundingClientRect().left + windowDifX;
+      let top = context_menu.element.getBoundingClientRect().top + windowDifY;
+    
+
+      context_menu.setPos(left, top);
+    
+      context_menu.noIntersect();
+    }
+
     scheme.renderAll();
   };
 

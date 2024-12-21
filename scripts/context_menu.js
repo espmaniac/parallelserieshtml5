@@ -136,23 +136,39 @@ var context_menu = {
         this.element.style.display = "none";
     },
 
+    hidden() {
+        return (this.element.style.display === "none") ? true : false;
+    },
+
     clear() {
         this.main_menu.onDelete();
     },
 
     noIntersect() {
+
+        let thisLeft = this.element.getBoundingClientRect().left;
+        let thisTop = this.element.getBoundingClientRect().top;
+
         let right = this.main_menu.getRight();
         let bottom = this.main_menu.getBottom();
         if (right > canvas.width) {
-            let left = context_menu.element.getBoundingClientRect().left;
+            let left = thisLeft;
             left -= right - canvas.width;
             this.element.style.left = left + "px";
         }
         if (bottom > canvas.height) {
-            let top = context_menu.element.getBoundingClientRect().top;
+            let top = thisTop;
             top -= bottom - canvas.height;
             this.element.style.top = top + "px";
         }
+
+        if (thisLeft < canvas.getBoundingClientRect().left)
+             this.element.style.left = "0px";
+
+        if (thisTop < canvas.getBoundingClientRect().top)
+            this.element.style.top = "0px";
+
+
     }
 };
 
