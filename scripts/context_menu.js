@@ -71,33 +71,6 @@ class Menu {
         this.element.innerHTML = "";
     }
 
-    getRight() {
-        let right = this.element.getBoundingClientRect().right;
-
-        for (let i = 0; i < this.submenus.length; ++i) {
-            let m = this.submenus[i];
-            let res = m.getRight();
-            if (res) {
-                right = res;
-                break;
-            }
-        }
-        return right;
-    }
-
-    getBottom() {
-        let bottom = this.element.getBoundingClientRect().bottom;
-
-        for (let i = 0; i < this.submenus.length; ++i) {
-            let m = this.submenus[i];
-            let res = m.getBottom();
-            if (res) {
-                bottom = res;
-                break;
-            }
-        }
-        return bottom;
-    }
 
 }
 
@@ -121,10 +94,23 @@ class Item {
 var context_menu = {
     element: null,
     main_menu: new Menu(""),
+    right: false,
 
     setPos(x, y) {
+
         this.element.style.left = x + "px";
         this.element.style.top = y + "px";
+        this.element.style.right = "auto";
+
+        if (x < (canvas.width / 2)) {
+            this.element.style.setProperty('--subMenuOffsetLeft', "100%");
+            this.element.style.setProperty('--subMenuOffsetRight', "auto");
+        }
+        else {
+            this.element.style.setProperty('--subMenuOffsetLeft', "auto");
+            this.element.style.setProperty('--subMenuOffsetRight', "100%");
+        }
+        
     },
 
     show() {

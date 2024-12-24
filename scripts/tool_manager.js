@@ -1,4 +1,3 @@
-
 var toolmgr = {
 
     onMouseDown(event) {

@@ -43,17 +43,19 @@ window.onload = function() {
     let windowDifY = (window.innerHeight - canvas.height) / 2;
     scheme.offsetX += windowDifX / scheme.zoom;
     scheme.offsetY += windowDifY / scheme.zoom;
-    
   
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    if (!context_menu.hidden()) {
-      let left = context_menu.element.getBoundingClientRect().left + windowDifX;
-      let top = context_menu.element.getBoundingClientRect().top + windowDifY;
     
+    if (!context_menu.hidden()) {
+      let pos = context_menu.element.getBoundingClientRect();
 
-      context_menu.setPos(left, top);
+      let x = pos.left + windowDifX;
+      
+      let y = pos.top + windowDifY;
+
+      context_menu.setPos(x, y);
     }
 
     scheme.renderAll();

@@ -279,14 +279,15 @@ body, html {
 }
 
 #contextMenu {
+    --subMenuOffsetLeft: 100%;
+    --subMenuOffsetRight: auto;
+
     position: fixed;
-    left: 0;
-    top: 0;
     z-index: 99999;
     text-align: center;
     cursor: pointer;
     user-select: none;
-    width: auto;
+    width: max-content;
     display: none;
 }
 
@@ -300,12 +301,10 @@ body, html {
 #contextMenu #ctxUL {
     padding: 0;
     top: 0;
-    left: 0;
     margin: auto;
     list-style-type: none;
     display: flex;
     width: 100%;
-    
 }
 #contextMenu ul li {
     position: relative;
@@ -313,7 +312,6 @@ body, html {
     margin: auto;
     padding: 5px;
     top: 0;
-    left: 0;
     width: 100%;
     background-color: #000000;
     color: #ffffff;
@@ -358,6 +356,7 @@ body, html {
     flex-direction: column;
     width: auto;
     top: 0;
-    left: 100%;
+    left: var(--subMenuOffsetLeft);
+    right: var(--subMenuOffsetRight);
     height: 100%;
 }
