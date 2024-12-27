@@ -10,14 +10,13 @@ class Component {
     this.angle = 0;
     this.selected = false;
 
-    this.node1 = new Node();
-    this.node2 = new Node();
 
-    this.node1.parent = this;
-    this.node2.parent = this;
+    this.nodes = [new Node(), new Node()];
+    this.nodes[0].parent = this;
+    this.nodes[1].parent = this;
 
+    connectNodes(this.nodes[0], this.nodes[1], this.value);
 
-    connectNodes(this.node1, this.node2, this.value);
     this.move(x, y);
       
   }
@@ -92,8 +91,8 @@ class Component {
       {x: this.rotationPointX(), y: this.rotationPointY()}, 
       this.angle
     );
-    this.node1.x = snapToGrid(rotateLeft.x);
-    this.node1.y = snapToGrid(rotateLeft.y);
+    this.nodes[0].x = snapToGrid(rotateLeft.x);
+    this.nodes[0].y = snapToGrid(rotateLeft.y);
 
     let rotateRight = rotatePoint(
       {x: this.x + this.width * 2, y: this.y + this.height / 2}, 
@@ -101,9 +100,15 @@ class Component {
       this.angle
     );
 
-    this.node2.x = snapToGrid(rotateRight.x);
-    this.node2.y = snapToGrid(rotateRight.y);
+    this.nodes[1].x = snapToGrid(rotateRight.x);
+    this.nodes[1].y = snapToGrid(rotateRight.y);
 
+  }
+
+  updateConnections() {
+    deleteNode(this.nodes[0]);
+    deleteNode(this.nodes[1]);
+    connectNodes(this.nodes[0], this.nodes[1], this.value);
   }
 
   rotate(angle) {
@@ -128,13 +133,9 @@ class Component {
     return false;
   }
 
-  hitNode(x, y) {
-    return this.node1.hitTest(x,y) ? this.node1 : (this.node2.hitTest(x,y) ? this.node2 : null);
-  }
-
   onDelete() {
-    deleteNode(this.node1);
-    deleteNode(this.node2);
+    deleteNode(this.nodes[0]);
+    deleteNode(this.nodes[1]);
   }
 
   }

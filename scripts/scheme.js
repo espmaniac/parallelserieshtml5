@@ -146,8 +146,10 @@ var scheme = {
       
         component.move(posX, posY, onMove);
       
-        if (!onMove)
-          updateComponentConnections(component);
+        if (!onMove) {
+          component.updateConnections();
+          tryConnect(component);
+        }
     },
 
 
@@ -207,8 +209,8 @@ var scheme = {
       
         if (this.tool === "WIRE" && this.selectedComponents.length <= 0) {
           let wire = new Wire();
-          wire.node1.x = snapToGrid(virtualPos.x); 
-          wire.node1.y = snapToGrid(virtualPos.y);
+          wire.nodes[0].x = snapToGrid(virtualPos.x); 
+          wire.nodes[0].y = snapToGrid(virtualPos.y);
           this.wires.push(wire);
           this.isDragging = true;
         }
@@ -220,31 +222,21 @@ var scheme = {
         const virtualPos = this.screenToWorldSpace(cursorX, cursorY);
         let wire = this.wires[this.wires.length - 1];
         let cursorTo = snapToAngle(
-          {x: wire.node1.x, y: wire.node1.y}, 
+          {x: wire.nodes[0].x, y: wire.nodes[0].y}, 
           {x: virtualPos.x, y: virtualPos.y}
         );
           
-        wire.node2.x = snapToGrid(cursorTo.x);
-        wire.node2.y = snapToGrid(cursorTo.y);
+        wire.nodes[1].x = snapToGrid(cursorTo.x);
+        wire.nodes[1].y = snapToGrid(cursorTo.y);
       
         if (!finish) return;
       
       
-        if (wire.node1.x === wire.node2.x && wire.node1.y === wire.node2.y) {
+        if (wire.nodes[0].x === wire.nodes[1].x && wire.nodes[0].y === wire.nodes[1].y) {
           this.wires.pop();
         }
         else {
-          for (let i in this.components) {
-            let component = this.components[i];
-            connectComponentLine(component, wire);
-          }
-      
-          for (let i = 0; i < this.wires.length - 1; ++i) { // last wire == current
-            let w = this.wires[i];
-            connectWireWire(wire, w);
-            connectWireWire(w, wire);
-            // one wire can be T-connected to another wire
-          }
+          tryConnect(wire);
         }
     
     },

@@ -94,7 +94,6 @@ class Item {
 var context_menu = {
     element: null,
     main_menu: new Menu(""),
-    right: false,
 
     setPos(x, y) {
 

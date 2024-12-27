@@ -73,6 +73,7 @@ function deleteNode(node) {
       let nodeOnLine = goodNode.node.parent.nodesOnLine.findIndex(function(n) {
         return n === node;
       });
+
       if (nodeOnLine >= 0) {
         goodNode.node.parent.nodesOnLine.splice(nodeOnLine, 1);
       }
@@ -86,9 +87,12 @@ function deleteNode(node) {
     let ind = junction.nodes.findIndex(function(n) {
       return n === node;
     });
-    if (ind >= 0 && ((junction.nodes.length - 1) >= 3)) 
-      junction.nodes.splice(ind, 1);
-    else deleteJunction(junction);
+    
+    if (ind >= 0) { 
+      junction.nodes.splice(ind, 1);      
+    }
+
+    if (junction.nodes.length < 3) deleteJunction(junction);
   }
 
   node.connections.length = 0; // clear

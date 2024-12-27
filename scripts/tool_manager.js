@@ -166,9 +166,6 @@ var toolmgr = {
                 
         } /*</zoom>*/ 
 
-
-        
-
         if (scheme.isDragging) {
             if (scheme.selectedComponents.length > 0) {
                 scheme.dragComponent(pointerX, pointerY, true);
@@ -237,7 +234,8 @@ var toolmgr = {
                 let c = scheme.selectedComponents[0];
                 c.rotate(-45);
                 c.update();
-                updateComponentConnections(c);
+                c.updateConnections();
+                tryConnect(c);
                 scheme.renderAll();
             }));
 
@@ -245,7 +243,8 @@ var toolmgr = {
                 let c = scheme.selectedComponents[0];
                 c.rotate(45);
                 c.update();
-                updateComponentConnections(c);
+                c.updateConnections();
+                tryConnect(c);
                 scheme.renderAll();
             }));
 
