@@ -32,8 +32,14 @@ function tryConnect(element) {
     if (nConnectionsLength >= 3)
     for (let j = 1; j < n.connections.length; ++j) {
       let node = n.connections[j].node;
-
-      junction(n.x,n.y, n, node);
+      let add = true;
+      if (element.className === "Wire") {
+        for (let k = 0; k < element.nodesOnLine.length; ++k) {
+          if (element.nodesOnLine[k] === node) add = false;
+        }
+      }
+      if (add)
+        junction(n.x,n.y, n, node);
     }
   }
 }

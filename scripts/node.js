@@ -62,20 +62,20 @@ function disconnectNodes(node1, node2) {
 
 function deleteNode(node) {
   for (let i = 0; i < node.connections.length; ++i) {
-    let goodNode = node.connections[i];
-    let ind = findNode(goodNode.node, node);
+    let goodNode = node.connections[i].node;
+    let ind = findNode(goodNode, node);
 
     if (ind < 0) continue;
 
-    goodNode.node.connections.splice(ind, 1);
+    goodNode.connections.splice(ind, 1);
 
-    if (goodNode.node.parent.className === "Wire") {
-      let nodeOnLine = goodNode.node.parent.nodesOnLine.findIndex(function(n) {
+    if (goodNode.parent.className === "Wire") {
+      let nodeOnLine = goodNode.parent.nodesOnLine.findIndex(function(n) {
         return n === node;
       });
 
       if (nodeOnLine >= 0) {
-        goodNode.node.parent.nodesOnLine.splice(nodeOnLine, 1);
+        goodNode.parent.nodesOnLine.splice(nodeOnLine, 1);
       }
       
     }
@@ -89,10 +89,11 @@ function deleteNode(node) {
     });
     
     if (ind >= 0) { 
-      junction.nodes.splice(ind, 1);      
+      junction.nodes.splice(ind, 1);  
     }
 
-    if (junction.nodes.length < 3) deleteJunction(junction);
+    if (junction.nodes.length < 3)
+      deleteJunction(junction);
   }
 
   node.connections.length = 0; // clear
