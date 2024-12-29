@@ -35,7 +35,10 @@ function tryConnect(element) {
       let add = true;
       if (element.className === "Wire") {
         for (let k = 0; k < element.nodesOnLine.length; ++k) {
-          if (element.nodesOnLine[k] === node) add = false;
+          if (element.nodesOnLine[k] === node) {
+            add = false;
+            break;
+          }
         }
       }
       if (add)
