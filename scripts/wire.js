@@ -52,5 +52,7 @@ class Wire {
   onDelete() {
     deleteNode(this.nodes[0]);
     deleteNode(this.nodes[1]);
+    this.nodesOnLine = [];
+    this.selected = false;
   }
 }

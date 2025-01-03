@@ -1,4 +1,5 @@
 var toolmgr = {
+    activeCmd: null,
 
     onMouseDown(event) {
       const mouseX = event.clientX - canvas.getBoundingClientRect().left;
@@ -12,8 +13,14 @@ var toolmgr = {
           scheme.trySelectComponent(mouseX, mouseY);
           scheme.trySelectWires(mouseX, mouseY);
         }
+        if (scheme.tool === "WIRE" && scheme.selectedComponents.length <= 0 && !scheme.isDragging) {
+            let wire = new Wire();
+            let draw = toolmgr.activeCmd = new DrawWire(wire);
+            draw.from(mouseX, mouseY);
     
-        scheme.tryDrawWireFrom(mouseX, mouseY);
+            scheme.wires.push(wire);
+            scheme.isDragging = true;
+        }
     
       } 
       if (event.button === 1) { // wheel button
@@ -31,18 +38,24 @@ var toolmgr = {
     onMouseMove(event) {
         let mouseX = event.clientX - canvas.getBoundingClientRect().left;
         let mouseY = event.clientY - canvas.getBoundingClientRect().top;
-        
+        let cmd = toolmgr.activeCmd;
+
         if (scheme.isPanning) {
             scheme.Pan(mouseX, mouseY);
         }
 
-        else if (scheme.isDragging) {
-            if (scheme.selectedComponents.length > 0) {
-                scheme.dragComponent(mouseX, mouseY, true);
-            } else {
-                scheme.tryDrawWireTo(mouseX, mouseY, false);
+        else if (cmd)
+            switch(cmd.name) {
+                case "DragComponent":
+                    cmd.move(mouseX, mouseY, true);
+                    break;
+
+                case "DrawWire":
+                    cmd.to(mouseX, mouseY);
+                    break;
+
+                default: break;
             }
-        }
 
         scheme.panOffX = mouseX;
         scheme.panOffY = mouseY;
@@ -53,23 +66,40 @@ var toolmgr = {
     onMouseUp(event) {
         let mouseX = event.clientX - canvas.getBoundingClientRect().left;
         let mouseY = event.clientY - canvas.getBoundingClientRect().top;
+        let cmd = toolmgr.activeCmd;
 
-        if (event.button === 0 && scheme.isDragging) {
-            if (scheme.selectedComponents.length > 0) {
-                scheme.dragComponent(mouseX, mouseY, false);
+        if (event.button === 0 && cmd) {
 
-            } 
-            else {
-                scheme.tryDrawWireTo(mouseX, mouseY, true);
+            switch(cmd.name) {
+                case "DragComponent":
+                    cmd.move(mouseX, mouseY, false);
+                    if (cmd.posX === cmd.oldPosX && cmd.posY === cmd.oldPosY) {
+                        cmd.execute();
+                        cmd = null;
+                    }
+                    
+                    break;
+                case "DrawWire":
+                    cmd.to(mouseX, mouseY);
+                    let w = cmd.wire;
+                    if (w.nodes[0].x === w.nodes[1].x && w.nodes[0].y === w.nodes[1].y) {
+                        scheme.wires.pop();
+                        cmd = null;
+                    }
+                    break;
+
+                default: break;
             }
             scheme.isDragging = false;
+            scheme.execute(cmd);
+
+            toolmgr.activeCmd = null;
         }
 
         if (event.button === 1 && scheme.isPanning) {
             scheme.isPanning = false;
         }
 
-        scheme.renderAll();
     },
 
     onMouseWheel(event) { // zoom
@@ -91,6 +121,14 @@ var toolmgr = {
 
         context_menu.hide();
 
+        let distance = 0;
+
+        if (cursor.touches) {
+            let currentTouch = event.touches[0];
+            let prevTouch = cursor.touches[0];
+            distance = Math.sqrt(Math.pow(currentTouch.clientX - prevTouch.clientX,2) + Math.pow(currentTouch.clientY - prevTouch.clientY,2));
+        }
+
         cursor.touches = event.touches;
 
         let pointerX = event.touches[0].clientX - canvas.getBoundingClientRect().left;
@@ -110,7 +148,12 @@ var toolmgr = {
 
         }
 
-        if ((touchTime - cursor.lastTouch) < 300) { // double tap
+        if (
+            cursor.lastTouches &&
+            (event.touches.length < 2) && 
+            distance < 30 &&
+            ((touchTime - cursor.lastTouches["0"]) < 300)
+        ) { // double tap
             canvas.dispatchEvent(new MouseEvent("contextmenu", {
                 bubbles: true,
                 cancelable: true,
@@ -118,12 +161,27 @@ var toolmgr = {
                 clientY: pointerY
             }));
         }
+        
 
         scheme.panOffX = pointerX;
         scheme.panOffY = pointerY;
 
-        scheme.tryDrawWireFrom(pointerX, pointerY);
-        cursor.lastTouch = touchTime;
+        if (scheme.tool === "WIRE" && scheme.selectedComponents.length <= 0 && !scheme.isDragging) {
+            let wire = new Wire();
+            let draw = toolmgr.activeCmd = new DrawWire(wire);
+            draw.from(pointerX, pointerY);
+    
+            scheme.wires.push(wire);
+            scheme.isDragging = true;
+        }
+
+        let timeTouches = {};
+
+        for (let i = 0; i < event.touches.length; ++i) {
+            timeTouches[event.touches[i].identifier] = touchTime;
+        }
+        cursor.lastTouches = timeTouches;
+
     },
 
     onTouchMove(event) {
@@ -132,6 +190,7 @@ var toolmgr = {
 
         let pointerX = event.touches[0].clientX - canvas.getBoundingClientRect().left;
         let pointerY = event.touches[0].clientY - canvas.getBoundingClientRect().top;
+        let cmd = toolmgr.activeCmd;
 
         if (cursor.touches.length !== event.touches.length) {
             scheme.panOffX = pointerX;
@@ -166,15 +225,20 @@ var toolmgr = {
                 
         } /*</zoom>*/ 
 
-        if (scheme.isDragging) {
-            if (scheme.selectedComponents.length > 0) {
-                scheme.dragComponent(pointerX, pointerY, true);
+        if (cmd)
+            switch(cmd.name) {
+                case "DragComponent":
+                    cmd.move(pointerX, pointerY, true);
+                    break;
+
+                case "DrawWire":
+                    cmd.to(pointerX, pointerY);
+                    break;
+
+                default: break;
             }
-            else {
-                scheme.tryDrawWireTo(pointerX, pointerY, false);
-            }
-        }
-        else if (scheme.isPanning  && event.touches.length <= 1) {
+
+        if (scheme.isPanning && !cmd && event.touches.length <= 1) {
             scheme.Pan(pointerX, pointerY);
         }
 
@@ -194,22 +258,40 @@ var toolmgr = {
         // don't stop panning, dragging, drawing if there are fingers on the screen
         if (cursor.touches.length !== event.changedTouches.length) return;
 
+        let cmd = toolmgr.activeCmd;
 
-        if (scheme.isDragging) {
-            if (scheme.selectedComponents.length > 0) {
-                scheme.dragComponent(pointerX, pointerY, false);
-            } 
-            else {
-                scheme.tryDrawWireTo(pointerX, pointerY, true);
+
+        if (cmd) {
+            switch(cmd.name) {
+                case "DragComponent":
+                    cmd.move(pointerX, pointerY, false);
+                    if (cmd.posX === cmd.oldPosX && cmd.posY === cmd.oldPosY) {
+                        cmd.execute();
+                        cmd = null;
+                    }
+                    
+                    break;
+                case "DrawWire":
+                    cmd.to(pointerX, pointerY);
+                    let w = cmd.wire;
+                    if (w.nodes[0].x === w.nodes[1].x && w.nodes[0].y === w.nodes[1].y) {
+                        scheme.wires.pop();
+                        cmd = null;
+                    }
+                    break;
+
+                default: break;
             }
-
             scheme.isDragging = false;
+            scheme.execute(cmd);
+
+            toolmgr.activeCmd = null;
         }
+        
         if (scheme.isPanning) {
             scheme.isPanning = false;
         }
 
-        scheme.renderAll();
     },
 
     onContextMenu(event) {
@@ -224,32 +306,23 @@ var toolmgr = {
 
 
             context_menu.main_menu.addItem(new Item("Edit Value", function() {
-                let newValue = prompt(`new ${scheme.selectedComponents[0].name.value} value`);
-                
-                scheme.selectedComponents[0].value.value = newValue;
-                scheme.renderAll();
+                let component = scheme.selectedComponents[0];
+                let newValue = prompt(`new ${component.name.value} value`);
+                scheme.execute(new ChangeComponentValue(component, newValue));
             }));
 
             context_menu.main_menu.addItem(new Item("Rotate -45", function() {
-                let c = scheme.selectedComponents[0];
-                c.rotate(-45);
-                c.update();
-                c.updateConnections();
-                tryConnect(c);
-                scheme.renderAll();
+                let component = scheme.selectedComponents[0];
+                scheme.execute(new RotateComponent(component, -45));
             }));
 
             context_menu.main_menu.addItem(new Item("Rotate +45", function() {
-                let c = scheme.selectedComponents[0];
-                c.rotate(45);
-                c.update();
-                c.updateConnections();
-                tryConnect(c);
-                scheme.renderAll();
+                let component = scheme.selectedComponents[0];
+                scheme.execute(new RotateComponent(component, +45));
             }));
 
             context_menu.main_menu.addItem(new Item("Delete", function() {
-                scheme.deleteSelected();
+                scheme.execute(new DeleteElement(scheme.selectedComponents[0]));
             }));
 
         }
@@ -257,12 +330,36 @@ var toolmgr = {
         else if (scheme.selectedWires.length) {
 
             context_menu.main_menu.addItem(new Item("Delete", function() {
-                scheme.deleteSelected();
+                let wire = scheme.wires[scheme.selectedWires[0]];
+                scheme.execute(new DeleteElement(wire));
             }));
+        }
+
+        else {
+            context_menu.main_menu.addItem(
+                new Item(`<p>Add</p> <img src='${choosenComponent.icon_src}' width="40" height="14"></img>`, 
+                function() {
+                    scheme.execute(new AddComponent(event.clientX, event.clientY));
+                }
+            ));
+
+            context_menu.main_menu.addItem(new Item(`Undo`, () => scheme.undo()));
+
+            context_menu.main_menu.addItem(new Item(`Redo`, () => scheme.redo()));
         }
 
 
         context_menu.show();
+    },
+
+    onKeyDown(event) {
+        if (event.ctrlKey) {
+            if (event.shiftKey && event.keyCode === 90)
+                scheme.redo();
+            else if (event.keyCode === 90)
+                scheme.undo();
+        }
+
     }
 
 };   

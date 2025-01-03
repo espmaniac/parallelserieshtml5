@@ -22,6 +22,9 @@ var scheme = {
     selectedWires: [],
     junctions: [],
 
+    undoStack: [],
+    redoStack: [],
+
 
     isDragging: false,
     isPanning: false,
@@ -30,8 +33,6 @@ var scheme = {
     _gridSize: cellSize,
     _gridOffsetX: 0,
     _gridOffsetY: 0,
-      
-
 
     _drawGrid() {
         this._gridSize = cellSize * this.zoom;
@@ -133,25 +134,6 @@ var scheme = {
         cursor.offsetY -= current.y - prev.y;
     },
 
-    dragComponent(cursorX, cursorY, onMove) {
-        let component = this.selectedComponents[0];
-      
-        let posX = (cursorX / this.zoom) - cursor.offsetX;
-        let posY = (cursorY / this.zoom) - cursor.offsetY;
-      
-        if (!onMove) {
-          posX = snapToGrid(posX);
-          posY = snapToGrid(posY);
-        }
-      
-        component.move(posX, posY, onMove);
-      
-        if (!onMove) {
-          component.updateConnections();
-          tryConnect(component);
-        }
-    },
-
 
     trySelectComponent(cursorX, cursorY) {
         if (this.isDragging) return;
@@ -174,6 +156,7 @@ var scheme = {
             component.select(true);
             cursor.offsetX = cursorX / this.zoom - component.x;
             cursor.offsetY = cursorY / this.zoom - component.y;
+            toolmgr.activeCmd = new DragComponent(component);
             break;
           } else {
             component.select(false);
@@ -201,65 +184,39 @@ var scheme = {
     
     },
 
-    tryDrawWireFrom(cursorX, cursorY) {
-    
-        if (this.isDragging) return;
+    execute(cmd) {
+      if(!cmd) return;
       
-        const virtualPos = this.screenToWorldSpace(cursorX, cursorY);
-      
-        if (this.tool === "WIRE" && this.selectedComponents.length <= 0) {
-          let wire = new Wire();
-          wire.nodes[0].x = snapToGrid(virtualPos.x); 
-          wire.nodes[0].y = snapToGrid(virtualPos.y);
-          this.wires.push(wire);
-          this.isDragging = true;
-        }
-    
+      cmd.execute();
+
+      this.undoStack.push(cmd);
+
+      if (this.redoStack.length > 0) {
+        this.redoStack = [];
+      }
+  
+      this.renderAll();
     },
 
-    tryDrawWireTo(cursorX, cursorY, finish) {
-    
-        const virtualPos = this.screenToWorldSpace(cursorX, cursorY);
-        let wire = this.wires[this.wires.length - 1];
-        let cursorTo = snapToAngle(
-          {x: wire.nodes[0].x, y: wire.nodes[0].y}, 
-          {x: virtualPos.x, y: virtualPos.y}
-        );
-          
-        wire.nodes[1].x = snapToGrid(cursorTo.x);
-        wire.nodes[1].y = snapToGrid(cursorTo.y);
-      
-        if (!finish) return;
-      
-      
-        if (wire.nodes[0].x === wire.nodes[1].x && wire.nodes[0].y === wire.nodes[1].y) {
-          this.wires.pop();
-        }
-        else {
-          tryConnect(wire);
-        }
-    
+    undo() {
+      if ((this.undoStack.length - 1) < 0) return;
+      let cmd = this.undoStack[this.undoStack.length - 1];
+      this.undoStack.pop();
+      cmd.unexecute();
+      this.redoStack.push(cmd);
+
+      this.renderAll();
     },
 
-    deleteSelected() {
-        if (this.selectedComponents.length > 0) {
-          this.selectedComponents[0].select(false);
-          this.selectedComponents[0].onDelete();
-          delete this.components[this.selectedComponents[0].name.value];
-          this.selectedComponents.length = 0;
-        }
-      
-      
-        for (let i = 0, j = 0; i < this.selectedWires.length; ++i) {
-          let index = this.selectedWires[i] - j;		
-          this.wires[index].onDelete();
-          this.wires.splice(index, 1);
-      
-          ++j;
-        }
-      
-        this.selectedWires.length = 0;
-        this.renderAll();
+    redo() {
+      if ((this.redoStack.length - 1) < 0) return;
+
+      let cmd = this.redoStack[this.redoStack.length - 1];
+      cmd.execute();
+      this.redoStack.pop();
+      this.undoStack.push(cmd);
+
+      this.renderAll();
     },
 
     clear() {
@@ -268,6 +225,7 @@ var scheme = {
         this.selectedWires = [];
         this.selectedComponents = [];
         this.junctions = [];
+        this.cmdHistory = [];
     }
 
 };

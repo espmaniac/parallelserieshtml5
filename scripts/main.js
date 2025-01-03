@@ -4,7 +4,7 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 
-var choosenComponent = {name: "", shortName: "", defaultValue: ""};
+var choosenComponent = {name: "", shortName: "", defaultValue: "", icon_src: ""};
 
 var count = 1; // component index
 
@@ -12,7 +12,7 @@ var cursor =  {
   touches: null,
   offsetX: 0,
   offsetY: 0,
-  lastTouch: null
+  lastTouches: {}
 };
 
 
@@ -36,6 +36,8 @@ window.onload = function() {
   canvas.addEventListener("mouseover", function (event) {
     scheme.isMouseHover = true;
   }, false);
+
+  window.addEventListener("keydown", toolmgr.onKeyDown);
 
 
   window.onresize = function() {
@@ -83,20 +85,6 @@ window.onload = function() {
   initComponents();
 
   initTools();
-
-  var btnAdd = document.getElementById("addComponent");
-  btnAdd.addEventListener("click", function() {
-    let countStr = count.toString();
-    scheme.components[choosenComponent.shortName + countStr] = (
-      new Component(choosenComponent.shortName + countStr, choosenComponent.defaultValue, 
-        snapToGrid(scheme.screenToWorldSpace(canvas.width / 2,0).x), 
-        snapToGrid(scheme.screenToWorldSpace(0,canvas.height / 2).y)
-      )
-    );
-    count += 1;
-    scheme.renderAll();
-  });
-
   
   var btnClear = document.getElementById("clear");
   btnClear.addEventListener("click", function() {
@@ -116,11 +104,10 @@ function initComponents() {
   let chooseResistor = document.getElementById("resistor");
   let chooseCapactitor = document.getElementById("capacitor");
   let chooseInductor = document.getElementById("inductor");
-  let addComponentIcon = document.getElementById("addComponent").children[0];
 
   chooseResistor.addEventListener("click", function() {
-    choosenComponent = {name: "Resistor", shortName: "R", defaultValue: "1k"};
-    addComponentIcon.src = "icons/res_eu.svg";
+    choosenComponent = {name: "Resistor", shortName: "R", defaultValue: "1k", icon_src: "icons/res_eu.svg"};
+
     onSeries = function(left, right) {
       return left + right;
     }
@@ -141,8 +128,7 @@ function initComponents() {
   });
 
   chooseCapactitor.addEventListener("click", function() {
-    choosenComponent = {name: "Capacitor", shortName: "C", defaultValue: "1u"};
-    addComponentIcon.src = "icons/capacitor.svg";
+    choosenComponent = {name: "Capacitor", shortName: "C", defaultValue: "1u", icon_src: "icons/capacitor.svg"};
     
     onSeries = function(left, right) {
       return (left != 0 && right != 0) ? (1 / (1/left + 1/right)) : ((left > right) ? left : right);
@@ -169,8 +155,8 @@ function initComponents() {
   });
   
 chooseInductor.addEventListener("click", function() {
-  choosenComponent = {name: "Inductor", shortName: "L", defaultValue: "1u"};
-  addComponentIcon.src = "icons/inductor.svg";
+  choosenComponent = {name: "Inductor", shortName: "L", defaultValue: "1u", icon_src: "icons/inductor.svg"};
+
   onSeries = function(left, right) {
     return left + right;
   }

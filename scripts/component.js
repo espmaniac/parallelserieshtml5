@@ -79,7 +79,6 @@ class Component {
 
     if (onMove) return;
 
-    /* update onMouseUp */
     this.update();
   }
 
@@ -136,6 +135,7 @@ class Component {
   onDelete() {
     deleteNode(this.nodes[0]);
     deleteNode(this.nodes[1]);
+    this.select(false);
   }
 
   }

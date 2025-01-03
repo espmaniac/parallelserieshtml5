@@ -7,8 +7,6 @@ class Menu {
         this.parent = null;
         this.level = 0;
         this.text = text;
-
-
     }
 
     addItem(item) {
@@ -28,12 +26,10 @@ class Menu {
             item.update();
 
             let li = document.createElement("li");
-            li.innerText = item.text;
+            li.innerHTML = item.text;
             li.appendChild(item.element);
 
             this.element.appendChild(li);
-
-
 
             this.submenus.push(item);
         }
@@ -80,7 +76,7 @@ class Item {
         this.parent = null;
         this.cmd = cmd;
         this.element = document.createElement('li');
-        this.element.innerText = txt;
+        this.element.innerHTML = txt;
         this.element.addEventListener("click", cmd);
     }
 

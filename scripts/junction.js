@@ -1,5 +1,3 @@
-
-
 class Junction {
   constructor() {
       this.x = null;
