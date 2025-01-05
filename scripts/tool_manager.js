@@ -353,11 +353,38 @@ var toolmgr = {
     },
 
     onKeyDown(event) {
-        if (event.ctrlKey) {
-            if (event.shiftKey && event.keyCode === 90)
-                scheme.redo();
-            else if (event.keyCode === 90)
-                scheme.undo();
+        switch(event.keyCode) {
+            case 8: case 46:
+                let elm = (scheme.selectedComponents.length) 
+                    ? scheme.selectedComponents[0] : 
+                    (scheme.selectedWires.length) ? scheme.wires[scheme.selectedWires[0]] : null;
+
+                if (elm) scheme.execute(new DeleteElement(elm));
+
+                break;
+
+            case 83:
+                removeActive();
+                let cursorTool = document.getElementById("cursorTool");
+                cursorTool.classList.add("active");
+                scheme.tool = "SELECT";
+                
+                break;
+
+            case 87:
+                removeActive();
+                let wireTool = document.getElementById("wireTool");
+                wireTool.classList.add("active");
+                scheme.tool = "WIRE";
+                break;
+
+            case 90:
+                if (event.shiftKey && event.ctrlKey) 
+                    scheme.redo();
+                else 
+                    scheme.undo();
+                break;
+            default: break;
         }
 
     }

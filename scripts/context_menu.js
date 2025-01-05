@@ -7,6 +7,8 @@ class Menu {
         this.parent = null;
         this.level = 0;
         this.text = text;
+
+
     }
 
     addItem(item) {
@@ -30,6 +32,8 @@ class Menu {
             li.appendChild(item.element);
 
             this.element.appendChild(li);
+
+
 
             this.submenus.push(item);
         }

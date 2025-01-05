@@ -187,20 +187,20 @@ chooseInductor.addEventListener("click", function() {
   });
 }
 
+function removeActive() {
+  for (let i = 0; i < mainTools.children.length; ++i) {
+    mainTools.children[i].classList.remove("active");
+  }
+  for (let i = 0; i < nodeTools.children.length; ++i) {
+    nodeTools.children[i].classList.remove("active");
+  }
+}
+
 function initTools() {
   let mainTools = document.getElementById("mainTools");
   let nodeTools = document.getElementById("nodeTools");
   let cursorTool = document.getElementById("cursorTool");
   let wireTool = document.getElementById("wireTool");
-
-  function removeActive() {
-    for (let i = 0; i < mainTools.children.length; ++i) {
-      mainTools.children[i].classList.remove("active");
-    }
-    for (let i = 0; i < nodeTools.children.length; ++i) {
-      nodeTools.children[i].classList.remove("active");
-    }
-  }
 
   cursorTool.addEventListener("click", function() {
     removeActive();
