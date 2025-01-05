@@ -188,6 +188,9 @@ chooseInductor.addEventListener("click", function() {
 }
 
 function removeActive() {
+  let mainTools = document.getElementById("mainTools");
+  let nodeTools = document.getElementById("nodeTools");
+
   for (let i = 0; i < mainTools.children.length; ++i) {
     mainTools.children[i].classList.remove("active");
   }
@@ -197,8 +200,6 @@ function removeActive() {
 }
 
 function initTools() {
-  let mainTools = document.getElementById("mainTools");
-  let nodeTools = document.getElementById("nodeTools");
   let cursorTool = document.getElementById("cursorTool");
   let wireTool = document.getElementById("wireTool");
 
