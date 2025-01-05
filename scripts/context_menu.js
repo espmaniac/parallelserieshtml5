@@ -7,8 +7,6 @@ class Menu {
         this.parent = null;
         this.level = 0;
         this.text = text;
-
-
     }
 
     addItem(item) {
@@ -32,8 +30,6 @@ class Menu {
             li.appendChild(item.element);
 
             this.element.appendChild(li);
-
-
 
             this.submenus.push(item);
         }
@@ -70,8 +66,6 @@ class Menu {
         this.submenus = [];
         this.element.innerHTML = "";
     }
-
-
 }
 
 class Item {
@@ -81,11 +75,15 @@ class Item {
         this.cmd = cmd;
         this.element = document.createElement('li');
         this.element.innerHTML = txt;
-        this.element.addEventListener("click", cmd);
+        this.clickFN = function(e) {
+            cmd();
+            context_menu.hide();
+        };
+        this.element.addEventListener("click", this.clickFN);
     }
 
     onDelete() {
-        this.element.removeEventListener("click", this.cmd);
+        this.element.removeEventListener("click", this.clickFN);
     }
 }
 

@@ -66,15 +66,6 @@ window.onload = function() {
   context_menu.element = document.getElementById("contextMenu");
   context_menu.main_menu.element = document.getElementById("ctxUL");
 
-  context_menu.element.addEventListener("click", function(event) {
-    let target = event.target;
-    
-    if (target.children.length <= 0) {
-      context_menu.hide();
-    }
-  
-  });
-
   canvas.addEventListener("contextmenu", toolmgr.onContextMenu);
   
 

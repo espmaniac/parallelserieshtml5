@@ -348,7 +348,6 @@ var toolmgr = {
             context_menu.main_menu.addItem(new Item(`Redo`, () => scheme.redo()));
         }
 
-
         context_menu.show();
     },
 

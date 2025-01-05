@@ -10,6 +10,7 @@ class Command {
 class DeleteElement extends Command {
     constructor(elem) {
         super();
+        this.name = "DeleteElement";
         this.element = elem;
         this.deletedIndex = -1;
     }

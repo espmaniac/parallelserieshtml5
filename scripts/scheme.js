@@ -225,7 +225,8 @@ var scheme = {
         this.selectedWires = [];
         this.selectedComponents = [];
         this.junctions = [];
-        this.cmdHistory = [];
+        this.undoStack = [];
+        this.redoStack = [];
     }
 
 };
