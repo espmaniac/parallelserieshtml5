@@ -31,10 +31,8 @@ class Wire {
       ctx.restore();
     }
   }
-  hitTest(x,y) {
+  hitTest(x,y, tolerance = 0.5) {
     // thanks https://www.jeffreythompson.org/collision-detection/line-point.php
-    // 
-    const TOLERANCE = 0.5;
     
     let distX = this.nodes[0].x - this.nodes[1].x;
     let distY = this.nodes[0].y - this.nodes[1].y;
@@ -46,7 +44,7 @@ class Wire {
 
     let sum = p1 + p2;
     
-    return (sum >= (length - TOLERANCE)  && sum <= (length + TOLERANCE));
+    return (sum >= (length - tolerance)  && sum <= (length + tolerance));
   }
 
   onDelete() {

@@ -53,7 +53,7 @@ function tryConnectWire(nArr, wire) {
   for (let i = 0; i < nArr.length; ++i) {
     let n = nArr[i];
 
-    let tLikeconnection = wire.hitTest(n.x, n.y);
+    let tLikeconnection = wire.hitTest(n.x, n.y, 0.1);
 
     let onLine = wire.nodesOnLine.find(
       function(node) {
