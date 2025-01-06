@@ -72,7 +72,6 @@ class Item {
     constructor(txt, cmd) {
         this.className = "Item";
         this.parent = null;
-        this.cmd = cmd;
         this.element = document.createElement('li');
         this.element.innerHTML = txt;
         this.clickFN = function(e) {

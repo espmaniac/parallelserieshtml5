@@ -7,9 +7,10 @@ function tryConnect(element) {
       let component = scheme.components[j];
       if (element === component) continue;
 
-      tryConnectNodes(n, component.nodes);
       if (element.className === "Wire")
         tryConnectWire(component.nodes, element);
+      else 
+        tryConnectNodes(n, component.nodes);
     }
 
     for (let j in scheme.wires) {
@@ -17,7 +18,7 @@ function tryConnect(element) {
       
       if (element === wire) continue;
 
-       let connected = tryConnectWire([n], wire);
+      let connected = tryConnectWire([n], wire);
 
       if (!connected && element.className === "Wire")
         tryConnectWire(wire.nodes, element);
