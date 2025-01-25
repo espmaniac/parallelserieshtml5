@@ -8,6 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ParallelSeries</title>
     <meta name="keywords" content="ParallelSeries, equivalent resistance, equivalent capacitance, equivalent inductance, delta star transform, parallel connection, series connection, resistance calculator, capacitance calculator, inductance calculator, resistor network solver, capacitor network solver, inductor network solver">
+    <meta name="description" content="calculator for finding the equivalent values of resistors, capacitors, inductance coils">
     <link rel="icon" href="logo/favicon.svg" sizes="any" type="image/svg+xml">
     <link rel="shortcut icon" href="logo/favicon16x16.ico" type="image/x-icon">
     <link rel="shortcut icon" href="logo/favicon32x32.ico" type="image/x-icon">
@@ -56,20 +57,6 @@
               </button>
 
             </div>
-            <div id="nodeTools">
-              <button id="startNode">
-                <img src="icons/node.svg" alt="" width="40" height="20">
-                <p>StartNode</p>
-              </button>
-              <button id="junction">
-                <img src="icons/junction.svg" alt="" width="40" height="20">
-                <p>Junction</p>
-              </button>
-              <button id="endNode">
-                <img src="icons/node.svg" alt="" width="40" height="20">
-                <p>EndNode</p>
-              </button>
-            </div>
         </div>
 
         <canvas id="myCanvas"></canvas>
@@ -92,6 +79,8 @@
     
     
     <script src="scripts/main.js" defer></script>
+    <script src="scripts/text.js" defer></script>
+    <script src="scripts/labelnode.js" defer></script>
     <script src="scripts/scheme.js" defer></script>
     
     <script src="scripts/tool_manager.js" defer></script>
@@ -102,7 +91,8 @@
     <script src="scripts/component.js" defer></script>
     <script src="scripts/junction.js" defer></script>
     <script src="scripts/node.js" defer></script>
-    <script src="scripts/text.js" defer></script>
+    
     <script src="scripts/wire.js" defer></script>
+
 </body>
 </html>

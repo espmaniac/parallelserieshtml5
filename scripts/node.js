@@ -96,6 +96,6 @@ function deleteNode(node) {
       deleteJunction(junction);
   }
 
-  node.connections.length = 0; // clear
+  node.connections = [];
   node.junctions = [];
 }

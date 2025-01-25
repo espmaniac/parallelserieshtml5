@@ -12,6 +12,7 @@ var toolmgr = {
         if (scheme.tool === "SELECT") {
           scheme.trySelectComponent(mouseX, mouseY);
           scheme.trySelectWires(mouseX, mouseY);
+          scheme.trySelectLabel(mouseX, mouseY);
         }
         if (scheme.tool === "WIRE" && scheme.selectedComponents.length <= 0 && !scheme.isDragging) {
             let wire = new Wire();
@@ -141,6 +142,7 @@ var toolmgr = {
 
             scheme.trySelectComponent(pointerX, pointerY);
             scheme.trySelectWires(pointerX, pointerY);
+            scheme.trySelectLabel(pointerX, pointerY);
 
             if (!scheme.selectedComponents.length && !scheme.selectedWires.length) {
                 scheme.isPanning = true;
@@ -238,6 +240,7 @@ var toolmgr = {
                 default: break;
             }
 
+
         if (scheme.isPanning && !cmd && event.touches.length <= 1) {
             scheme.Pan(pointerX, pointerY);
         }
@@ -301,54 +304,90 @@ var toolmgr = {
 
         context_menu.setPos(event.clientX, event.clientY);
 
+        let startNodeMenu = new Menu("StartNode = ");
+        let destNodeMenu = new Menu("DestNode = ");
+
+        let addNodesSubMenu = function(nodes) {
+            for (let i = 0; i < nodes.length; ++i) {
+                let node = nodes[i];
+                startNodeMenu.addItem(new Item("N" + i, function() { scheme.execute(new SetLabelNode(scheme.labels[0], node)); }));
+                destNodeMenu.addItem(new Item("N" + i, function() { scheme.execute(new SetLabelNode(scheme.labels[1], node)); }));
+            }
+        }
                 
         if (scheme.selectedComponents.length) {
+            var component = scheme.selectedComponents[0];
 
+            addNodesSubMenu(component.nodes);
+
+            context_menu.main_menu.addItem(startNodeMenu);
+            context_menu.main_menu.addItem(destNodeMenu);
 
             context_menu.main_menu.addItem(new Item("Edit Value", function() {
-                let component = scheme.selectedComponents[0];
                 let newValue = prompt(`new ${component.name.value} value`);
                 scheme.execute(new ChangeComponentValue(component, newValue));
             }));
 
             context_menu.main_menu.addItem(new Item("Rotate -45", function() {
-                let component = scheme.selectedComponents[0];
                 scheme.execute(new RotateComponent(component, -45));
             }));
 
             context_menu.main_menu.addItem(new Item("Rotate +45", function() {
-                let component = scheme.selectedComponents[0];
                 scheme.execute(new RotateComponent(component, +45));
             }));
 
             context_menu.main_menu.addItem(new Item("Delete", function() {
-                scheme.execute(new DeleteElement(scheme.selectedComponents[0]));
+                scheme.execute(new DeleteElement(component));
             }));
 
         }
 
         else if (scheme.selectedWires.length) {
+            var wire = scheme.wires[scheme.selectedWires[0]];
+
+            addNodesSubMenu(wire.nodes);
+            context_menu.main_menu.addItem(startNodeMenu);
+            context_menu.main_menu.addItem(destNodeMenu);
 
             context_menu.main_menu.addItem(new Item("Delete", function() {
-                let wire = scheme.wires[scheme.selectedWires[0]];
                 scheme.execute(new DeleteElement(wire));
             }));
+
         }
 
         else {
-            context_menu.main_menu.addItem(
-                new Item(`<p>Add</p> <img src='${choosenComponent.icon_src}' width="40" height="14"></img>`, 
-                function() {
-                    scheme.execute(new AddComponent(event.clientX, event.clientY));
-                }
-            ));
 
-            context_menu.main_menu.addItem(new Item(`Undo`, () => scheme.undo()));
+            
+            let selectedLabel = scheme.labels.find(function(l) { return l.selected === true; });
 
-            context_menu.main_menu.addItem(new Item(`Redo`, () => scheme.redo()));
+            if (selectedLabel) {
+                context_menu.main_menu.addItem(new Item(`Rotate +45`, function() {
+                    scheme.execute(new RotateComponent(selectedLabel, +45));
+                }));
+                context_menu.main_menu.addItem(new Item(`Rotate -45`, function() {
+                    scheme.execute(new RotateComponent(selectedLabel, -45));
+                }));
+                context_menu.main_menu.addItem(new Item(`Delete`, function() {
+                    scheme.execute(new DeleteElement(selectedLabel));
+                }));
+            }
+
+            else {
+                context_menu.main_menu.addItem(
+                    new Item(`<p>Add</p> <img src='${choosenComponent.icon_src}' width="40" height="14"></img>`, 
+                    function() {
+                        scheme.execute(new AddComponent(event.clientX, event.clientY));
+                    }
+                ));
+
+                context_menu.main_menu.addItem(new Item(`Undo`, () => scheme.undo()));
+
+                context_menu.main_menu.addItem(new Item(`Redo`, () => scheme.redo()));
+            }
         }
 
         context_menu.show();
+        scheme.renderAll();
     },
 
     onKeyDown(event) {
@@ -356,7 +395,8 @@ var toolmgr = {
             case 8: case 46:
                 let elm = (scheme.selectedComponents.length) 
                     ? scheme.selectedComponents[0] : 
-                    (scheme.selectedWires.length) ? scheme.wires[scheme.selectedWires[0]] : null;
+                    (scheme.selectedWires.length) ? scheme.wires[scheme.selectedWires[0]] : 
+                    scheme.labels.find(function(l) { return l.selected === true; });
 
                 if (elm) scheme.execute(new DeleteElement(elm));
 

@@ -21,6 +21,7 @@ var scheme = {
     wires: [],
     selectedWires: [],
     junctions: [],
+    labels: [new LabelNode("StartNode"), new LabelNode("DestNode")],
 
     undoStack: [],
     redoStack: [],
@@ -88,6 +89,30 @@ var scheme = {
         
         for (let i = 0; i < this.junctions.length; ++i)
             this.junctions[i].draw();
+
+        for (let i = 0; i < this.labels.length; ++i)
+          this.labels[i].draw();
+
+        let drawNodes = function(nodes) {
+          for (let i = 0; i < nodes.length; ++i) {
+            let labelNode = new LabelNode("N" + i);
+            labelNode.node = nodes[i];
+            labelNode.offX = 0;
+            labelNode.offY = labelNode.label.height()/2;
+            labelNode.radius = labelNode.label.width();
+            labelNode.draw();
+          }
+
+        }
+
+        if (!context_menu.hidden()) {
+          for (let i in this.selectedWires) {
+            drawNodes(this.wires[this.selectedWires[i]].nodes);
+          }
+          for (let i in this.selectedComponents) {
+            drawNodes(this.selectedComponents[i].nodes);
+          }
+        }
     },
 
     worldToScreen(worldX, worldY) {
@@ -184,6 +209,17 @@ var scheme = {
     
     },
 
+    trySelectLabel(cursorX, cursorY) {
+      const virtualPos = this.screenToWorldSpace(cursorX, cursorY);
+      for (let i in this.labels) {
+        let label = this.labels[i];
+        if (label.hitTest(virtualPos.x, virtualPos.y)) {
+          label.select(true);
+        } else
+          label.select(false);
+      }
+    },
+
     execute(cmd) {
       if(!cmd) return;
       
@@ -227,6 +263,8 @@ var scheme = {
         this.junctions = [];
         this.undoStack = [];
         this.redoStack = [];
+        this.labels[0].node = null;
+        this.labels[1].node = null;
     }
 
 };

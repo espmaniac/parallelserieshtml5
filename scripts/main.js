@@ -17,7 +17,10 @@ var cursor =  {
 
 
 window.onload = function() {
-  scheme.renderAll();
+  context_menu.element = document.getElementById("contextMenu");
+  context_menu.main_menu.element = document.getElementById("ctxUL");
+  
+  
   canvas.addEventListener('wheel', toolmgr.onMouseWheel);
   canvas.addEventListener('mousedown', toolmgr.onMouseDown);
   canvas.addEventListener('mouseup', toolmgr.onMouseUp);
@@ -63,8 +66,7 @@ window.onload = function() {
     scheme.renderAll();
   };
 
-  context_menu.element = document.getElementById("contextMenu");
-  context_menu.main_menu.element = document.getElementById("ctxUL");
+
 
   canvas.addEventListener("contextmenu", toolmgr.onContextMenu);
   
@@ -87,6 +89,7 @@ window.onload = function() {
     scheme.renderAll();
   });
 
+  scheme.renderAll();
 }
 
 
@@ -180,14 +183,11 @@ chooseInductor.addEventListener("click", function() {
 
 function removeActive() {
   let mainTools = document.getElementById("mainTools");
-  let nodeTools = document.getElementById("nodeTools");
 
   for (let i = 0; i < mainTools.children.length; ++i) {
     mainTools.children[i].classList.remove("active");
   }
-  for (let i = 0; i < nodeTools.children.length; ++i) {
-    nodeTools.children[i].classList.remove("active");
-  }
+
 }
 
 function initTools() {

@@ -8,8 +8,9 @@ class Text {
         this.flipY = 1;
         this.flipX = 1;
         this.font = "bold 12px sans-serif";
-
+        this.align = "center";
         this.selected = false;
+        this.color = "#000000";
     }
 
     width() {
@@ -41,51 +42,44 @@ class Text {
     draw() {
         ctx.save();
         
-        ctx.fillStyle = "#FF0000";
-        ctx.textAlign = "left";
+        ctx.textAlign = this.align;
         
         ctx.font = this.font;
 
-        let drawX = this.x + Math.abs(this.width() - this.parent.width)/2;
+        let drawX = this.x;
         let drawY = this.y;
+        let width = this.width();
+        let height = this.height();
 
-        ctx.translate(this.parent.rotationPointX(), this.parent.rotationPointY());
+        ctx.translate(this.rotationPointX(), this.rotationPointY());
         ctx.rotate(this.angle * (Math.PI / 180));
-        ctx.translate(-this.parent.rotationPointX(), -this.parent.rotationPointY());
+        ctx.translate(-this.rotationPointX(), -this.rotationPointY());
         
         
         ctx.scale(this.flipX, this.flipY);
-
-        drawX = this.x + Math.abs(this.width() - this.parent.width)/2;
-        drawY = this.y;
 
         if (this.selected) {
             ctx.strokeStyle = "#FF0000";
             ctx.fillStyle = "#FF0000";
         }
         else {
-            ctx.strokeStyle = "#000000";
-            ctx.fillStyle = "#000000";
+            ctx.strokeStyle = this.color;
+            ctx.fillStyle = this.color;
         }
     
 
         if (this.flipX === -1) {
             drawX *= -1;
-            drawX -= this.width();
         }
         
         if (this.flipY === -1) {
             drawY *= -1;
-            drawY += this.height();
+            drawY += height;
         }
-
-        
         
         ctx.fillText(this.value, drawX, drawY);
-
         
-        ctx.restore();
-        
+        ctx.restore(); 
     }
 
     rotate(angle) {
@@ -107,4 +101,43 @@ class Text {
         }
 
     }
+
+    hitTest(x,y) {
+
+        let rotatedPoint = rotatePoint(
+            {x: x, y: y}, 
+            {x: this.rotationPointX(), y: this.rotationPointY()}, 
+            -this.angle
+        );
+
+        let width = this.width();
+        let height = this.height();
+
+        let difX = 0;
+
+        switch(this.align) {
+            case "right":
+                difX = (this.flipX === -1) ? 0 : width;
+                break;
+
+            case "left":
+                difX = (this.flipX === -1) ? width : 0;
+                break;
+
+            case "center" :
+                difX = width/2;
+                break;
+
+            default: break;
+        }
+
+
+        if ((rotatedPoint.x >= (this.x - difX) && rotatedPoint.x <= (this.x + width - difX)) &&
+            (rotatedPoint.y >= (this.y - height) && rotatedPoint.y <= (this.y)))
+            return true;
+
+      
+        return false;
+    }
+
 }

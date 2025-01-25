@@ -12,10 +12,10 @@ class DeleteElement extends Command {
         super();
         this.name = "DeleteElement";
         this.element = elem;
-        this.deletedIndex = -1;
+        this.save = null; // wire index, label node
     }
     execute() {
-        this.element.onDelete();
+        
         switch(this.element.className) {
             case "Component":
                 delete scheme.components[this.element.name.value];
@@ -26,13 +26,21 @@ class DeleteElement extends Command {
                     let w = scheme.wires[i];
                     if (wire === w) {
                       scheme.wires.splice(i, 1);
-                      this.deletedIndex = i;
+                      this.save = i;
                       break;
                     }
                   }
                 break;
+
+            case "LabelNode":
+
+                this.save = this.element.node;
+                break;
+
+            default: break;
         }
 
+        this.element.onDelete();
         scheme.selectedComponents = [];
         scheme.selectedWires = [];
 
@@ -50,9 +58,14 @@ class DeleteElement extends Command {
             case "Wire":
                 let wire = this.element;
                 connectNodes(wire.nodes[0], wire.nodes[1], "0");
-                scheme.wires.splice(this.deletedIndex, 0, wire);
+                scheme.wires.splice(this.save, 0, wire);
                 tryConnect(wire);
                 break;
+
+            case "LabelNode":
+                this.element.node = this.save;
+                break;
+            default: break;
         }
     }
 }
@@ -120,17 +133,22 @@ class RotateComponent extends Command {
         this.value = value;
         this.component = component;
     }
+
+    ifComponent() {
+        if (this.component.className === "Component") {
+            this.component.update();
+            this.component.updateConnections();
+            tryConnect(this.component);
+        }
+    }
+
     execute() {
         this.component.rotate(this.value);
-        this.component.update();
-        this.component.updateConnections();
-        tryConnect(this.component);
+        this.ifComponent();
     }
     unexecute() {
         this.component.rotate(-this.value);
-        this.component.update();
-        this.component.updateConnections();
-        tryConnect(this.component);
+        this.ifComponent();
     }
 }
 
@@ -215,5 +233,29 @@ class DrawWire extends Command {
     unexecute() {
         this.delete = new DeleteElement(this.wire);
         this.delete.execute();
+    }
+}
+
+class SetLabelNode extends Command {
+    constructor(label, node) {
+        super();
+        this.name = "SetLabelNode";
+        this.label = label;
+        this.node = node;
+    }
+
+
+    setNode() {
+        let node = this.label.node;
+        this.label.node = this.node;
+        this.node = node;
+    }
+
+    execute() {
+        this.setNode();
+    }
+
+    unexecute() {
+        this.setNode();
     }
 }

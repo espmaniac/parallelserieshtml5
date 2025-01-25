@@ -5,11 +5,14 @@ class Component {
     this.name.parent = this;
     this.value = new Text(value);
     this.value.parent = this;
+
+    this.value.rotationPointX = this.name.rotationPointX = function() { return this.parent.rotationPointX(); };
+    this.value.rotationPointY = this.name.rotationPointY = function() { return this.parent.rotationPointY(); };
+
     this.width = cellSize * 2;
     this.height = cellSize;
     this.angle = 0;
     this.selected = false;
-
 
     this.nodes = [new Node(), new Node()];
     this.nodes[0].parent = this;
@@ -71,27 +74,27 @@ class Component {
     this.x = x;
     this.y = y;
 
-    this.value.x = this.x;
+    this.value.x = this.x + this.width / 2;
     this.value.y = this.y;
 
-    this.name.x = this.x;
+    this.name.x = this.x + this.width / 2;
     this.name.y = this.y - 10;
+
+    this.nodePosUpdate(onMove);
 
     if (onMove) return;
 
     this.update();
   }
 
-  update() {
-    
-
+  nodePosUpdate(onMove) {
     let rotateLeft = rotatePoint(
       {x: this.x - this.width, y: this.y + this.height / 2}, 
       {x: this.rotationPointX(), y: this.rotationPointY()}, 
       this.angle
     );
-    this.nodes[0].x = snapToGrid(rotateLeft.x);
-    this.nodes[0].y = snapToGrid(rotateLeft.y);
+    this.nodes[0].x = (onMove) ? rotateLeft.x : snapToGrid(rotateLeft.x);
+    this.nodes[0].y = (onMove) ? rotateLeft.y : snapToGrid(rotateLeft.y);
 
     let rotateRight = rotatePoint(
       {x: this.x + this.width * 2, y: this.y + this.height / 2}, 
@@ -99,9 +102,12 @@ class Component {
       this.angle
     );
 
-    this.nodes[1].x = snapToGrid(rotateRight.x);
-    this.nodes[1].y = snapToGrid(rotateRight.y);
+    this.nodes[1].x = (onMove) ? rotateRight.x : snapToGrid(rotateRight.x);
+    this.nodes[1].y = (onMove) ? rotateRight.y : snapToGrid(rotateRight.y);
+  }
 
+  update() {
+    this.nodePosUpdate(false);
   }
 
   updateConnections() {
@@ -125,6 +131,7 @@ class Component {
       {x: this.rotationPointX(), y: this.rotationPointY()}, 
       -this.angle
     );
+    
     if ((rotatedPoint.x >= this.x && rotatedPoint.x <= (this.x + this.width)) &&
         (rotatedPoint.y >= this.y && rotatedPoint.y <= (this.y + this.height)))
         return true;
