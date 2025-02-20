@@ -1,7 +1,7 @@
 
 function tryConnect(element) {
   for (let i in element.nodes) {
-    n = element.nodes[i];
+    let n = element.nodes[i];
 
     for (let j in scheme.components) {
       let component = scheme.components[j];
@@ -31,20 +31,12 @@ function tryConnect(element) {
       nConnectionsLength -= element.nodesOnLine.length;
 
     if (nConnectionsLength >= 3)
-    for (let j = 1; j < n.connections.length; ++j) {
-      let node = n.connections[j].node;
-      let add = true;
-      if (element.className === "Wire") {
-        for (let k = 0; k < element.nodesOnLine.length; ++k) {
-          if (element.nodesOnLine[k] === node) {
-            add = false;
-            break;
-          }
-        }
+      for (let j = element.nodes.length - 1; j < n.connections.length; ++j) {
+        let node = n.connections[j].node;
+        let add = (element.className === "Wire") ? !element.nodesOnLine.includes(node) : true;
+        if (add)
+          junction(n.x,n.y, n, node);
       }
-      if (add)
-        junction(n.x,n.y, n, node);
-    }
   }
 }
 

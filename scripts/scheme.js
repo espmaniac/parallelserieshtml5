@@ -6,17 +6,18 @@ const cellSize = 20; // grid size
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 3;
 
+
 var scheme = {
     zoom: 1.0,
     offsetX: -canvas.width / 2,
     offsetY: -canvas.height / 2,
 
-    tool: "SELECT", // "SELECT", "SELECT_RECT", "WIRE"
+    tool: "SELECT", // "SELECT", "WIRE"
 
     panOffX: 0,
     panOffY: 0,
 
-    components: [],
+    components: {},
     selectedComponents: [],
     wires: [],
     selectedWires: [],
@@ -26,24 +27,20 @@ var scheme = {
     undoStack: [],
     redoStack: [],
 
-
     isDragging: false,
     isPanning: false,
     isMouseHover: false,
 
-    _gridSize: cellSize,
-    _gridOffsetX: 0,
-    _gridOffsetY: 0,
 
     _drawGrid() {
-        this._gridSize = cellSize * this.zoom;
+        let gridSize = cellSize * this.zoom;
 
         // Calculate the number of cells that fit in the visible area
-        const numCellsX = Math.ceil(canvas.width / this._gridSize);
-        const numCellsY = Math.ceil(canvas.height / this._gridSize);
+        const numCellsX = Math.ceil(canvas.width / gridSize);
+        const numCellsY = Math.ceil(canvas.height / gridSize);
       
-        this._gridOffsetX = this.offsetX * this.zoom % this._gridSize;
-        this._gridOffsetY = this.offsetY * this.zoom % this._gridSize;
+        let gridOffsetX = this.offsetX * this.zoom % gridSize;
+        let gridOffsetY = this.offsetY * this.zoom % gridSize;
       
         // infinite grid illusion
         ctx.save();
@@ -53,14 +50,14 @@ var scheme = {
       
         // draw vectical lines
         for (let i = 0; i <= numCellsX; i++) {
-          let x = this._gridOffsetX + i * this._gridSize;
+          let x = gridOffsetX + i * gridSize;
           ctx.moveTo(x, 0);
           ctx.lineTo(x, canvas.height);
         }
       
         // draw horizontal lines
         for (let i = 0; i <= numCellsY; i++) {
-          let y = this._gridOffsetY + i * this._gridSize;
+          let y = gridOffsetY + i * gridSize;
           ctx.moveTo(0, y);
           ctx.lineTo(canvas.width, y);
         }
@@ -255,8 +252,67 @@ var scheme = {
       this.renderAll();
     },
 
+    serialize() {
+      let save = {
+        component: choosenComponent.shortName,
+        ComponentNameCount: Component.nameCount,
+        zoom: this.zoom,
+        offsetX: this.offsetX,
+        offsetY: this.offsetY,
+        components: this.components,
+        wires: this.wires
+      };
+
+      let json = JSON.stringify(save);
+      
+      
+      return json;
+    },
+
+    deserialize(jsn) {
+      let json = JSON.parse(jsn);
+
+      if (!json) return;
+
+      this.clear();
+
+      Component.nameCount = json.ComponentNameCount;
+      this.zoom = json.zoom;
+      this.offsetX = json.offsetX;
+      this.offsetY = json.offsetY;
+
+      selectComponent(json.component);
+
+      for (let c in json.components) {
+        let component = json.components[c];
+        this.components[c] = new Component(
+          c.toString(), 
+          component.value, 
+          component.x, 
+          component.y,
+          component.angle
+        );
+      }
+
+      for (let w in json.wires) {
+        let wire = json.wires[w];
+        let newWire = new Wire();
+        newWire.nodes[0].x = wire.x1;
+        newWire.nodes[0].y = wire.y1;
+        newWire.nodes[1].x = wire.x2;
+        newWire.nodes[1].y = wire.y2;
+        this.wires.push(newWire);
+      }
+
+      for (let c in this.components) tryConnect(this.components[c]);
+      for (let w in this.wires) tryConnect(this.wires[w]);
+
+
+      this.renderAll();
+    },
+
     clear() {
-        this.components = [];
+        this.components = {};
         this.wires = [];
         this.selectedWires = [];
         this.selectedComponents = [];
@@ -265,6 +321,8 @@ var scheme = {
         this.redoStack = [];
         this.labels[0].node = null;
         this.labels[1].node = null;
+
+        Component.nameCount = 1;
     }
 
 };

@@ -26,13 +26,16 @@
             <button id="capacitor"></button>
             <button id="inductor"></button>
         </div>
+        <div class="form" style="width: 80%; margin: 0 auto;">
+            <textarea name="" class="textarea" id="openScheme" cols="1" rows="1" placeholder="json"></textarea>
+            <button id="open">open</button>
+        </div>
     </div>
     
     <div id="header">
         <div id="left">
-            <button id="open">Open</button>
+            <!--<button id="open">Open</button>-->
             <button id="save">Save</button>
-            <button id="matrix">Matrix</button>
             <button id="calculate">Calculate</button>
         </div>
 
@@ -49,9 +52,6 @@
               <button id="cursorTool" class="active">
                   <img src="icons/cursor.svg" alt="" srcset="" width="40" height="20">
               </button>
-              <button id="selectionTool">
-                  <img src="icons/selection.svg" alt="" srcset="" width="40" height="20">
-              </button>
               <button id="wireTool">
                   <img src="icons/wire.svg" alt="" srcset="" width="40" height="20">
               </button>
@@ -63,13 +63,31 @@
 
     </div>
 
-    <div id="form">
-        <textarea name="" id="inp" cols="1" rows="1" placeholder="expression"></textarea>
+    <div class="form">
+        <textarea name="" class="textarea" id="inp" cols="1" rows="1" placeholder="expression"></textarea>
         <button id="calc"> = </button>
     </div>
     <div id="answer">
         <h2 id="result">Answer: 42</h2>
     </div>
+
+    <div class="modal" id="saveModal">
+        <div class="modalDialog">
+            <div class="modalHeader">
+                <h3>Save</h3>
+                <button class="close">x</button>
+            </div>
+            <div class="modalContent">
+            
+                <div id="saveScheme" class="form">
+                    <textarea name="" class="textarea" id="saveText" cols="1" rows="3" placeholder="" readonly></textarea>
+                    <button id="saveFileBtn">copy</button>
+                </div>
+            </div>
+        
+        </div>
+    </div>
+
 
     <div id="contextMenu">
         <ul id="ctxUL"></ul>
@@ -94,5 +112,6 @@
     
     <script src="scripts/wire.js" defer></script>
 
+    <script src="scripts/graph.js" defer></script>
 </body>
 </html>

@@ -6,7 +6,6 @@ canvas.height = window.innerHeight;
 
 var choosenComponent = {name: "", shortName: "", defaultValue: "", icon_src: ""};
 
-var count = 1; // component index
 
 var cursor =  {
   touches: null,
@@ -70,6 +69,7 @@ window.onload = function() {
 
   canvas.addEventListener("contextmenu", toolmgr.onContextMenu);
   
+  let input = document.getElementById("inp");
 
   input.style.height = input.offsetHeight + "px";
   textAreaAutoHeight();
@@ -78,20 +78,40 @@ window.onload = function() {
   initComponents();
 
   initTools();
+
+  initModals();
   
   var btnClear = document.getElementById("clear");
   btnClear.addEventListener("click", function() {
     let del = confirm("Do you want to clear the circuit?");
-    if (del) {
-      count = 1;
-      scheme.clear();
-    }
+    
+    if (del) scheme.clear();
+
     scheme.renderAll();
   });
+
+
+  document.getElementById("calc").onclick = function() {
+    let ParSer = new ParallelSeries();
+
+    ParSer.onSeries = onSeries;
+    ParSer.onParallel = onParallel;
+    ParSer.expr = document.getElementById("inp").value;
+    
+    let solution = ParSer.solve();
+    const res = document.getElementById("result");
+    res.innerText = "Answer: " + new String(solution);
+  };
+
 
   scheme.renderAll();
 }
 
+function textAreaAutoHeight() {     
+  const input = document.getElementById("inp");
+    if (parseInt(input.offsetHeight) <= parseInt(input.scrollHeight))
+        input.style.height = (input.scrollHeight) + "px"; 
+}
 
 function initComponents() {
   let chooseComponent = document.getElementById("chooseComponent");
@@ -100,85 +120,27 @@ function initComponents() {
   let chooseInductor = document.getElementById("inductor");
 
   chooseResistor.addEventListener("click", function() {
-    choosenComponent = {name: "Resistor", shortName: "R", defaultValue: "1k", icon_src: "icons/res_eu.svg"};
-
-    onSeries = function(left, right) {
-      return left + right;
-    }
-    onParallel = function(left, right) {
-      return (left != 0 && right != 0) ? (1 / (1/left + 1/right)) : 0;
-    }
-
-    Component.prototype.drawComponent = function() {
-      ctx.moveTo(this.x, this.y + this.height / 2);
-      ctx.lineTo(this.x - this.width, (this.y + this.height / 2));
-    
-      ctx.moveTo(this.x + this.width, this.y + this.height / 2);
-      ctx.lineTo(this.width*2 + this.x, (this.y + this.height / 2));
-      ctx.rect(this.x, this.y, this.width, this.height);
-    }
-
+    selectComponent("R");
     chooseComponent.remove();
   });
 
   chooseCapactitor.addEventListener("click", function() {
-    choosenComponent = {name: "Capacitor", shortName: "C", defaultValue: "1u", icon_src: "icons/capacitor.svg"};
-    
-    onSeries = function(left, right) {
-      return (left != 0 && right != 0) ? (1 / (1/left + 1/right)) : ((left > right) ? left : right);
-    } 
-    onParallel = function(left, right) {
-			return (left != 0 && right != 0) ? (left + right) : 0;
-    }
-
-    Component.prototype.drawComponent = function() {
-      
-      ctx.fillRect(this.x + 15, this.y, 3, this.height);
-      ctx.fillRect(this.x + this.width - 18, this.y, 3, this.height);
-
-      ctx.moveTo(this.x + 15, this.y + this.height / 2);
-      ctx.lineTo(this.x - this.width, (this.y + this.height / 2));
-    
-      ctx.moveTo(this.x + this.width - 15, this.y + this.height / 2);
-      ctx.lineTo(this.width * 2 + this.x, (this.y + this.height / 2));
-      
-    }
-
+    selectComponent("C");
     chooseComponent.remove();
 
   });
   
-chooseInductor.addEventListener("click", function() {
-  choosenComponent = {name: "Inductor", shortName: "L", defaultValue: "1u", icon_src: "icons/inductor.svg"};
-
-  onSeries = function(left, right) {
-    return left + right;
-  }
-  onParallel = function(left, right) {
-    return (left != 0 && right != 0) ? (1 / (1/left + 1/right)) : 0;
-  }
-  Component.prototype.drawComponent = function() {
-
-    
-    ctx.arc(this.x + 10, this.y + this.height / 2, 6, -Math.PI,
-    0);
-
-    ctx.arc(this.x + 20, this.y + this.height / 2, 6, -Math.PI,
-    0);
-    ctx.arc(this.x + 30, this.y + this.height / 2, 6, -Math.PI,
-    0);
-
-
-
-    ctx.moveTo(this.x + 4, this.y + this.height / 2);
-    ctx.lineTo(this.x - this.width, (this.y + this.height / 2));
-      
-    ctx.moveTo(this.x + this.width - 4, this.y + this.height / 2);
-    ctx.lineTo(this.width * 2 + this.x, (this.y + this.height / 2));
-
-  }
-  chooseComponent.remove();
+  chooseInductor.addEventListener("click", function() {
+    selectComponent("L");
+    chooseComponent.remove();
   });
+
+  let open = document.getElementById("open");
+  open.addEventListener("click", function() {
+    scheme.deserialize(document.getElementById("openScheme").value);
+    chooseComponent.remove();
+  });
+
 }
 
 function removeActive() {
@@ -207,4 +169,111 @@ function initTools() {
     this.classList.add("active");
   });
 
+}
+
+function selectComponent(shortName) {
+  switch(shortName) {
+    case "R":
+      choosenComponent = {name: "Resistor", shortName: "R", defaultValue: "1k", icon_src: "icons/res_eu.svg"};
+
+      onSeries = function(left, right) {
+        return left + right;
+      }
+      onParallel = function(left, right) {
+        return (left != 0 && right != 0) ? (1 / (1/left + 1/right)) : 0;
+      }
+  
+      Component.prototype.drawComponent = function() {
+        ctx.moveTo(this.x, this.y + this.height / 2);
+        ctx.lineTo(this.x - this.width, (this.y + this.height / 2));
+      
+        ctx.moveTo(this.x + this.width, this.y + this.height / 2);
+        ctx.lineTo(this.width*2 + this.x, (this.y + this.height / 2));
+        ctx.rect(this.x, this.y, this.width, this.height);
+      }
+  
+      break;
+    case "C":
+      choosenComponent = {name: "Capacitor", shortName: "C", defaultValue: "1u", icon_src: "icons/capacitor.svg"};
+    
+      onSeries = function(left, right) {
+        return (left != 0 && right != 0) ? (1 / (1/left + 1/right)) : ((left > right) ? left : right);
+      } 
+      onParallel = function(left, right) {
+        return (left != 0 && right != 0) ? (left + right) : 0;
+      }
+  
+      Component.prototype.drawComponent = function() {
+        
+        ctx.fillRect(this.x + 15, this.y, 3, this.height);
+        ctx.fillRect(this.x + this.width - 18, this.y, 3, this.height);
+  
+        ctx.moveTo(this.x + 15, this.y + this.height / 2);
+        ctx.lineTo(this.x - this.width, (this.y + this.height / 2));
+      
+        ctx.moveTo(this.x + this.width - 15, this.y + this.height / 2);
+        ctx.lineTo(this.width * 2 + this.x, (this.y + this.height / 2));
+        
+      }
+  
+      break;
+    case "L":
+      choosenComponent = {name: "Inductor", shortName: "L", defaultValue: "1u", icon_src: "icons/inductor.svg"};
+
+      onSeries = function(left, right) {
+        return left + right;
+      }
+      onParallel = function(left, right) {
+        return (left != 0 && right != 0) ? (1 / (1/left + 1/right)) : 0;
+      }
+      Component.prototype.drawComponent = function() {
+    
+        
+        ctx.arc(this.x + 10, this.y + this.height / 2, 6, -Math.PI,
+        0);
+    
+        ctx.arc(this.x + 20, this.y + this.height / 2, 6, -Math.PI,
+        0);
+        ctx.arc(this.x + 30, this.y + this.height / 2, 6, -Math.PI,
+        0);
+    
+    
+    
+        ctx.moveTo(this.x + 4, this.y + this.height / 2);
+        ctx.lineTo(this.x - this.width, (this.y + this.height / 2));
+          
+        ctx.moveTo(this.x + this.width - 4, this.y + this.height / 2);
+        ctx.lineTo(this.width * 2 + this.x, (this.y + this.height / 2));
+    
+      }
+      
+
+      break;
+
+    default: break;
+  };
+
+}
+
+function modalInit(element) {
+
+  let close = element.querySelector(".close");
+  close.addEventListener("click", function() {
+    element.style.display = "none";
+  });
+}
+
+function initModals() {
+
+  let save = document.getElementById("save");
+  var saveModal = document.getElementById("saveModal");
+  modalInit(saveModal);
+  save.addEventListener("click", function() {    
+    saveModal.style.display="block";
+    document.getElementById("saveText").value = scheme.serialize();
+  });
+  let saveBtn = document.getElementById("saveFileBtn");
+  saveBtn.addEventListener("click", function() {
+    navigator.clipboard.writeText(document.getElementById("saveText").value);
+  });
 }

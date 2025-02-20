@@ -172,7 +172,7 @@ body, html {
     color: #ffff00;
 }
 
-#form {
+.form {
     width: 100%;
     max-width: 100%;
     height: auto;
@@ -183,7 +183,11 @@ body, html {
     align-items: stretch;
 }
 
-#inp, #calc {
+#saveScheme {
+    position: relative;
+}
+
+.textarea, #calc, #saveFileBtn, #open {
     font-size: 22px;
     border: 1px solid #ff0000;
     border-radius: 0;
@@ -192,7 +196,7 @@ body, html {
     align-items: center;
 }
 
-#inp {
+.textarea {
     width: 100%;
     max-width: 100%;
     background-color: black;
@@ -209,23 +213,24 @@ body, html {
     overflow-wrap: anywhere !important;
     word-wrap: break-word !important;
     word-break: break-all !important;
+    resize: vertical;
 }
 
-#inp::selection {
+.textarea::selection {
     background-color:#00aaff;
 }
 
-#inp:focus {
+.textarea:focus {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
     box-shadow: 0 0 3px #ff0000;
 }
 
-#calc {
+#calc, #saveFileBtn, #open {
     text-align: center;
     padding: 10px;
     margin: 0;
-    font-size: 24px;
+    font-size: 16px;
     white-space: nowrap;
     color: #fff;
     background-color: #000000;
@@ -235,12 +240,12 @@ body, html {
     border-top-right-radius: 4px;
 }
 
-#calc:hover {
+#calc:hover, #saveFileBtn:hover, #open:hover {
     color: #FFFF00;
     cursor: pointer;
 }
 
-#calc:active {
+#calc:active, #saveFileBtn:active, #open:active {
     color:#00aaff;
     cursor: pointer;
 }
@@ -347,4 +352,82 @@ body, html {
     left: var(--subMenuOffsetLeft);
     right: var(--subMenuOffsetRight);
     height: 100%;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 999999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modalContent{
+    background-color: #fefefe;
+    margin: auto auto;
+    height: auto;
+    width: 80%;
+    position: relative;
+    box-sizing: content-box;
+    display: block;
+}
+
+.modalHeader {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 10px;
+    width: 80%;
+    margin: 0 auto;
+}
+
+.modalDialog {
+    position: relative;
+    top: 50%;
+    margin: 0 auto;
+    background-color: #fff;
+    width: 80%;
+    padding: 5px;
+    transform: translateY(-50%);
+}
+
+.modalHeader h3 {
+    font-family: sans-serif;
+    margin:auto auto;
+}
+
+.modal .close {
+    height: 100%;
+    padding: 10px;
+    border-radius: 50%;
+    margin: auto 0;
+    display: block;
+    font-family: sans-serif;
+    background-color: #ff0000;
+    color: #fff; 
+    border: none;
+    font-family: sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.modal .close:hover {
+    color: #000;
+}
+
+.modal .close:active {
+    background-color: #e8080e;
+}
+
+#saveText, #openScheme {
+    font-size: 12px;
+}
+
+#openScheme::placeholder {
+    font-size: 22px;
 }

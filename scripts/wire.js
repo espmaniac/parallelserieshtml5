@@ -53,4 +53,13 @@ class Wire {
     this.nodesOnLine = [];
     this.selected = false;
   }
+
+  toJSON() {
+    return {
+      x1: this.nodes[0].x,
+      y1: this.nodes[0].y,
+      x2: this.nodes[1].x,
+      y2: this.nodes[1].y
+    };
+  }
 }

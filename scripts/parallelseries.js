@@ -1,14 +1,5 @@
-const input = document.getElementById("inp");
-const res = document.getElementById("result");
-const btn = document.getElementById("calc");
-
 var onSeries = null;
 var onParallel = null;
-
-function textAreaAutoHeight() {     
-    if (parseInt(input.offsetHeight) <= parseInt(input.scrollHeight))
-        input.style.height = (input.scrollHeight) + "px"; 
-}
 
 class Delta {
     constructor() {
@@ -264,13 +255,3 @@ class ParallelSeries {
 
 }
 
-btn.onclick = function() {
-    let ParSer = new ParallelSeries();
-
-    ParSer.onSeries = onSeries;
-    ParSer.onParallel = onParallel;
-    ParSer.expr = input.value;
-    
-    let solution = ParSer.solve();
-    res.innerText = "Answer: " + new String(solution);
-};

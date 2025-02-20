@@ -1,5 +1,6 @@
 class Component {
-  constructor(name, value, x, y) {
+  static nameCount = 1;
+  constructor(name, value, x, y, angle=0) {
     this.className = "Component";
     this.name = new Text(name);
     this.name.parent = this;
@@ -18,8 +19,12 @@ class Component {
     this.nodes[0].parent = this;
     this.nodes[1].parent = this;
 
+    this.x = x;
+    this.y = y;
+
     connectNodes(this.nodes[0], this.nodes[1], this.value);
 
+    this.rotate(angle);
     this.move(x, y);
       
   }
@@ -145,4 +150,13 @@ class Component {
     this.select(false);
   }
 
+  toJSON() {
+    return {
+      x: this.x,
+      y: this.y,
+      value: this.value.value,
+      angle: this.angle,
+    };
   }
+
+}

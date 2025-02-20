@@ -79,7 +79,7 @@ class AddComponent extends Command {
 
         let pos = scheme.screenToWorldSpace(this.x, this.y);
         this.component = new Component(
-            choosenComponent.shortName + count.toString(), 
+            choosenComponent.shortName + Component.nameCount.toString(), 
             choosenComponent.defaultValue, 
             snapToGrid(pos.x), 
             snapToGrid(pos.y)
@@ -93,15 +93,15 @@ class AddComponent extends Command {
             this.delete.unexecute();
         }
         else {
-            scheme.components[choosenComponent.shortName + count.toString()] = this.component;
+            scheme.components[choosenComponent.shortName + Component.nameCount.toString()] = this.component;
             tryConnect(this.component);
         }
-        count++;
+        Component.nameCount++;
     }
     unexecute() {
         this.delete = new DeleteElement(this.component);
         this.delete.execute();
-        --count;
+        --Component.nameCount;
     }
 }
 
