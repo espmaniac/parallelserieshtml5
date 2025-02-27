@@ -104,6 +104,14 @@ window.onload = function() {
   };
 
 
+  document.getElementById("calculate").addEventListener("click", function(e) {
+    if (scheme.labels[0].node === null || scheme.labels[1].node === null) return;
+    if (scheme.labels.length > 2)
+      scheme.labels.splice(2, scheme.labels.length);
+    let g = new Graph();
+    g.toString(scheme.labels[0].node, scheme.labels[1].node);
+  });
+
   scheme.renderAll();
 }
 

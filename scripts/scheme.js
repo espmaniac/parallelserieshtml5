@@ -257,8 +257,8 @@ var scheme = {
         component: choosenComponent.shortName,
         ComponentNameCount: Component.nameCount,
         zoom: this.zoom,
-        offsetX: this.offsetX,
-        offsetY: this.offsetY,
+        offsetX: Math.round(this.offsetX),
+        offsetY: Math.round(this.offsetY),
         components: this.components,
         wires: this.wires
       };

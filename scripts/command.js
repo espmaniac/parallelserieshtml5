@@ -259,3 +259,46 @@ class SetLabelNode extends Command {
         this.setNode();
     }
 }
+
+class AddLabelNode extends Command {
+    constructor(node, text) {
+        super();
+        this.label = new LabelNode(text);
+        this.label.node = node;
+        this.name = "AddLabelNode";
+    }
+
+    execute() {
+        scheme.labels.push(this.label);
+    }
+
+    unexecute() {
+        scheme.labels.pop();
+    }
+
+}
+
+class MacroCommand extends Command {
+    constructor() {
+        super();
+        this.cmds = [];
+        this.name = "MacroCommand";
+    }
+
+    addCommand(cmd) {
+        this.cmds.push(cmd);
+    }
+
+    execute() {
+        for (let i = 0; i < this.cmds.length; ++i) {
+            this.cmds[i].execute();
+        }
+    }
+
+    unexecute() {
+        for (let i = this.cmds.length - 1; i >= 0; --i) {
+            this.cmds[i].unexecute();
+        }
+    }
+
+}
