@@ -21,15 +21,8 @@ class DeleteElement extends Command {
                 delete scheme.components[this.element.name.value];
                 break;
             case "Wire":
-                let wire = this.element;
-                for (let i = 0; i < scheme.wires.length; ++i) {
-                    let w = scheme.wires[i];
-                    if (wire === w) {
-                      scheme.wires.splice(i, 1);
-                      this.save = i;
-                      break;
-                    }
-                  }
+                  this.save = scheme.wires.findIndex((w) => { return w == this.element});
+                  scheme.wires.splice(this.save,1);
                 break;
 
             case "LabelNode":
@@ -37,7 +30,15 @@ class DeleteElement extends Command {
                 this.save = this.element.node;
                 break;
 
-            default: break;
+            case "GraphLabelNode":
+                this.save = {
+                    index: scheme.labels.findIndex((l) => { return l == this.element; }), 
+                    node: this.element.node
+                };
+                scheme.labels.splice(this.save.index,1);
+                break;
+
+            default: return;
         }
 
         this.element.onDelete();
@@ -65,6 +66,12 @@ class DeleteElement extends Command {
             case "LabelNode":
                 this.element.node = this.save;
                 break;
+
+            case "GraphLabelNode":
+                this.element.node = this.save.node;
+                scheme.labels.splice(this.save.index, 0, this.element);
+                break;    
+
             default: break;
         }
     }
@@ -261,10 +268,9 @@ class SetLabelNode extends Command {
 }
 
 class AddLabelNode extends Command {
-    constructor(node, text) {
+    constructor(label) {
         super();
-        this.label = new LabelNode(text);
-        this.label.node = node;
+        this.label = label
         this.name = "AddLabelNode";
     }
 

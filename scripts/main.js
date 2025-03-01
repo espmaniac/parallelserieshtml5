@@ -105,11 +105,18 @@ window.onload = function() {
 
 
   document.getElementById("calculate").addEventListener("click", function(e) {
-    if (scheme.labels[0].node === null || scheme.labels[1].node === null) return;
+    if (!scheme.labels[0].node || !scheme.labels[1].node) return;
+
+    let deletePrevNodes = new MacroCommand();
+    for (let i = 2; i < scheme.labels.length; ++i)
+      deletePrevNodes.addCommand(new DeleteElement(scheme.labels[i]));
+    
     if (scheme.labels.length > 2)
-      scheme.labels.splice(2, scheme.labels.length);
+      scheme.execute(deletePrevNodes);
+    
     let g = new Graph();
     g.toString(scheme.labels[0].node, scheme.labels[1].node);
+
   });
 
   scheme.renderAll();

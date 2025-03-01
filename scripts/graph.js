@@ -17,7 +17,6 @@ class Branch {
 
 class Graph {
     constructor() {
-        this.visited = [];
         this.nodes = [];// circuit merged nodes
     }
 
@@ -36,21 +35,24 @@ class Graph {
                 end = node;
                 node.value = "end";
             }
-            else
-                addNodes.addCommand(new AddLabelNode(node, `N${i}`));
-
+            else {
+                let newLabel = new LabelNode(`N${i}`);
+                newLabel.node = node;
+                newLabel.className = "GraphLabelNode";
+                addNodes.addCommand(new AddLabelNode(newLabel));
+            }
         }
 
-        scheme.execute(addNodes);
 
-
-        let pathExist = this.buildPath(start, end);
-        
-
-        console.log(printGraphNode(pathExist, [])); // debug
-        
-        return (pathExist) ? pathExist : undefined; // debug
-        
+        let pathExist = this.buildPath(start, end, []);
+        if (pathExist !== -1) {
+            scheme.execute(addNodes);
+            console.log(printGraphNode(pathExist, [])); // debug
+            return pathExist
+        }
+        else {
+            return undefined;
+        }
     }
 
     mergeNodes(startNode, visited) {
@@ -99,30 +101,30 @@ class Graph {
         return mergeNode;
     }
 
-    buildPath(startNode, destNode) {
+    buildPath(startNode, destNode, visited) {
 
         let result = -1;
 
-        this.visited.push(startNode);
+        visited.push(startNode);
 
         let startGraphNode = new GraphNode();
         startGraphNode.value = startNode.value;
     
 
         if (startNode === destNode) {
-            this.visited.pop();
+            visited.pop();
             return startGraphNode;
         }
 
         for (let i = 0; i < startNode.connections.length; i++) {
             let node = startNode.connections[i].node;
 
-            let find = this.visited.includes(node);
+            let find = visited.includes(node);
 
             if (find) continue;
 
 
-            let child = this.buildPath(node, destNode);
+            let child = this.buildPath(node, destNode, visited);
 
             if (child !== -1) {
    
@@ -142,7 +144,7 @@ class Graph {
         }
 
 
-        this.visited.pop();
+        visited.pop();
 
         return result;
     }
@@ -151,12 +153,11 @@ class Graph {
 
 
 function printGraphNode(node, visitedPrint=[]) {
-
-    let local_str = `${node.value}:`;
-
     //if (visitedPrint.includes(node)) return -1;
 
     //visitedPrint.push(node);
+
+    let local_str = `${node.value}:`;
     let strs = [];
 
     for (let i = 0; i < node.children.length; ++i) {
