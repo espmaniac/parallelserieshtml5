@@ -3,7 +3,6 @@ class GraphNode {
         this.parents = [];
         this.children = [];
         this.branches = [];
-        this.elementNode = null;
         this.value = null;
     }
 }
@@ -47,8 +46,9 @@ class Graph {
         let pathExist = this.buildPath(start, end, []);
         if (pathExist !== -1) {
             scheme.execute(addNodes);
+            console.log(pathExist);
             console.log(printGraphNode(pathExist, [])); // debug
-            return pathExist
+            return pathExist;
         }
         else {
             return undefined;
@@ -101,7 +101,7 @@ class Graph {
         return mergeNode;
     }
 
-    buildPath(startNode, destNode, visited) {
+    buildPath(startNode, destNode, visited, graphNodes = new Map()) {
 
         let result = -1;
 
@@ -109,6 +109,12 @@ class Graph {
 
         let startGraphNode = new GraphNode();
         startGraphNode.value = startNode.value;
+
+        if (graphNodes.has(startNode.value)) {
+            startGraphNode = graphNodes.get(startNode.value);
+        } else {
+            graphNodes.set(startNode.value, startGraphNode);
+        }
     
 
         if (startNode === destNode) {
@@ -124,10 +130,12 @@ class Graph {
             if (find) continue;
 
 
-            let child = this.buildPath(node, destNode, visited);
+            let child = this.buildPath(node, destNode, visited, graphNodes);
 
             if (child !== -1) {
-   
+                result = startGraphNode;
+                if (startGraphNode.children.includes(child)) continue;
+                
                 startGraphNode.children.push(child);
                 child.parents.push(startGraphNode);
 
@@ -138,7 +146,6 @@ class Graph {
                 
                 startGraphNode.branches.push(branch);
 
-                result = startGraphNode;
             }
 
         }
@@ -153,9 +160,9 @@ class Graph {
 
 
 function printGraphNode(node, visitedPrint=[]) {
-    //if (visitedPrint.includes(node)) return -1;
+    if (visitedPrint.includes(node)) return -1;
 
-    //visitedPrint.push(node);
+    visitedPrint.push(node);
 
     let local_str = `${node.value}:`;
     let strs = [];
@@ -163,6 +170,7 @@ function printGraphNode(node, visitedPrint=[]) {
     for (let i = 0; i < node.children.length; ++i) {
         let child = node.children[i];
         local_str += ` ${child.value}`;
+
         let res = printGraphNode(child, visitedPrint);
         
         if (typeof res === "string") {
