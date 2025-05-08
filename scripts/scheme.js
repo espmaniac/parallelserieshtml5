@@ -253,6 +253,35 @@ var scheme = {
     },
 
     serialize() {
+
+      let labels = [];
+
+      for (let i = 0; i < this.labels.length; ++i) {
+        let l = this.labels[i];
+        if (l.className === "LabelNode") {
+          let label = {
+            text: l.label.value,
+            angle: l.label.angle,
+            nodeX: null,
+            nodeY: null,
+            nodeParent: null,
+            offX: l.offX,
+            offY: l.offY,
+            radius: l.radius
+          };
+          if (l.node) {
+            label.nodeX = l.node.x,
+            label.nodeY = l.node.y,
+            label.nodeParent = (l.node.parent.className === "Component") ? 
+              {type: "Component", value: l.node.parent.name.value}  : 
+              {type: "Wire", value: this.wires.findIndex((n) => {
+                return (n === l.node.parent);
+              })};
+          }
+          labels.push(label);
+        }
+      }
+
       let save = {
         component: choosenComponent.shortName,
         ComponentNameCount: Component.nameCount,
@@ -260,7 +289,8 @@ var scheme = {
         offsetX: Math.round(this.offsetX),
         offsetY: Math.round(this.offsetY),
         components: this.components,
-        wires: this.wires
+        wires: this.wires,
+        labels: labels
       };
 
       let json = JSON.stringify(save);
@@ -307,6 +337,28 @@ var scheme = {
       for (let c in this.components) tryConnect(this.components[c]);
       for (let w in this.wires) tryConnect(this.wires[w]);
 
+      this.labels = [];
+
+      for (let jl in json.labels) {
+        let l = json.labels[jl];
+        let label = new LabelNode(l.text);
+        label.label.rotate(l.angle);
+        label.offX = l.offX;
+        label.offY = l.offY;
+        label.radius = l.radius;
+
+        if (l.nodeParent) {
+          let nodes = (l.nodeParent.type === "Component") ? 
+            this.components[l.nodeParent.value].nodes :
+            this.wires[l.nodeParent.value].nodes;
+
+          new SetLabelNode(label, nodes.find((n) => {
+            return n.hitTest(l.nodeX, l.nodeY);
+          })).execute();
+
+        }
+        this.labels.push(label);
+      }
 
       this.renderAll();
     },
