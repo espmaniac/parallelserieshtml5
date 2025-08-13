@@ -55,12 +55,7 @@ class Graph {
         }
     }
 
-    mergeNodes(startNode, visited) {
-        
-        if (visited.includes(startNode)) return -1;
-
-        visited.push(startNode);
-
+    mergeNodes(startNode, visited = []) {
         let mergeNode = new Node();
         mergeNode.x = startNode.x;
         mergeNode.y = startNode.y;
@@ -75,9 +70,36 @@ class Graph {
             mergeNode = find;
         }
 
-        for (let i = 0; i < startNode.connections.length; ++i) {
-            let connection = startNode.connections[i];
+        
+        if (visited.includes(startNode)) return mergeNode;
+
+        visited.push(startNode);
+
+        let connections = startNode.connections.slice();
+
+
+        for (let i = 0; i < connections.length; ++i) {
+            let connection = connections[i];
+
             let result = this.mergeNodes(connection.node, visited);
+
+
+            if (connection.node.parent.className === "Wire") {
+                let nodesOnLine = connection.node.parent.nodesOnLine;
+
+                for(let j = 0; j < nodesOnLine.length; ++j) {
+
+                    let nodeOnLine = nodesOnLine[j];
+
+                    if (!connections.find(function(n) {
+                        return n.x === nodeOnLine.x && n.y === nodeOnLine.y;
+                    })) {
+                        connections.push({node: nodeOnLine, value: "0"});
+                    }
+                }
+
+            }
+
             if (result !== -1) {
 
                 if (result.x !== mergeNode.x || result.y !== mergeNode.y) {
@@ -90,7 +112,8 @@ class Graph {
                         mergeNode.connections.push({node: result, value: connection.value});
                     }
                     let resultFind = result.connections.find((n) => { 
-                        return n.node.x === mergeNode.x && n.node.y === mergeNode.y});                    
+                        return n.node.x === mergeNode.x && n.node.y === mergeNode.y
+                    });                    
                     
                     if(!resultFind) 
                         result.connections.push({node: mergeNode, value: connection.value});
