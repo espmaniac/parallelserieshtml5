@@ -1,4 +1,3 @@
-
 function tryConnect(element) {
   for (let i in element.nodes) {
     let n = element.nodes[i];
@@ -27,15 +26,10 @@ function tryConnect(element) {
 
     let nConnectionsLength = n.connections.length;
 
-    if(element.className === "Wire")
-      nConnectionsLength -= element.nodesOnLine.length;
-
     if (nConnectionsLength >= 3)
       for (let j = element.nodes.length - 1; j < n.connections.length; ++j) {
         let node = n.connections[j].node;
-        let add = (element.className === "Wire") ? !element.nodesOnLine.includes(node) : true;
-        if (add)
-          junction(n.x,n.y, n, node);
+        junction(n.x,n.y, n, node);
       }
   }
 }
@@ -46,25 +40,22 @@ function tryConnectWire(nArr, wire) {
   for (let i = 0; i < nArr.length; ++i) {
     let n = nArr[i];
 
-    let tLikeconnection = wire.hitTest(n.x, n.y, 0.1);
-
-    let onLine = wire.nodesOnLine.find(
-      function(node) {
-        return (node === n);
-    });
+    // Use stricter hitTest tolerance
+    let tLikeconnection = wire.hitTest(n.x, n.y, 0.01);
 
     let nodes = tryConnectNodes(n, wire.nodes);
 
     if (nodes)
       connected = true;
 
-    else if (tLikeconnection && !onLine) {
-      connectNodes(n, wire.nodes[0]);
-      connectNodes(n, wire.nodes[1]);
-      junction(n.x, n.y, n, wire.nodes[0]);
-      junction(n.x, n.y, n, wire.nodes[1]);
-      wire.nodesOnLine.push(n);
-      connected = true;
+    else if (tLikeconnection) {
+      // prevent cutting at wire endpoints
+      if (!(n.x === wire.nodes[0].x && n.y === wire.nodes[0].y) &&
+          !(n.x === wire.nodes[1].x && n.y === wire.nodes[1].y)) {
+        // Split the wire into two segments when a node lies on it
+        splitWireAtNode(wire, n);
+        connected = true;
+      }
     }
   }
   return connected;
@@ -79,7 +70,6 @@ function tryConnectNodes(n, nArr) {
       connectNodes(n, node);
       connected = true;
     }
-
   }
   return connected;
 }
@@ -133,4 +123,31 @@ function junctionAt(x,y, jArr) {
     }
   
     return null;
+}
+
+function splitWireAtNode(wire, node) {
+  let w2 = new Wire();
+  let drawW2 = new DrawWire(w2);
+
+  let n2 = wire.nodes[1];
+
+
+  w2.nodes[0].x = wire.nodes[1].x;
+  w2.nodes[0].y = wire.nodes[1].y;
+
+  wire.nodes[1].x = node.x;
+  wire.nodes[1].y = node.y;
+
+  w2.nodes[1].x = n2.x;
+  w2.nodes[1].y = n2.y;
+
+  deleteNode(wire.nodes[0]);
+  deleteNode(wire.nodes[1]);
+
+  connectNodes(wire.nodes[0], wire.nodes[1], "0");
+  connectNodes(wire.nodes[1], node, "0");
+
+  scheme.execute(drawW2);
+
+  scheme.wires.push(w2);
 }
