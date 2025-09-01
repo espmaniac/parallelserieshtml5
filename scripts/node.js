@@ -68,18 +68,6 @@ function deleteNode(node) {
     if (ind < 0) continue;
 
     goodNode.connections.splice(ind, 1);
-
-    if (goodNode.parent.className === "Wire") {
-      let nodeOnLine = goodNode.parent.nodesOnLine.findIndex(function(n) {
-        return n === node;
-      });
-
-      if (nodeOnLine >= 0) {
-        goodNode.parent.nodesOnLine.splice(nodeOnLine, 1);
-      }
-      
-    }
-
   }
 
   for (let i = 0; i < node.junctions.length; ++i) {

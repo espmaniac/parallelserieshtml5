@@ -7,8 +7,6 @@ class Wire {
     this.nodes[0].parent = this;
     this.nodes[1].parent = this;
 
-    this.nodesOnLine = [];
-
     connectNodes(this.nodes[0], this.nodes[1], "0");
   }
   draw() {
@@ -50,7 +48,6 @@ class Wire {
   onDelete() {
     deleteNode(this.nodes[0]);
     deleteNode(this.nodes[1]);
-    this.nodesOnLine = [];
     this.selected = false;
   }
 
