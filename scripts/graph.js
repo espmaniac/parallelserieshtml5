@@ -87,19 +87,7 @@ class Graph {
             let connection = connections[i];
 
             let result = this.mergeNodes(connection.node, visited);
-
-            if (connection.node.parent.className === "Wire") {
-                let nodesOnLine = connection.node.parent.nodesOnLine;
-                for (let j = 0; j < nodesOnLine.length; ++j) {
-                    let nodeOnLine = nodesOnLine[j];
-                    if (!connections.find(function (n) {
-                        return n.x === nodeOnLine.x && n.y === nodeOnLine.y;
-                    })) {
-                        connections.push({ node: nodeOnLine, value: "0" });
-                    }
-                }
-            }
-
+            
             if (result !== -1) {
                 if (result.x !== mergeNode.x || result.y !== mergeNode.y) {
                     let exist = mergeNode.connections.find((n) => {
@@ -454,3 +442,4 @@ function printGraphNode(node, visitedPrint = []) {
 
     return local_str;
 }
+
