@@ -50,15 +50,7 @@ class Graph {
             try { console.log("raw expression:", rawStr); } catch (e) {}
             try { console.log("cleaned expression:", cleanStr); } catch (e) {}
 
-            try {
-                let inp = document.getElementById("inp");
-                if (inp) {
-                    inp.value = cleanStr;
-                    try { textAreaAutoHeight(); } catch (e) {}
-                }
-            } catch (e) {}
-
-            return pathExist;
+            return cleanStr;
         } else {
             return undefined;
         }

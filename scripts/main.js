@@ -105,6 +105,7 @@ window.onload = function() {
 
 
   document.getElementById("calculate").addEventListener("click", function(e) {
+
     if (!scheme.labels[0].node || !scheme.labels[1].node) return;
 
     let deletePrevNodes = new MacroCommand();
@@ -115,7 +116,16 @@ window.onload = function() {
       scheme.execute(deletePrevNodes);
     
     let g = new Graph();
-    g.toString(scheme.labels[0].node, scheme.labels[1].node);
+    let str = g.toString(scheme.labels[0].node, scheme.labels[1].node);
+
+
+    if (!str) return;
+    let inp = document.getElementById("inp");
+    inp.scrollIntoView();
+    inp.value = str;
+    textAreaAutoHeight();
+    
+    document.getElementById("calc").click();
 
   });
 
