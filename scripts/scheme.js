@@ -78,8 +78,7 @@ var scheme = {
         
         for (var i in this.components)
             this.components[i].draw();
-        
-        
+
         for (let i = 0; i < this.wires.length; ++i)
             this.wires[i].draw();
         
@@ -89,6 +88,8 @@ var scheme = {
 
         for (let i = 0; i < this.labels.length; ++i)
           this.labels[i].draw();
+
+
 
         let drawNodes = function(nodes) {
           for (let i = 0; i < nodes.length; ++i) {
@@ -277,6 +278,7 @@ var scheme = {
               {type: "Wire", value: this.wires.findIndex((n) => {
                 return (n === l.node.parent);
               })};
+          
           }
           labels.push(label);
         }
@@ -358,6 +360,8 @@ var scheme = {
 
         }
         this.labels.push(label);
+
+        
       }
 
       this.renderAll();
@@ -373,6 +377,7 @@ var scheme = {
         this.redoStack = [];
         this.labels[0].node = null;
         this.labels[1].node = null;
+        this.labels.splice(2);
 
         Component.nameCount = 1;
     }
