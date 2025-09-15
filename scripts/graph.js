@@ -33,6 +33,13 @@ class Graph {
             }
         }
 
+        // If we failed to find end in merged nodes, abort
+        if (!end) return undefined;
+
+        // Compute BFS distances for guidance (do not prune topology, only orient GraphNode)
+        this._distEnd = this._computeDistances(end);
+        this._distStart = this._computeDistances(start);
+
         let graphNodes = new Map();
         let pathExist = this.buildPath(start, end, [], graphNodes);
 
@@ -54,6 +61,26 @@ class Graph {
         } else {
             return undefined;
         }
+    }
+
+    // Generic BFS distances from a given node over merged-node undirected graph
+    _computeDistances(src) {
+        const dist = new Map();
+        const q = [src];
+        dist.set(src, 0);
+
+        while (q.length) {
+            const cur = q.shift();
+            const d = dist.get(cur);
+            const conns = cur.connections || [];
+            for (let i = 0; i < conns.length; ++i) {
+                const nei = conns[i].node;
+                if (dist.has(nei)) continue;
+                dist.set(nei, d + 1);
+                q.push(nei);
+            }
+        }
+        return dist;
     }
 
     // mergeNodes kept as before (adds nodes from wires as "0" connections)
@@ -117,8 +144,27 @@ class Graph {
         }
 
         for (let i = 0; i < startNode.connections.length; i++) {
-            let node = startNode.connections[i].node;
+            const edge = startNode.connections[i];
+            let node = edge.node;
+
+            // Avoid revisiting the same merged Node within the current DFS path
             if (visited.includes(node)) continue;
+
+            // Distance-guided filtering:
+            // Keep an edge if it brings us closer to 'end' OR moves us away from 'start'.
+            if (this._distEnd && this._distStart) {
+                const dEcur = this._distEnd.get(startNode);
+                const dEnext = this._distEnd.get(node);
+                if (dEnext === undefined) continue; // cannot reach end at all
+
+                const dScur = this._distStart.get(startNode);
+                const dSnext = this._distStart.get(node);
+
+                const reducesEnd = (dEcur !== undefined && dEnext < dEcur);
+                const movesAwayStart = (dScur !== undefined && dSnext !== undefined && dSnext > dScur);
+
+                if (!reducesEnd && !movesAwayStart) continue;
+            }
 
             let child = this.buildPath(node, destNode, visited, graphNodes);
 
@@ -126,13 +172,19 @@ class Graph {
                 result = startGraphNode;
                 if (startGraphNode.children.includes(child)) continue;
 
+                // Prevent creating a cycle in GraphNode: if 'startGraphNode' is reachable from 'child',
+                // adding edge startGraphNode -> child would form a cycle. Skip such edge.
+                if (this._gnReachable(child, startGraphNode)) {
+                    continue;
+                }
+
                 startGraphNode.children.push(child);
                 child.parents.push(startGraphNode);
 
                 // store branch label with child object as key
-                let label = (typeof startNode.connections[i].value === "string")
-                    ? startNode.connections[i].value
-                    : startNode.connections[i].value.value;
+                let label = (typeof edge.value === "string")
+                    ? edge.value
+                    : edge.value.value;
 
                 startGraphNode.branches.set(child, String(label));
             }
@@ -140,6 +192,26 @@ class Graph {
 
         visited.pop();
         return result;
+    }
+
+    /**********************
+     * GraphNode reachability helper (to avoid cycles)
+     **********************/
+    // DFS over GraphNode.children: is 'target' reachable from 'from'?
+    _gnReachable(from, target) {
+        if (from === target) return true;
+        const seen = new Set();
+        const stack = [from];
+        while (stack.length) {
+            const cur = stack.pop();
+            if (seen.has(cur)) continue;
+            seen.add(cur);
+            if (cur === target) return true;
+            for (const child of cur.children) {
+                if (!seen.has(child)) stack.push(child);
+            }
+        }
+        return false;
     }
 
     /**********************
