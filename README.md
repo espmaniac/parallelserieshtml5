@@ -34,6 +34,8 @@
   - `S` → select tool  
   - `W` → wire tool  
   - `Delete` / `Backspace` → remove selected elements  
+  - `R` → rotate selected component by +45°  
+  - `Ctrl+R` → rotate selected component by -45° (reload prevented)  
   - `Ctrl+Z` → undo  
   - `Ctrl+Shift+Z` → redo
 - **Context Menu Controls**
@@ -55,6 +57,7 @@
 | Pan view | Middle-click drag / two-finger drag |
 | Zoom | Scroll wheel / pinch |
 | Delete element | `Delete` / `Backspace` |
+| Rotate selected component | `R` / `Ctrl+R` |
 | Undo / Redo | `Ctrl+Z` / `Ctrl+Shift+Z` |
 | Switch tools | `S` → select, `W` → wire |
 | Specify StartNode / DestNode | Right-click (context menu) on component or wire |
