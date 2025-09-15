@@ -402,6 +402,18 @@ var toolmgr = {
 
                 break;
 
+            case 82:
+                if (scheme.selectedComponents.length > 0) {
+                    let component = scheme.selectedComponents[0];
+                    if (event.ctrlKey) {
+                        event.preventDefault();
+                        scheme.execute(new RotateComponent(component, -45));
+                    } else {
+                        scheme.execute(new RotateComponent(component, 45));
+                    }
+                }
+                break;
+
             case 83:
                 removeActive();
                 let cursorTool = document.getElementById("cursorTool");
@@ -418,10 +430,15 @@ var toolmgr = {
                 break;
 
             case 90:
-                if (event.shiftKey && event.ctrlKey) 
-                    scheme.redo();
-                else 
-                    scheme.undo();
+                if (event.ctrlKey) {
+                    if (event.shiftKey) {
+                        event.preventDefault();
+                        scheme.redo();
+                    } else {
+                        event.preventDefault();
+                        scheme.undo();
+                    }
+                }
                 break;
             default: break;
         }
