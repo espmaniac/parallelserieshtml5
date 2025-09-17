@@ -129,6 +129,35 @@ window.onload = function() {
 
   });
 
+
+  document.getElementById("equivalent").addEventListener("click", function(e) {
+    // Ensure both labels are attached to nodes
+    if (!scheme.labels[0].node || !scheme.labels[1].node) return;
+
+    // Remove previously auto-added graph labels (if any)
+    const deletePrevNodes = new MacroCommand();
+    for (let i = 2; i < scheme.labels.length; ++i) {
+      deletePrevNodes.addCommand(new DeleteElement(scheme.labels[i]));
+    }
+    if (scheme.labels.length > 2) {
+      scheme.execute(deletePrevNodes);
+    }
+
+    // Compute equivalent value numerically
+    const eqv = new Equivalent();
+    const eq = eqv.computeEquivalent(scheme.labels[0].node, scheme.labels[1].node);
+
+    document.getElementById("inp").scrollIntoView();
+
+    // Render the answer
+    const res = document.getElementById("result");
+    if (eq == null) {
+      res.innerText = "Answer: error";
+      return;
+    }
+    res.innerText = "Answer: " + eq;
+  });
+
   scheme.renderAll();
 }
 
