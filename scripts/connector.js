@@ -126,28 +126,29 @@ function junctionAt(x,y, jArr) {
 }
 
 function splitWireAtNode(wire, node) {
-  let w2 = new Wire();
-  let drawW2 = new DrawWire(w2);
+    let w2 = new Wire();
+    let drawW2 = new DrawWire(w2);
 
-  let n2 = wire.nodes[1];
+    let n2 = new Node();
+    n2.x = wire.nodes[1].x;
+    n2.y = wire.nodes[1].y;
 
+    w2.nodes[0].x = node.x;
+    w2.nodes[0].y = node.y;
+    w2.nodes[1].x = n2.x;
+    w2.nodes[1].y = n2.y;
 
-  w2.nodes[0].x = wire.nodes[1].x;
-  w2.nodes[0].y = wire.nodes[1].y;
+    wire.nodes[1].x = node.x;
+    wire.nodes[1].y = node.y;
 
-  wire.nodes[1].x = node.x;
-  wire.nodes[1].y = node.y;
+    deleteNode(wire.nodes[0]);
+    deleteNode(wire.nodes[1]);
 
-  w2.nodes[1].x = n2.x;
-  w2.nodes[1].y = n2.y;
+    connectNodes(wire.nodes[0], wire.nodes[1], "0");
 
-  deleteNode(wire.nodes[0]);
-  deleteNode(wire.nodes[1]);
+    scheme.execute(drawW2);
+    scheme.wires.push(w2);
 
-  connectNodes(wire.nodes[0], wire.nodes[1], "0");
-  connectNodes(wire.nodes[1], node, "0");
-
-  scheme.execute(drawW2);
-
-  scheme.wires.push(w2);
+    tryConnect(wire);
+    tryConnect(w2);
 }
