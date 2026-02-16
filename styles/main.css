@@ -141,9 +141,9 @@ body, html {
         height: auto;
         min-height: 2.5em;
         flex-wrap: wrap;
-        align-items: center;
-        padding-top: 0.25em;
-        padding-bottom: 0.25em;
+        align-items: flex-start;
+        padding-top: 0;
+        padding-bottom: 0;
     }
 
     #header::before {
@@ -151,10 +151,12 @@ body, html {
         color: #f0f0f0;
         font-family: sans-serif;
         font-weight: bold;
-        position: absolute;
-        left: 0.75em;
-        top: 50%;
-        transform: translateY(-50%);
+        width: 100%;
+        height: 2.5em;
+        display: flex;
+        align-items: center;
+        padding-left: 0.75em;
+        box-sizing: border-box;
         text-align: left;
     }
 
@@ -163,7 +165,7 @@ body, html {
         width: 2.25em;
         height: 2.25em;
         left: 50%;
-        top: 50%;
+        top: 1.25em;
         margin: 0;
     }
 
@@ -177,10 +179,6 @@ body, html {
         max-height: 0;
         overflow: hidden;
         transition: max-height 0.2s ease;
-    }
-
-    #left {
-        margin-top: 0.25em;
     }
 
     #header:hover #left,
