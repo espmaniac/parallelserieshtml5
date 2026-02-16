@@ -24,7 +24,9 @@ body.component-selecting {
     bottom: 0;
     left: 0;
     inset: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     background:
         linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
@@ -34,21 +36,28 @@ body.component-selecting {
     z-index: 999;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     text-align: center;
     font-family: "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif;
-    padding: 1.5em;
+    padding: 1em;
     box-sizing: border-box;
 }
 
 .chooseComponentContent {
     width: 100%;
     max-width: 58em;
+    max-height: calc(100vh - 2em);
+    max-height: calc(100dvh - 2em);
     border: 1px solid #3a3a3a;
     border-radius: 1em;
     background: linear-gradient(180deg, rgba(33, 33, 33, 0.95), rgba(20, 20, 20, 0.96));
     box-shadow: 0 18px 36px rgba(0, 0, 0, 0.45);
     padding: 1.75em;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    margin: auto;
 }
 
 #chooseComponent h1 {
@@ -79,12 +88,13 @@ body.component-selecting {
     width: calc(33.333% - 0.7em);
     min-width: 8em;
     margin: 0.35em;
+    min-height: 5.25em;
 }
 
 @supports (display: grid) {
     #components {
         display: grid;
-        grid-template-columns: repeat(3, minmax(8em, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
         gap: 1em;
     }
 
@@ -96,7 +106,7 @@ body.component-selecting {
 }
 
 .componentCard {
-    height: 11.5em;
+    height: 9.8em;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -223,7 +233,7 @@ body.component-selecting {
     padding-top: 0.9em;
     box-sizing: border-box;
     display: flex;
-    align-items: stretch;
+    align-items: center;
 }
 
 .chooseComponentOpenScheme .chooseComponentTextarea,
@@ -247,7 +257,7 @@ body.component-selecting {
     color: #f5f5f5;
     border: 1px solid #5f5f5f;
     min-height: 3.2em;
-    margin-top: 0.2em;
+    margin-top: 0;
     padding: 0.7em 0.85em;
     border-radius: 0.7em;
     outline: none;
@@ -275,7 +285,7 @@ body.component-selecting {
     color: #f2f2f2;
     border: 1px solid #616161;
     font-weight: 600;
-    margin-top: 0.25em;
+    margin-top: 0;
     justify-content: center;
     position: relative;
     isolation: isolate;
@@ -344,6 +354,7 @@ body.component-selecting {
 
     #components {
         gap: 0.6em;
+        grid-template-columns: repeat(3, minmax(7.5em, 1fr));
     }
 
     .componentCard {
@@ -382,14 +393,14 @@ body.component-selecting {
 
 @media (max-width: 800px) {
     #components {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(9.2em, 1fr));
     }
 
     .componentCard {
         width: 100%;
         min-width: 0;
         margin: 0 0 0.6em;
-        height: 9.4em;
+        height: 8.2em;
     }
 
     @supports (display: grid) {
@@ -419,9 +430,14 @@ body.component-selecting {
     }
 }
 
+@media (max-width: 560px) and (orientation: portrait) {
+    #components {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 360px) and (max-height: 568px) {
     #chooseComponent {
-        align-items: flex-start;
         padding: 0.6em;
     }
 
