@@ -156,11 +156,12 @@ var toolmgr = {
             distance < 30 &&
             ((touchTime - cursor.lastTouches["0"]) < 300)
         ) { // double tap
+            let touch = event.touches[0];
             canvas.dispatchEvent(new MouseEvent("contextmenu", {
                 bubbles: true,
                 cancelable: true,
-                clientX: pointerX,
-                clientY: pointerY
+                clientX: touch.clientX,
+                clientY: touch.clientY
             }));
         }
         
