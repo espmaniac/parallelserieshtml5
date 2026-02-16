@@ -181,12 +181,8 @@ body, html {
         transition: max-height 0.2s ease;
     }
 
-    #header:hover #left,
-    #header:hover #right,
-    #header:focus-within #left,
-    #header:focus-within #right,
-    #header:active #left,
-    #header:active #right {
+    #header.menu-open #left,
+    #header.menu-open #right {
         max-height: 16em;
     }
 

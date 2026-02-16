@@ -79,6 +79,8 @@ window.onload = function() {
 
   initTools();
 
+  initHeaderMenu();
+
   initModals();
   
   var btnClear = document.getElementById("clear");
@@ -204,6 +206,31 @@ function removeActive() {
     mainTools.children[i].classList.remove("active");
   }
 
+}
+
+function initHeaderMenu() {
+  let header = document.getElementById("header");
+
+  if (!header) return;
+
+  header.addEventListener("click", function(e) {
+    if (window.innerWidth > 768) return;
+
+    const clickedButton = e.target.closest("#left button, #right button");
+    if (clickedButton) {
+      header.classList.remove("menu-open");
+      return;
+    }
+
+    const clickedGithub = e.target.closest("#github");
+    if (clickedGithub) return;
+
+    header.classList.toggle("menu-open");
+  });
+
+  window.addEventListener("resize", function() {
+    if (window.innerWidth > 768) header.classList.remove("menu-open");
+  });
 }
 
 function initTools() {
