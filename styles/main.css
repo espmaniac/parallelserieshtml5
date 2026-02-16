@@ -233,7 +233,7 @@ body.component-selecting {
     padding-top: 0.9em;
     box-sizing: border-box;
     display: flex;
-    align-items: center;
+    align-items: stretch;
 }
 
 .chooseComponentOpenScheme .chooseComponentTextarea,
@@ -250,6 +250,7 @@ body.component-selecting {
 
 .chooseComponentOpenScheme #open {
     width: 20%;
+    min-height: 3.2em;
 }
 
 .chooseComponentOpenScheme .chooseComponentTextarea {
@@ -433,6 +434,22 @@ body.component-selecting {
 @media (max-width: 560px) and (orientation: portrait) {
     #components {
         grid-template-columns: 1fr;
+    }
+
+    .chooseComponentOpenScheme {
+        flex-direction: row;
+        align-items: stretch;
+        gap: 0.45em;
+    }
+
+    .chooseComponentOpenScheme .chooseComponentTextarea {
+        width: 74%;
+        margin: 0;
+    }
+
+    .chooseComponentOpenScheme #open {
+        width: 26%;
+        margin: 0;
     }
 }
 
