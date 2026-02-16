@@ -141,7 +141,7 @@ body, html {
         height: auto;
         min-height: 2.5em;
         flex-wrap: wrap;
-        align-items: flex-start;
+        align-items: center;
         padding-top: 0.25em;
         padding-bottom: 0.25em;
     }
@@ -151,9 +151,10 @@ body, html {
         color: #f0f0f0;
         font-family: sans-serif;
         font-weight: bold;
-        width: 100%;
-        margin-left: 0.75em;
-        margin-bottom: 0.25em;
+        position: absolute;
+        left: 0.75em;
+        top: 50%;
+        transform: translateY(-50%);
         text-align: left;
     }
 
@@ -162,7 +163,7 @@ body, html {
         width: 2.25em;
         height: 2.25em;
         left: 50%;
-        top: 1.5em;
+        top: 50%;
         margin: 0;
     }
 
