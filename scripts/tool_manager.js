@@ -301,6 +301,10 @@ var toolmgr = {
     onContextMenu(event) {
         event.preventDefault();
 
+        const canvasRect = canvas.getBoundingClientRect();
+        const canvasX = event.clientX - canvasRect.left;
+        const canvasY = event.clientY - canvasRect.top;
+
         context_menu.clear();
 
         context_menu.setPos(event.clientX, event.clientY);
@@ -377,7 +381,7 @@ var toolmgr = {
                 context_menu.main_menu.addItem(
                     new Item(`<p>Add</p> <img src='${choosenComponent.icon_src}' width="40" height="14"></img>`, 
                     function() {
-                        scheme.execute(new AddComponent(event.clientX, event.clientY));
+                        scheme.execute(new AddComponent(canvasX, canvasY));
                     }
                 ));
 
