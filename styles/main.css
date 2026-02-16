@@ -289,6 +289,64 @@ body.component-selecting {
     box-shadow: 0 6px 16px rgba(54, 164, 255, 0.22);
 }
 
+@media (max-height: 520px) and (orientation: landscape) {
+    #chooseComponent {
+        padding: 0.75em;
+    }
+
+    .chooseComponentContent {
+        width: min(72em, 100%);
+        padding: 0.85em;
+        border-radius: 0.75em;
+    }
+
+    #chooseComponent h1 {
+        font-size: 1.25em;
+    }
+
+    .chooseComponentHint {
+        margin: 0.35em auto 0.8em;
+        font-size: 0.85em;
+    }
+
+    #components {
+        gap: 0.6em;
+    }
+
+    .componentCard {
+        height: 6em;
+        gap: 0.35em;
+    }
+
+    .componentIcon {
+        width: 56%;
+        height: 2em;
+    }
+
+    .componentName {
+        font-size: 0.9em;
+    }
+
+    .componentShortcut {
+        font-size: 0.62em;
+        padding: 0.08em 0.55em;
+    }
+
+    .chooseComponentOpenScheme {
+        margin-top: 0.85em;
+        padding-top: 0.5em;
+    }
+
+    .chooseComponentOpenScheme .chooseComponentTextarea {
+        min-height: 2.35em;
+        padding: 0.45em 0.65em;
+    }
+
+    .chooseComponentOpenScheme #open {
+        margin-top: 0;
+    }
+}
+
 @media (max-width: 800px) {
     #components {
         grid-template-columns: 1fr;
