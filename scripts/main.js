@@ -169,31 +169,41 @@ function textAreaAutoHeight() {
 }
 
 function initComponents() {
+  const selectionClass = "component-selecting";
+  document.documentElement.classList.add(selectionClass);
+  document.body.classList.add(selectionClass);
+
   let chooseComponent = document.getElementById("chooseComponent");
+
+  function closeChooseComponent() {
+    document.documentElement.classList.remove(selectionClass);
+    document.body.classList.remove(selectionClass);
+    chooseComponent.remove();
+  }
   let chooseResistor = document.getElementById("resistor");
   let chooseCapactitor = document.getElementById("capacitor");
   let chooseInductor = document.getElementById("inductor");
 
   chooseResistor.addEventListener("click", function() {
     selectComponent("R");
-    chooseComponent.remove();
+    closeChooseComponent();
   });
 
   chooseCapactitor.addEventListener("click", function() {
     selectComponent("C");
-    chooseComponent.remove();
+    closeChooseComponent();
 
   });
   
   chooseInductor.addEventListener("click", function() {
     selectComponent("L");
-    chooseComponent.remove();
+    closeChooseComponent();
   });
 
   let open = document.getElementById("open");
   open.addEventListener("click", function() {
     scheme.deserialize(document.getElementById("openScheme").value);
-    chooseComponent.remove();
+    closeChooseComponent();
   });
 
 }
