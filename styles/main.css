@@ -7,11 +7,19 @@ body, html {
     overflow-y: auto;
 }
 
-#chooseComponent {
-    width: 100%;
+html.component-selecting,
+body.component-selecting {
+    overflow: hidden;
+    overscroll-behavior: none;
     height: 100%;
-    position: absolute;
+}
+
+#chooseComponent {
+    width: 100vw;
+    height: 100dvh;
+    position: fixed;
     inset: 0;
+    overflow: hidden;
     background:
         linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
