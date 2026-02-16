@@ -17,15 +17,30 @@
 <body>
 
     <div id="chooseComponent">
-        <h1>Choose a component</h1>
+        <div class="chooseComponentContent">
+        <h1>Select a Component</h1>
+        <p class="chooseComponentHint">Choose the default component type for your workspace.</p>
         <div id="components">
-            <button id="resistor" ></button>
-            <button id="capacitor"></button>
-            <button id="inductor"></button>
+            <button id="resistor" class="componentCard" aria-label="Select resistor">
+                <span class="componentIcon" aria-hidden="true"></span>
+                <span class="componentName">Resistor</span>
+                <span class="componentShortcut">R</span>
+            </button>
+            <button id="capacitor" class="componentCard" aria-label="Select capacitor">
+                <span class="componentIcon" aria-hidden="true"></span>
+                <span class="componentName">Capacitor</span>
+                <span class="componentShortcut">C</span>
+            </button>
+            <button id="inductor" class="componentCard" aria-label="Select inductor">
+                <span class="componentIcon" aria-hidden="true"></span>
+                <span class="componentName">Inductor</span>
+                <span class="componentShortcut">L</span>
+            </button>
         </div>
-        <div class="form" style="width: 80%; margin: 0 auto;">
+        <div class="form chooseComponentOpenScheme">
             <textarea name="" class="textarea" id="openScheme" cols="1" rows="1" placeholder="json"></textarea>
-            <button id="open">open</button>
+            <button id="open">Open</button>
+        </div>
         </div>
     </div>
     
