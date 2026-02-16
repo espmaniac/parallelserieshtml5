@@ -79,6 +79,7 @@ window.onload = function() {
 
   initTools();
 
+
   initModals();
   
   var btnClear = document.getElementById("clear");
