@@ -5,6 +5,7 @@ body, html {
     height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
+    background: #fafafa;
 }
 
 html.component-selecting,
@@ -12,6 +13,10 @@ body.component-selecting {
     overflow: hidden;
     overscroll-behavior: none;
     height: 100%;
+}
+
+#myCanvas {
+    background: #fafafa;
 }
 
 #chooseComponent {

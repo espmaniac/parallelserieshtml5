@@ -45,7 +45,7 @@ var scheme = {
         // infinite grid illusion
         ctx.save();
         ctx.beginPath();
-        ctx.strokeStyle = "#cecece";
+        ctx.strokeStyle = "#e6e6e6";
         ctx.lineWidth = 1;
       
         // draw vectical lines
