@@ -801,6 +801,7 @@ body.component-selecting {
     user-select: none;
     width: max-content;
     display: none;
+    opacity: 0.95;
 }
 
 #contextMenu ul {
@@ -838,31 +839,36 @@ body.component-selecting {
     padding: 5px;
     top: 0;
     width: 100%;
-    background-color: #000000;
+    background-color: #717171;
     color: #ffffff;
     font-family: sans-serif;
     font-weight: 400;
     font-size: 14px;
     text-align: center;
-    border: 1px solid red;
     box-sizing: border-box;
 }
 
+#contextMenu ul li:first-child {
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+#contextMenu ul li:last-child {
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+#contextMenu ul li:not(:first-child) {
+    border-top: 1px solid #8d8d8d;
+}
+
 #contextMenu li:hover {
-    color: #FFFF00;
+    background-color: #8d8d8d;
 }
 
-#contextMenu .selected {
-    color: #00aaff !important;
-}
-
-#contextMenu li:hover > img {
-    filter: brightness(0) saturate(100%) invert(80%) sepia(94%) saturate(752%) hue-rotate(354deg) brightness(105%) contrast(105%);
-}
 
 #contextMenu li:hover .dropDownMenu {
     display: flex;
-    color: #FFFF00;
 }
 
 #contextMenu li:hover > .subDropDownMenu {
