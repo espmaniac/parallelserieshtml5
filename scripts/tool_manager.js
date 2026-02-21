@@ -182,7 +182,7 @@ var toolmgr = {
             scheme.wires.push(wire);
             scheme.isDragging = true;
         }
-
+        scheme.renderAll();
     },
 
     onTouchMove(event) {
@@ -450,3 +450,4 @@ var toolmgr = {
 
 };   
   
+
