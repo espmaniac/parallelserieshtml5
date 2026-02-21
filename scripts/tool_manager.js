@@ -137,7 +137,6 @@ var toolmgr = {
 
         let touchTime = new Date().getTime();
         
-
         if (scheme.tool === "SELECT") {
 
             scheme.trySelectComponent(pointerX, pointerY);
@@ -150,20 +149,26 @@ var toolmgr = {
 
         }
 
+        let now = Date.now();
+
         if (
-            cursor.lastTouches &&
-            (event.touches.length < 2) && 
+            cursor.lastTapTime &&
+            (now - cursor.lastTapTime) < 300 &&
             distance < 30 &&
-            ((touchTime - cursor.lastTouches["0"]) < 300)
-        ) { // double tap
+            event.touches.length === 1
+        ) {
             let touch = event.touches[0];
+
             canvas.dispatchEvent(new MouseEvent("contextmenu", {
                 bubbles: true,
                 cancelable: true,
                 clientX: touch.clientX,
                 clientY: touch.clientY
             }));
+
         }
+
+        cursor.lastTapTime = now;
         
 
         scheme.panOffX = pointerX;
@@ -177,13 +182,6 @@ var toolmgr = {
             scheme.wires.push(wire);
             scheme.isDragging = true;
         }
-
-        let timeTouches = {};
-
-        for (let i = 0; i < event.touches.length; ++i) {
-            timeTouches[event.touches[i].identifier] = touchTime;
-        }
-        cursor.lastTouches = timeTouches;
 
     },
 
