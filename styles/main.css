@@ -901,7 +901,7 @@ body.component-selecting {
     border-bottom-right-radius: 6px;
 }
 
-#contextMenu li.hasSubMenu:hover {
+#contextMenu[data-submenu-direction="right"] li.hasSubMenu:hover {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
 }
