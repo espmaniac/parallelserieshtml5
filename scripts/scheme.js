@@ -9,8 +9,8 @@ const MAX_SCALE = 3;
 
 var scheme = {
     zoom: 1.0,
-    offsetX: -canvas.width / 2,
-    offsetY: -canvas.height / 2,
+    offsetX: -getCanvasWidth() / 2,
+    offsetY: -getCanvasHeight() / 2,
 
     tool: "SELECT", // "SELECT", "WIRE"
 
@@ -36,8 +36,8 @@ var scheme = {
         let gridSize = cellSize * this.zoom;
 
         // Calculate the number of cells that fit in the visible area
-        const numCellsX = Math.ceil(canvas.width / gridSize);
-        const numCellsY = Math.ceil(canvas.height / gridSize);
+        const numCellsX = Math.ceil(getCanvasWidth() / gridSize);
+        const numCellsY = Math.ceil(getCanvasHeight() / gridSize);
       
         let gridOffsetX = this.offsetX * this.zoom % gridSize;
         let gridOffsetY = this.offsetY * this.zoom % gridSize;
@@ -52,14 +52,14 @@ var scheme = {
         for (let i = 0; i <= numCellsX; i++) {
           let x = gridOffsetX + i * gridSize;
           ctx.moveTo(x, 0);
-          ctx.lineTo(x, canvas.height);
+          ctx.lineTo(x, getCanvasHeight());
         }
       
         // draw horizontal lines
         for (let i = 0; i <= numCellsY; i++) {
           let y = gridOffsetY + i * gridSize;
           ctx.moveTo(0, y);
-          ctx.lineTo(canvas.width, y);
+          ctx.lineTo(getCanvasWidth(), y);
         }
       
         ctx.stroke();
@@ -69,8 +69,8 @@ var scheme = {
 
 
     renderAll() {
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0,0, canvas.width, canvas.height);
+        ctx.setTransform(getCanvasPixelRatio(), 0, 0, getCanvasPixelRatio(), 0, 0);
+        ctx.clearRect(0, 0, getCanvasWidth(), getCanvasHeight());
         this._drawGrid(); 
         
         ctx.scale(this.zoom, this.zoom);

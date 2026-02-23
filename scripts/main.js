@@ -1,7 +1,39 @@
 const canvas = document.getElementById('myCanvas');
 const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+
+const canvasMetrics = {
+  width: 0,
+  height: 0,
+  pixelRatio: 1
+};
+
+function getCanvasWidth() {
+  return canvasMetrics.width;
+}
+
+function getCanvasHeight() {
+  return canvasMetrics.height;
+}
+
+function getCanvasPixelRatio() {
+  return canvasMetrics.pixelRatio;
+}
+
+function resizeCanvas() {
+  canvasMetrics.width = window.innerWidth;
+  canvasMetrics.height = window.innerHeight;
+  canvasMetrics.pixelRatio = Math.max(1, window.devicePixelRatio || 1);
+
+  canvas.style.width = canvasMetrics.width + "px";
+  canvas.style.height = canvasMetrics.height + "px";
+
+  canvas.width = Math.round(canvasMetrics.width * canvasMetrics.pixelRatio);
+  canvas.height = Math.round(canvasMetrics.height * canvasMetrics.pixelRatio);
+
+  ctx.setTransform(canvasMetrics.pixelRatio, 0, 0, canvasMetrics.pixelRatio, 0, 0);
+}
+
+resizeCanvas();
 
 
 var choosenComponent = {name: "", shortName: "", defaultValue: "", icon_src: ""};
@@ -43,13 +75,12 @@ window.onload = function() {
 
 
   window.onresize = function() {
-    let windowDifX = (window.innerWidth - canvas.width) / 2;
-    let windowDifY = (window.innerHeight - canvas.height) / 2;
+    let windowDifX = (window.innerWidth - getCanvasWidth()) / 2;
+    let windowDifY = (window.innerHeight - getCanvasHeight()) / 2;
     scheme.offsetX += windowDifX / scheme.zoom;
     scheme.offsetY += windowDifY / scheme.zoom;
   
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    resizeCanvas();
 
     
     if (!context_menu.hidden()) {
