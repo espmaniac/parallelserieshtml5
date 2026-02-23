@@ -911,16 +911,26 @@ body.component-selecting {
     border-bottom-left-radius: 0;
 }
 
-#contextMenu li.hasSubMenu:hover > .dropDownMenu,
-#contextMenu li.hasSubMenu:hover > .subDropDownMenu {
+#contextMenu li.hasSubMenu:hover > .dropDownMenu > li:first-child,
+#contextMenu li.hasSubMenu:hover > .subDropDownMenu > li:first-child {
     border-top-left-radius: 0;
+}
+
+#contextMenu li.hasSubMenu:hover > .dropDownMenu > li:last-child,
+#contextMenu li.hasSubMenu:hover > .subDropDownMenu > li:last-child {
     border-bottom-left-radius: 0;
 }
 
-#contextMenu[data-submenu-direction="left"] li.hasSubMenu:hover > .dropDownMenu,
-#contextMenu[data-submenu-direction="left"] li.hasSubMenu:hover > .subDropDownMenu {
+#contextMenu[data-submenu-direction="left"] li.hasSubMenu:hover > .dropDownMenu > li:first-child,
+#contextMenu[data-submenu-direction="left"] li.hasSubMenu:hover > .subDropDownMenu > li:first-child {
     border-top-right-radius: 0;
+    border-top-left-radius: 6px;
+}
+
+#contextMenu[data-submenu-direction="left"] li.hasSubMenu:hover > .dropDownMenu > li:last-child,
+#contextMenu[data-submenu-direction="left"] li.hasSubMenu:hover > .subDropDownMenu > li:last-child {
     border-bottom-right-radius: 0;
+    border-bottom-left-radius: 6px;
 }
 
 #contextMenu ul li:not(:first-child) {
