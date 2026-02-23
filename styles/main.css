@@ -1017,6 +1017,7 @@ body.component-selecting {
 
     cursor: pointer;
     transition: all 0.2s ease;
+    text-transform: uppercase;
 }
 
 .modalHeader .close:hover {
