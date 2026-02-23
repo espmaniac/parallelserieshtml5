@@ -98,7 +98,7 @@ var context_menu = {
         this.element.style.top = y + "px";
         this.element.style.right = "auto";
 
-        if (x < (canvas.width / 2)) {
+        if (x < (getCanvasWidth() / 2)) {
             this.element.style.setProperty('--subMenuOffsetLeft', "100%");
             this.element.style.setProperty('--subMenuOffsetRight', "auto");
         }
