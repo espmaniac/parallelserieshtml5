@@ -1000,12 +1000,16 @@ body.component-selecting {
 
 .modalHeader .close {
     margin: auto 0;
-    padding: 0 0.8em;
-    height: 78%;
+    width: 2em;
+    height: 2em;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 6px;
+    border-radius: 999px;
 
     color: rgba(255,255,255,0.85);
     font-weight: 500;
