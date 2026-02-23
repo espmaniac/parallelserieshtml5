@@ -909,22 +909,11 @@ body.component-selecting {
 #contextMenu[data-submenu-direction="left"] li.hasSubMenu:hover {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
-    border-top-right-radius: 6px;
-    border-bottom-right-radius: 6px;
-}
-
-#contextMenu .dropDownMenu,
-#contextMenu .subDropDownMenu {
-    overflow: hidden;
 }
 
 #contextMenu li.hasSubMenu:hover > .dropDownMenu,
 #contextMenu li.hasSubMenu:hover > .subDropDownMenu {
     border-top-left-radius: 0;
-}
-
-#contextMenu[data-submenu-direction="right"] li.hasSubMenu:hover > .dropDownMenu,
-#contextMenu[data-submenu-direction="right"] li.hasSubMenu:hover > .subDropDownMenu {
     border-bottom-left-radius: 0;
 }
 
