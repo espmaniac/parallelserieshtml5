@@ -3,9 +3,13 @@ body, html {
     margin: 0;
     width: 100%;
     height: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden;
     background: #fafafa;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
 }
 
 html.component-selecting,
@@ -16,6 +20,9 @@ body.component-selecting {
 }
 
 #myCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
     background: #fafafa;
 }
 
@@ -680,9 +687,40 @@ body.component-selecting {
     }
 }
 
+
+@media (max-width: 768px) {
+    #calcForm {
+        padding: 0.5em;
+        gap: 0.45em;
+    }
+
+    #inp {
+        font-size: 16px;
+        min-height: 2.6em;
+        max-height: 26vh;
+    }
+
+    #calc {
+        min-width: 3.2em;
+        font-size: 16px;
+        justify-content: center;
+    }
+
+    #answer {
+        padding: 0.45em 0.7em calc(0.55em + env(safe-area-inset-bottom));
+    }
+
+    #result {
+        font-size: 0.95em;
+    }
+}
+
 #scheme {
     position: relative;
     width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
 }
 #tools {
     position: absolute;
@@ -730,6 +768,20 @@ body.component-selecting {
     pointer-events: none;
     vertical-align: middle;
     margin: 0;
+}
+
+
+#calcForm {
+    flex-shrink: 0;
+    padding: 0.4em;
+    box-sizing: border-box;
+    background: #111111;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#inp {
+    min-height: 2.4em;
+    max-height: 22vh;
 }
 
 .form {
@@ -806,30 +858,34 @@ body.component-selecting {
 }
 
 #answer {
-    margin-top: 2px;
-    padding: 2px 16px;
+    flex-shrink: 0;
+    margin-top: 0;
+    padding: 0.4em 0.9em calc(0.5em + env(safe-area-inset-bottom));
 
     width: 100%;
     box-sizing: border-box;
 
     font-family: "SF Pro Display", "Inter", sans-serif;
-    font-size: 0.875em;
+    font-size: 0.9em;
     font-weight: 400;
     letter-spacing: 0.02em;
     text-align: left;
-    color: #c1c1c1;
+    color: #d4d4d4;
 
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.88);
 
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
 
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.28);
 
     transition: all 0.25s ease;
+}
+
+#result {
+    margin: 0;
+    font-size: 1.02em;
+    font-weight: 500;
 }
 
 

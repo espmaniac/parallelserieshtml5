@@ -20,8 +20,11 @@ function getCanvasPixelRatio() {
 }
 
 function resizeCanvas() {
-  canvasMetrics.width = window.innerWidth;
-  canvasMetrics.height = window.innerHeight;
+  const schemeElement = document.getElementById('scheme');
+  const schemeRect = schemeElement.getBoundingClientRect();
+
+  canvasMetrics.width = Math.max(1, Math.floor(schemeRect.width));
+  canvasMetrics.height = Math.max(1, Math.floor(schemeRect.height));
   canvasMetrics.pixelRatio = Math.max(1, window.devicePixelRatio || 1);
 
   canvas.style.width = canvasMetrics.width + "px";
