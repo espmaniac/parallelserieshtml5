@@ -998,28 +998,35 @@ body.component-selecting {
     margin:auto auto;
 }
 
-.modal .close {
-    height: 100%;
-    padding: 10px;
-    border-radius: 999px;
+.modalHeader .close {
     margin: auto 0;
-    display: block;
+    width: 2em;
+    height: 2em;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+
+    color: rgba(255,255,255,0.85);
+    font-weight: 500;
     font-family: sans-serif;
-    background: linear-gradient(180deg, #f0f0f0, #cfcfcf);
-    color: #131313; 
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    font-family: sans-serif;
-    font-weight: 700;
+
     cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.modal .close:hover {
-    background: linear-gradient(180deg, #ffffff, #dcdcdc);
-    color: #000;
+.modalHeader .close:hover {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.18);
+    color: #fff;
 }
 
-.modal .close:active {
-    background: linear-gradient(180deg, #d8d8d8, #bdbdbd);
+.modalHeader .close:active {
+    background: rgba(255,255,255,0.18);
 }
 
 #saveText, #openScheme {
