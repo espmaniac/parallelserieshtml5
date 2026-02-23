@@ -26,6 +26,7 @@ class Menu {
             item.update();
 
             let li = document.createElement("li");
+            li.classList.add("hasSubMenu");
             li.innerHTML = item.text;
             li.appendChild(item.element);
 
@@ -101,10 +102,12 @@ var context_menu = {
         if (x < (getCanvasWidth() / 2)) {
             this.element.style.setProperty('--subMenuOffsetLeft', "100%");
             this.element.style.setProperty('--subMenuOffsetRight', "auto");
+            this.element.dataset.submenuDirection = "right";
         }
         else {
             this.element.style.setProperty('--subMenuOffsetLeft', "auto");
             this.element.style.setProperty('--subMenuOffsetRight', "100%");
+            this.element.dataset.submenuDirection = "left";
         }
         
     },
