@@ -32,12 +32,12 @@ body.component-selecting {
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    background-color: #212121;
+    background-color: #f2f2f2;
     background-image:
-        linear-gradient(rgba(129, 129, 129, 0.18) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(129, 129, 129, 0.18) 1px, transparent 1px);
-    background-size: 32px 32px;
-    color: #f2f2f2;
+        linear-gradient(rgba(129, 129, 129, 0.28) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(129, 129, 129, 0.28) 1px, transparent 1px);
+    background-size: 30px 30px;
+    color: #212121;
     z-index: 999;
     display: flex;
     justify-content: center;
@@ -244,9 +244,9 @@ body.component-selecting {
 }
 
 .chooseComponentOpenScheme #open {
-    background: #212121;
+    background: #818181;
     color: #f2f2f2;
-    border: 1px solid #212121;
+    border: 1px solid #818181;
     font-weight: 600;
     margin-top: 0;
     justify-content: center;
@@ -256,8 +256,8 @@ body.component-selecting {
 .chooseComponentOpenScheme #open:hover,
 .chooseComponentOpenScheme #open:focus-visible {
     border-color: #212121;
-    background: #3a3a3a;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
+    background: #5f5f5f;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.18);
     color: #f2f2f2;
 }
 
@@ -267,8 +267,8 @@ body.component-selecting {
 
 .chooseComponentOpenScheme #open:active {
     color: #f2f2f2;
-    background: #000000;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.24);
+    background: #212121;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
