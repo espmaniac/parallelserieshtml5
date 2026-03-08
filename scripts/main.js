@@ -209,7 +209,10 @@ function initComponents() {
   function closeChooseComponent() {
     document.documentElement.classList.remove(selectionClass);
     document.body.classList.remove(selectionClass);
-    chooseComponent.remove();
+
+    if (chooseComponent && chooseComponent.parentNode) {
+      chooseComponent.parentNode.removeChild(chooseComponent);
+    }
   }
   let chooseResistor = document.getElementById("resistor");
   let chooseCapactitor = document.getElementById("capacitor");
