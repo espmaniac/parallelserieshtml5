@@ -218,24 +218,47 @@ function initComponents() {
   let chooseCapactitor = document.getElementById("capacitor");
   let chooseInductor = document.getElementById("inductor");
 
-  chooseResistor.addEventListener("click", function() {
+  function bindLegacyTap(element, action) {
+    if (!element) {
+      return;
+    }
+
+    let touchHandled = false;
+
+    element.addEventListener("touchend", function(e) {
+      touchHandled = true;
+      e.preventDefault();
+      action();
+      setTimeout(function() {
+        touchHandled = false;
+      }, 400);
+    });
+
+    element.addEventListener("click", function() {
+      if (touchHandled) {
+        return;
+      }
+      action();
+    });
+  }
+
+  bindLegacyTap(chooseResistor, function() {
     selectComponent("R");
     closeChooseComponent();
   });
 
-  chooseCapactitor.addEventListener("click", function() {
+  bindLegacyTap(chooseCapactitor, function() {
     selectComponent("C");
     closeChooseComponent();
-
   });
   
-  chooseInductor.addEventListener("click", function() {
+  bindLegacyTap(chooseInductor, function() {
     selectComponent("L");
     closeChooseComponent();
   });
 
   let open = document.getElementById("open");
-  open.addEventListener("click", function() {
+  bindLegacyTap(open, function() {
     scheme.deserialize(document.getElementById("openScheme").value);
     closeChooseComponent();
   });
