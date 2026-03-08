@@ -137,21 +137,18 @@ body.component-selecting {
     width: 68%;
     height: 3.25em;
     background: url("../icons/res_eu.svg") center center / contain no-repeat;
-    background-image: var(--component-icon);
 }
 
 @supports ((-webkit-mask-image: url("")) or (mask-image: url(""))) {
     .componentIcon {
         background: #f0f0f0;
-    -webkit-mask-image: var(--component-icon);
-    mask-image: var(--component-icon);
-    -webkit-mask-position: center;
-    mask-position: center;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-size: contain;
-    mask-size: contain;
-    transition: background 0.2s ease;
+        -webkit-mask-position: center;
+        mask-position: center;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        transition: background 0.2s ease;
     }
 }
 
@@ -216,15 +213,21 @@ body.component-selecting {
 }
 
 #resistor .componentIcon {
-    --component-icon: url("../icons/res_eu.svg");
+    background-image: url("../icons/res_eu.svg");
+    -webkit-mask-image: url("../icons/res_eu.svg");
+    mask-image: url("../icons/res_eu.svg");
 }
 
 #capacitor .componentIcon {
-    --component-icon: url("../icons/capacitor.svg");
+    background-image: url("../icons/capacitor.svg");
+    -webkit-mask-image: url("../icons/capacitor.svg");
+    mask-image: url("../icons/capacitor.svg");
 }
 
 #inductor .componentIcon {
-    --component-icon: url("../icons/inductor.svg");
+    background-image: url("../icons/inductor.svg");
+    -webkit-mask-image: url("../icons/inductor.svg");
+    mask-image: url("../icons/inductor.svg");
 }
 
 .componentCard:hover .componentIcon,
