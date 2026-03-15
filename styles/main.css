@@ -679,14 +679,15 @@ body.component-selecting {
 }
 
 #expression {
-    width: 96%;
-    margin: 6px auto;
-    position: absolute;
-    bottom: 0;
+    position: fixed;
+    left: max(6px, env(safe-area-inset-left));
+    right: max(6px, env(safe-area-inset-right));
+    bottom: max(6px, env(safe-area-inset-bottom));
+    width: auto;
+    margin: 0;
     background: rgba(233, 233, 233, 0.35);
-    transform: translateX(-50%);
-    left: 50%;
     padding: 12px;
+    box-sizing: border-box;
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
     border-radius: 32px;
