@@ -17,6 +17,7 @@ body.component-selecting {
 
 #myCanvas {
     background: #fafafa;
+    display: block;
 }
 
 #chooseComponent {
