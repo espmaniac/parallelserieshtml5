@@ -20,8 +20,10 @@ function getCanvasPixelRatio() {
 }
 
 function resizeCanvas() {
+  const schemeContainer = document.getElementById("scheme");
+
   canvasMetrics.width = window.innerWidth;
-  canvasMetrics.height = window.innerHeight;
+  canvasMetrics.height = schemeContainer ? Math.max(1, schemeContainer.clientHeight) : window.innerHeight;
   canvasMetrics.pixelRatio = Math.max(1, window.devicePixelRatio || 1);
 
   canvas.style.width = canvasMetrics.width + "px";
@@ -31,6 +33,15 @@ function resizeCanvas() {
   canvas.height = Math.round(canvasMetrics.height * canvasMetrics.pixelRatio);
 
   ctx.setTransform(canvasMetrics.pixelRatio, 0, 0, canvasMetrics.pixelRatio, 0, 0);
+}
+
+function updateLayoutHeights() {
+  const expression = document.getElementById("expression");
+  const root = document.documentElement;
+
+  if (expression && root) {
+    root.style.setProperty("--expression-height", expression.offsetHeight + "px");
+  }
 }
 
 resizeCanvas();
@@ -48,6 +59,8 @@ var cursor =  {
 
 
 window.onload = function() {
+  updateLayoutHeights();
+  resizeCanvas();
   context_menu.element = document.getElementById("contextMenu");
   context_menu.main_menu.element = document.getElementById("ctxUL");
   
@@ -80,6 +93,7 @@ window.onload = function() {
     scheme.offsetX += windowDifX / scheme.zoom;
     scheme.offsetY += windowDifY / scheme.zoom;
   
+    updateLayoutHeights();
     resizeCanvas();
 
     
@@ -193,10 +207,15 @@ window.onload = function() {
   scheme.renderAll();
 }
 
-function textAreaAutoHeight() {     
+function textAreaAutoHeight() {
   const input = document.getElementById("inp");
-    if (parseInt(input.offsetHeight) <= parseInt(input.scrollHeight))
-        input.style.height = (input.scrollHeight) + "px"; 
+
+  input.style.height = "auto";
+  input.style.height = input.scrollHeight + "px";
+
+  updateLayoutHeights();
+  resizeCanvas();
+  scheme.renderAll();
 }
 
 function initComponents() {
