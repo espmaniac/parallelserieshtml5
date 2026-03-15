@@ -4,7 +4,7 @@ body, html {
     width: 100%;
     height: 100%;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: hidden;
     background: #fafafa;
 }
 
@@ -678,17 +678,30 @@ body.component-selecting {
 }
 
 #expression {
-    width: 98%;
-    max-width: 98%;
+    width: 96%;
     margin: 6px auto;
+    position: absolute;
+    bottom: 0;
+    background: rgba(233, 233, 233, 0.35);
+    transform: translateX(-50%);
+    left: 50%;
+    padding: 12px;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border-radius: 32px;
 }
 
 #expression label {
     font-family: Arial, Helvetica, sans-serif;
-    font-weight: 300;
+    font-weight: 600;
+    margin-bottom: 2px;
     font-size: 14px;
-    color: #888;
+    color: #666;
     margin-left: 6px;
+}
+
+#expression .form {
+    margin-top: 8px;
 }
 
 #saveScheme {
@@ -705,10 +718,10 @@ body.component-selecting {
 }
 
 #inp {
-    border: 1px solid rgba(255,255,255,0.12) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
     padding-right: 4px;
     padding-left: 8px;
-    background: #e6e6e6 !important;
+    background: rgba(245, 245, 245, 0.1) !important;
     color: #313131;
     font-size: 18px !important;
     min-height: 40px;
@@ -749,14 +762,18 @@ body.component-selecting {
 }
 
 #calc:hover, #saveFileBtn:hover, #open:hover {
-    background: linear-gradient(180deg, #303036, #262629);
+    background: linear-gradient(180deg, #303036, #262629) !important;
     cursor: pointer;
     border-color: #3a3a40;
 }
 
 #calc:active, #saveFileBtn:active, #open:active {
-    background: #1a1a1d;
+    background: #1a1a1d !important;
     cursor: pointer;
+}
+
+#expression #calc {
+    background: rgba(0,0,0,0.75);
 }
 
 #answer {
@@ -773,10 +790,7 @@ body.component-selecting {
     text-align: left;
     color: #555;
 
-    background: rgb(233 233 233 / 85%);
-
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(200,200,200,0.2);
 
     border-radius: 32px;
 
