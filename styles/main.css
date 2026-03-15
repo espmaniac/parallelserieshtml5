@@ -691,7 +691,7 @@ body.component-selecting {
     right: auto;
     bottom: auto;
     width: calc(100% - max(12px, env(safe-area-inset-left)) - max(12px, env(safe-area-inset-right)));
-    margin: calc(2.6em + 10px) auto 8px;
+    margin: 8px auto max(8px, env(safe-area-inset-bottom));
     background: rgba(233, 233, 233, 0.35);
     padding: 12px;
     box-sizing: border-box;
