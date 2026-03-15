@@ -456,15 +456,15 @@ body.component-selecting {
     height: 2.6em;
     min-height: 2.6em;
 
-    position: relative;
+    position: absolute;
+    top: 0;
     z-index: 999;
 
     display: flex;
     justify-content: space-between;
     align-items: center;
 
-    background: #1f1f1f;
-
+    background: rgba(0,0,0,0.9);
 
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 
@@ -623,7 +623,7 @@ body.component-selecting {
     width: auto;
     height: auto;
     right: 1em;
-    top: 2em;
+    top: 4em;
     display: flex;
     flex-direction: column;
 
