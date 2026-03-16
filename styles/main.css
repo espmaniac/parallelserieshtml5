@@ -947,21 +947,29 @@ body.component-selecting {
     width: 100%;
     height: 100%;
     overflow: auto;
-    background: rgba(0, 0, 0, 0.7);
+
+    background: rgba(6, 6, 8, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
-.modalContent{
-    background: linear-gradient(180deg, rgba(42, 42, 42, 0.9), rgba(16, 16, 16, 0.92));
-    margin: auto auto;
-    height: auto;
-    width: 100%;
+.modalDialog {
     position: relative;
+    top: 50%;
+    margin: 0 auto;
+    width: min(92vw, 620px);
+    min-height: min(62vh, 500px);
+    padding: 14px;
     box-sizing: border-box;
-    display: block;
-    border-radius: 0 0 16px 16px;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-top: none;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+    transform: translateY(-50%);
+
+    background: rgba(20, 20, 20, 0.34);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 32px;
+    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.42);
+
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .modalHeader {
@@ -969,37 +977,53 @@ body.component-selecting {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: 10px;
+    padding: 10px 12px;
     width: 100%;
     box-sizing: border-box;
     margin: 0 auto;
-    background: rgba(28, 28, 28, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    position: relative;
+
+    background: rgba(30, 30, 30, 0.38);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-bottom: none;
-    border-radius: 16px 16px 0 0;
-    backdrop-filter: blur(16px) saturate(130%);
-    -webkit-backdrop-filter: blur(16px) saturate(130%);
+    border-radius: 22px 22px 0 0;
+
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
 }
 
-.modalDialog {
+.modalContent {
+    background: rgba(18, 18, 18, 0.32);
+    margin: auto;
+    min-height: calc(min(62vh, 500px) - 58px);
+    width: 100%;
     position: relative;
-    top: 50%;
-    margin: 0 auto;
-    background: transparent;
-    width: 80%;
-    padding: 0;
-    transform: translateY(-50%);
+    box-sizing: border-box;
+    display: flex;
+    align-items: stretch;
+    border-radius: 0 0 22px 22px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: none;
+    padding: 4px;
+
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
 }
 
 .modalHeader h3 {
     font-family: "SF Pro Display", "Inter", sans-serif;
-    color: #f2f2f2;
+    color: rgba(240, 240, 240, 0.92);
     letter-spacing: 0.03em;
-    margin:auto auto;
+    margin: 0;
+    width: 100%;
+    text-align: center;
 }
 
 .modalHeader .close {
-    margin: auto 0;
+    margin: 0;
+    position: absolute;
+    right: 12px;
+    top: 50%;
     width: 2em;
     height: 2em;
     padding: 0;
@@ -1007,27 +1031,84 @@ body.component-selecting {
     align-items: center;
     justify-content: center;
 
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(0, 0, 0, 0.32);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 999px;
 
-    color: rgba(255,255,255,0.85);
+    color: rgba(255, 255, 255, 0.86);
     font-weight: 500;
     font-family: sans-serif;
 
     cursor: pointer;
     transition: all 0.2s ease;
     text-transform: uppercase;
+    transform: translateY(-50%);
 }
 
 .modalHeader .close:hover {
-    background: rgba(255,255,255,0.12);
-    border-color: rgba(255,255,255,0.18);
+    background: rgba(0, 0, 0, 0.52);
+    border-color: rgba(255, 255, 255, 0.24);
     color: #fff;
 }
 
 .modalHeader .close:active {
-    background: rgba(255,255,255,0.18);
+    background: rgba(0, 0, 0, 0.66);
+}
+
+.modalDialog .form,
+.modalDialog .textarea,
+.modalDialog #saveFileBtn {
+    background-color: transparent;
+}
+
+.modalDialog .form {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    display: flex;
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 0;
+}
+
+.modalDialog .textarea {
+    background: rgba(10, 10, 10, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(245, 245, 245, 0.92);
+    border-radius: 8px 0 0 8px;
+    height: 100%;
+    flex: 1;
+    resize: none;
+
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.modalDialog #saveFileBtn {
+    background: rgba(12, 12, 12, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-left: none;
+    color: rgba(245, 245, 245, 0.92);
+    border-radius: 0 8px 8px 0;
+    min-width: 88px;
+    height: 100%;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px;
+
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.modalDialog #saveFileBtn:hover {
+    background: rgba(18, 18, 18, 0.62) !important;
+    border-color: rgba(255, 255, 255, 0.24);
+}
+
+.modalDialog #saveFileBtn:active {
+    background: rgba(0, 0, 0, 0.72) !important;
 }
 
 #saveText, #openScheme {
