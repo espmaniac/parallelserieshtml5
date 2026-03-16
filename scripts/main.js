@@ -19,6 +19,18 @@ function getCanvasPixelRatio() {
   return canvasMetrics.pixelRatio;
 }
 
+function updateExpressionSpace() {
+  const expression = document.getElementById("expression");
+
+  if (!expression) return;
+
+  const expressionStyles = window.getComputedStyle(expression);
+  const marginBottom = parseFloat(expressionStyles.marginBottom) || 0;
+  const expressionSpace = Math.ceil(expression.offsetHeight + marginBottom + 8);
+
+  document.documentElement.style.setProperty("--expression-space", expressionSpace + "px");
+}
+
 function resizeCanvas() {
   const schemeContainer = document.getElementById("scheme");
 
@@ -50,6 +62,7 @@ var cursor =  {
 
 
 window.onload = function() {
+  updateExpressionSpace();
   resizeCanvas();
   context_menu.element = document.getElementById("contextMenu");
   context_menu.main_menu.element = document.getElementById("ctxUL");
@@ -83,6 +96,7 @@ window.onload = function() {
     scheme.offsetX += windowDifX / scheme.zoom;
     scheme.offsetY += windowDifY / scheme.zoom;
   
+    updateExpressionSpace();
     resizeCanvas();
 
     
@@ -202,6 +216,7 @@ function textAreaAutoHeight() {
   input.style.height = "auto";
   input.style.height = input.scrollHeight + "px";
 
+  updateExpressionSpace();
   resizeCanvas();
   scheme.renderAll();
 }

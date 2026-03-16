@@ -1,5 +1,6 @@
 :root {
     --header-height: 2.6em;
+    --expression-space: 120px;
 }
 
 body, html {
@@ -624,6 +625,8 @@ body.component-selecting {
     position: relative;
     width: 100%;
     min-height: calc(100vh - var(--header-height) - 8px);
+    padding-bottom: var(--expression-space);
+    box-sizing: border-box;
 }
 #tools {
     position: absolute;
@@ -685,12 +688,12 @@ body.component-selecting {
 }
 
 #expression {
-    position: relative;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    width: calc(100% - max(12px, env(safe-area-inset-left)) - max(12px, env(safe-area-inset-right)));
-    margin: 8px auto max(8px, env(safe-area-inset-bottom));
+    position: absolute;
+    left: max(6px, env(safe-area-inset-left));
+    right: max(6px, env(safe-area-inset-right));
+    bottom: 0;
+    width: auto;
+    margin: 0 0 max(8px, env(safe-area-inset-bottom));
     background: rgba(233, 233, 233, 0.35);
     padding: 12px;
     box-sizing: border-box;
