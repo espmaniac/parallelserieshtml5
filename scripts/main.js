@@ -203,8 +203,10 @@ window.onload = function() {
 
 function textAreaAutoHeight() {
   const input = document.getElementById("inp");
-  input.style.height = "auto";
-  input.style.height = input.scrollHeight + "px";
+
+  if (input.scrollHeight > input.offsetHeight) {
+    input.style.height = input.scrollHeight + "px";
+  }
 }
 
 function syncExpressionHeight() {
@@ -212,8 +214,9 @@ function syncExpressionHeight() {
 
   textAreaAutoHeight();
 
-  expression.style.height = "auto";
-  expression.style.height = expression.scrollHeight + "px";
+  if (expression.scrollHeight > expression.offsetHeight) {
+    expression.style.height = expression.scrollHeight + "px";
+  }
 }
 
 function initComponents() {
