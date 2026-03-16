@@ -1,6 +1,5 @@
 :root {
     --header-height: 2.6em;
-    --expression-height: 120px;
 }
 
 body, html {
@@ -624,7 +623,7 @@ body.component-selecting {
 #scheme {
     position: relative;
     width: 100%;
-    min-height: calc(100vh - var(--header-height) - var(--expression-height) - 16px);
+    min-height: calc(100vh - var(--header-height) - 8px);
 }
 #tools {
     position: absolute;

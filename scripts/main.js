@@ -35,15 +35,6 @@ function resizeCanvas() {
   ctx.setTransform(canvasMetrics.pixelRatio, 0, 0, canvasMetrics.pixelRatio, 0, 0);
 }
 
-function updateLayoutHeights() {
-  const expression = document.getElementById("expression");
-  const root = document.documentElement;
-
-  if (expression && root) {
-    root.style.setProperty("--expression-height", expression.offsetHeight + "px");
-  }
-}
-
 resizeCanvas();
 
 
@@ -59,7 +50,6 @@ var cursor =  {
 
 
 window.onload = function() {
-  updateLayoutHeights();
   resizeCanvas();
   context_menu.element = document.getElementById("contextMenu");
   context_menu.main_menu.element = document.getElementById("ctxUL");
@@ -93,7 +83,6 @@ window.onload = function() {
     scheme.offsetX += windowDifX / scheme.zoom;
     scheme.offsetY += windowDifY / scheme.zoom;
   
-    updateLayoutHeights();
     resizeCanvas();
 
     
@@ -213,7 +202,6 @@ function textAreaAutoHeight() {
   input.style.height = "auto";
   input.style.height = input.scrollHeight + "px";
 
-  updateLayoutHeights();
   resizeCanvas();
   scheme.renderAll();
 }
