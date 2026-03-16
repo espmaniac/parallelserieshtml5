@@ -100,11 +100,19 @@ window.onload = function() {
 
   canvas.addEventListener("contextmenu", toolmgr.onContextMenu);
   
-  let input = document.getElementById("inp");
+  const input = document.getElementById("inp");
 
-  input.style.height = input.offsetHeight + "px";
-  textAreaAutoHeight();
-  input.oninput = textAreaAutoHeight;
+  syncExpressionHeight();
+  input.oninput = syncExpressionHeight;
+
+  if (typeof ResizeObserver !== "undefined") {
+    const expressionResizeObserver = new ResizeObserver(function() {
+      syncExpressionHeight();
+    });
+    expressionResizeObserver.observe(input);
+  }
+
+  window.addEventListener("resize", syncExpressionHeight);
 
   initComponents();
 
@@ -193,10 +201,19 @@ window.onload = function() {
   scheme.renderAll();
 }
 
-function textAreaAutoHeight() {     
+function textAreaAutoHeight() {
   const input = document.getElementById("inp");
-    if (parseInt(input.offsetHeight) <= parseInt(input.scrollHeight))
-        input.style.height = (input.scrollHeight) + "px"; 
+  input.style.height = "auto";
+  input.style.height = input.scrollHeight + "px";
+}
+
+function syncExpressionHeight() {
+  const expression = document.getElementById("expression");
+
+  textAreaAutoHeight();
+
+  expression.style.height = "auto";
+  expression.style.height = expression.scrollHeight + "px";
 }
 
 function initComponents() {
