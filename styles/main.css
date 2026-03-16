@@ -958,7 +958,7 @@ body.component-selecting {
     width: min(92vw, 620px);
     height: min(62vh, 500px);
     min-height: min(62vh, 500px);
-    padding: 14px;
+    padding: 12px;
     box-sizing: border-box;
     transform: translateY(-50%);
     display: flex;
@@ -979,13 +979,13 @@ body.component-selecting {
     padding: 10px 12px;
     width: 100%;
     box-sizing: border-box;
-    margin: 0 auto;
+    margin: 12px auto;
     position: relative;
 
     background: rgba(30, 30, 30, 0.38);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-bottom: none;
-    border-radius: 22px 22px 0 0;
+    border-radius: 22px;
     backdrop-filter: blur(1px);
     -webkit-backdrop-filter: blur(1px);
 }
@@ -1000,10 +1000,10 @@ body.component-selecting {
     display: flex;
     align-items: stretch;
     flex: 1;
-    border-radius: 0 0 22px 22px;
+    border-radius: 22px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-top: none;
-    padding: 8px;
+    padding: 12px;
     backdrop-filter: blur(1px);
     -webkit-backdrop-filter: blur(1px);
 }
