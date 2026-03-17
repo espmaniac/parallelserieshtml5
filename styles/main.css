@@ -680,13 +680,13 @@ body.component-selecting {
 }
 
 #expression {
-    position: absolute;
-    left: max(6px, env(safe-area-inset-left));
-    right: max(6px, env(safe-area-inset-right));
-    top: calc(100% - max(6px, env(safe-area-inset-bottom)));
-    transform: translateY(-100%);
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    transform: none;
     width: auto;
-    margin: 0;
+    margin: 6px;
     background: rgba(233, 233, 233, 0.35);
     padding: 12px;
     box-sizing: border-box;

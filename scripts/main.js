@@ -20,8 +20,11 @@ function getCanvasPixelRatio() {
 }
 
 function resizeCanvas() {
+  const expression = document.getElementById("expression");
+  const expressionHeight = expression ? expression.offsetHeight : 0;
+
   canvasMetrics.width = window.innerWidth;
-  canvasMetrics.height = window.innerHeight;
+  canvasMetrics.height = Math.max(200, window.innerHeight - expressionHeight);
   canvasMetrics.pixelRatio = Math.max(1, window.devicePixelRatio || 1);
 
   canvas.style.width = canvasMetrics.width + "px";
@@ -34,24 +37,6 @@ function resizeCanvas() {
 }
 
 resizeCanvas();
-
-function syncExpressionPanelLayout() {
-  const expression = document.getElementById("expression");
-
-  if (!expression) {
-    return;
-  }
-
-  if (!expression.dataset.topLocked) {
-    const { top } = expression.getBoundingClientRect();
-    expression.style.top = `${top}px`;
-    expression.style.transform = "none";
-    expression.dataset.topLocked = "1";
-  }
-
-  expression.style.height = "auto";
-  expression.style.height = `${expression.scrollHeight}px`;
-}
 
 
 var choosenComponent = {name: "", shortName: "", defaultValue: "", icon_src: ""};
@@ -99,7 +84,6 @@ window.onload = function() {
     scheme.offsetY += windowDifY / scheme.zoom;
   
     resizeCanvas();
-    syncExpressionPanelLayout();
 
     
     if (!context_menu.hidden()) {
@@ -118,25 +102,16 @@ window.onload = function() {
 
 
   canvas.addEventListener("contextmenu", toolmgr.onContextMenu);
-  syncExpressionPanelLayout();
   
   let input = document.getElementById("inp");
 
   input.style.height = input.offsetHeight + "px";
   textAreaAutoHeight();
+  resizeCanvas();
   input.oninput = function() {
     textAreaAutoHeight();
-    syncExpressionPanelLayout();
-  };
-
-  if (window.ResizeObserver) {
-    const inputResizeObserver = new ResizeObserver(function() {
-      syncExpressionPanelLayout();
-    });
-    inputResizeObserver.observe(input);
+    resizeCanvas();
   }
-
-  syncExpressionPanelLayout();
 
   initComponents();
 
@@ -188,6 +163,7 @@ window.onload = function() {
     inp.scrollIntoView();
     inp.value = str;
     textAreaAutoHeight();
+    resizeCanvas();
     
     document.getElementById("calc").click();
 
