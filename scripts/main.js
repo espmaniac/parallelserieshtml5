@@ -35,6 +35,24 @@ function resizeCanvas() {
 
 resizeCanvas();
 
+function syncExpressionPanelLayout() {
+  const expression = document.getElementById("expression");
+
+  if (!expression) {
+    return;
+  }
+
+  if (!expression.dataset.topLocked) {
+    const { top } = expression.getBoundingClientRect();
+    expression.style.top = `${top}px`;
+    expression.style.transform = "none";
+    expression.dataset.topLocked = "1";
+  }
+
+  expression.style.height = "auto";
+  expression.style.height = `${expression.scrollHeight}px`;
+}
+
 
 var choosenComponent = {name: "", shortName: "", defaultValue: "", icon_src: ""};
 
@@ -81,6 +99,7 @@ window.onload = function() {
     scheme.offsetY += windowDifY / scheme.zoom;
   
     resizeCanvas();
+    syncExpressionPanelLayout();
 
     
     if (!context_menu.hidden()) {
@@ -99,12 +118,25 @@ window.onload = function() {
 
 
   canvas.addEventListener("contextmenu", toolmgr.onContextMenu);
+  syncExpressionPanelLayout();
   
   let input = document.getElementById("inp");
 
   input.style.height = input.offsetHeight + "px";
   textAreaAutoHeight();
-  input.oninput = textAreaAutoHeight;
+  input.oninput = function() {
+    textAreaAutoHeight();
+    syncExpressionPanelLayout();
+  };
+
+  if (window.ResizeObserver) {
+    const inputResizeObserver = new ResizeObserver(function() {
+      syncExpressionPanelLayout();
+    });
+    inputResizeObserver.observe(input);
+  }
+
+  syncExpressionPanelLayout();
 
   initComponents();
 
