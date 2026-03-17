@@ -20,15 +20,24 @@ function getCanvasPixelRatio() {
 }
 
 function resizeCanvas() {
+  const header = document.getElementById("header");
+  const scheme = document.getElementById("scheme");
   const expression = document.getElementById("expression");
-  const expressionHeight = expression ? expression.offsetHeight : 0;
 
-  canvasMetrics.width = window.innerWidth;
-  canvasMetrics.height = Math.max(200, window.innerHeight - expressionHeight);
+  const headerHeight = header ? header.offsetHeight : 0;
+  const expressionHeight = expression ? expression.offsetHeight : 0;
+  const schemeHeight = Math.max(200, window.innerHeight - headerHeight - expressionHeight);
+
+  if (scheme) {
+    scheme.style.height = schemeHeight + "px";
+  }
+
+  canvasMetrics.width = scheme ? scheme.clientWidth : window.innerWidth;
+  canvasMetrics.height = schemeHeight;
   canvasMetrics.pixelRatio = Math.max(1, window.devicePixelRatio || 1);
 
-  canvas.style.width = canvasMetrics.width + "px";
-  canvas.style.height = canvasMetrics.height + "px";
+  canvas.style.width = "100%";
+  canvas.style.height = "100%";
 
   canvas.width = Math.round(canvasMetrics.width * canvasMetrics.pixelRatio);
   canvas.height = Math.round(canvasMetrics.height * canvasMetrics.pixelRatio);
