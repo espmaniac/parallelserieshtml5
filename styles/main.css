@@ -35,10 +35,7 @@ body.component-selecting {
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    background:
-        radial-gradient(circle at 20% 14%, rgba(255, 255, 255, 0.2), transparent 40%),
-        radial-gradient(circle at 78% 0%, rgba(210, 210, 210, 0.16), transparent 36%),
-        linear-gradient(165deg, #121212 0%, #090909 52%, #020202 100%);
+    background: transparent;
     color: #f3f3f3;
     z-index: 999;
     display: flex;
@@ -54,9 +51,13 @@ body.component-selecting {
     content: "";
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.48);
-    backdrop-filter: blur(9px);
-    -webkit-backdrop-filter: blur(9px);
+    background-color: rgba(0, 0, 0, 0.44);
+    background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.18) 1px, transparent 1.2px),
+        radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.08) 1px, transparent 1.2px);
+    background-size: 12px 12px, 20px 20px;
+    backdrop-filter: blur(11px);
+    -webkit-backdrop-filter: blur(11px);
     pointer-events: none;
     z-index: 0;
 }
