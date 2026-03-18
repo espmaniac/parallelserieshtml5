@@ -50,6 +50,17 @@ body.component-selecting {
     box-sizing: border-box;
 }
 
+#chooseComponent::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.48);
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+    pointer-events: none;
+    z-index: 0;
+}
+
 .chooseComponentContent {
     width: 100%;
     max-width: 58em;
@@ -67,6 +78,8 @@ body.component-selecting {
     flex-direction: column;
     overflow-y: auto;
     margin: auto;
+    position: relative;
+    z-index: 1;
 }
 
 .chooseComponentTop {
@@ -130,8 +143,12 @@ body.component-selecting {
 }
 
 .chooseComponentGitHub img {
-    width: 1.15em;
-    height: 1.15em;
+    width: 1.05em;
+    height: 1.05em;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 50%;
+    padding: 0.28em;
+    background: rgba(0, 0, 0, 0.3);
     filter: brightness(0) saturate(100%) invert(99%) sepia(1%) saturate(21%) hue-rotate(60deg) brightness(105%) contrast(100%);
 }
 
