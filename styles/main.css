@@ -343,7 +343,7 @@ body.component-selecting {
 .chooseComponentOpenScheme #open:focus-visible,
 .chooseComponentOpenScheme #open:active {
     border-color: rgba(255, 255, 255, 0.55);
-    background: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.08);
     color: #ffffff;
     filter: saturate(1.2);
 }
