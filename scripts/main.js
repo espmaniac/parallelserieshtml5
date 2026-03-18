@@ -20,11 +20,15 @@ function getCanvasPixelRatio() {
 }
 
 function resizeSchemeElement() {
+  const input = document.getElementById("inp");
+  const saveHeight = input.style.height;
+  input.style.height = "auto";
+
   const expression = document.getElementById("expression");
   const expressionHeight = expression ? expression.offsetHeight : 0;
-
   const scheme = document.getElementById("scheme");
   scheme.style.height =  (window.innerHeight - expressionHeight) + "px";
+  input.style.height = saveHeight;
 }
 
 function resizeCanvas() {
@@ -91,6 +95,7 @@ window.onload = function() {
     scheme.offsetY += windowDifY / scheme.zoom;
   
     resizeCanvas();
+
     resizeSchemeElement();
 
     
@@ -124,6 +129,7 @@ window.onload = function() {
   const resizeObserver = new ResizeObserver(() => {
     resizeCanvas();
     scheme.renderAll();
+    resizeSchemeElement();
   });
 
   resizeObserver.observe(input);
