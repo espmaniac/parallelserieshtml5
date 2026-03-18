@@ -68,7 +68,6 @@ body.component-selecting {
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 1.25em;
     background: rgba(34, 34, 34, 0.52);
-    box-shadow: 0 22px 46px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.18);
     backdrop-filter: blur(16px) saturate(1.25);
     -webkit-backdrop-filter: blur(16px) saturate(1.25);
     padding: 1.75em;
@@ -83,8 +82,9 @@ body.component-selecting {
 
 .chooseComponentTop {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+    justify-content: flex-start;
+    align-items: stretch;
+    flex-direction: column;
     gap: 1em;
     margin-bottom: 0.2em;
 }
@@ -132,13 +132,14 @@ body.component-selecting {
     color: rgba(248, 248, 248, 0.96);
     border: 1px solid rgba(255,255,255,0.08);
     background: rgba(50, 50, 50, 0.68);
-    border-radius: 32px;
-    padding: 0.62em 1.05em;
+    border-radius: 0.85em;
+    padding: 0.72em 1.05em;
     font-size: 0.9em;
     font-weight: 560;
     white-space: nowrap;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    width: 100%;
+    justify-content: center;
+    transition: background 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
 }
 
 .chooseComponentGitHub img {
@@ -155,8 +156,6 @@ body.component-selecting {
 .chooseComponentGitHub:focus-visible {
     background: rgba(36, 36, 36, 0.74);
     border-color: rgba(255,255,255,0.18);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
-    transform: translateY(-1px);
 }
 
 .chooseComponentGitHub:focus-visible {
@@ -204,15 +203,13 @@ body.component-selecting {
     cursor: pointer;
     color: #f3f3f3;
     background: rgba(255, 255, 255, 0.08);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.2s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.2s ease, filter 0.15s ease;
 }
 
 .componentCard:hover,
 .componentCard:focus-visible {
     border-color: rgba(255, 255, 255, 0.55);
     background: rgba(255, 255, 255, 0.14);
-    box-shadow: 0 14px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.28);
     outline: none;
     filter: saturate(1.2);
 }
@@ -309,9 +306,8 @@ body.component-selecting {
     padding: 0.7em 0.85em;
     border-radius: 0.7em;
     outline: none;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 16px rgba(0, 0, 0, 0.22);
     resize: none;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    transition: border-color 0.15s ease, background 0.15s ease;
     overflow: hidden;
     overflow-wrap: anywhere;
     word-break: break-word;
@@ -325,25 +321,26 @@ body.component-selecting {
 .chooseComponentOpenScheme .chooseComponentTextarea:focus {
     border: 1px solid rgba(255, 255, 255, 0.72);
     background: rgba(14, 14, 14, 0.58);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 0 3px rgba(190, 190, 190, 0.2);
+    outline: 3px solid rgba(190, 190, 190, 0.2);
+    outline-offset: 0;
 }
 
 .chooseComponentOpenScheme #open {
-    background: rgba(92, 92, 92, 0.55);
-    color: #f7f7f7;
-    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.08);
+    color: #f3f3f3;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 0.85em;
     font-weight: 600;
     margin-top: 0;
     justify-content: center;
     position: relative;
-    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .chooseComponentOpenScheme #open:hover,
 .chooseComponentOpenScheme #open:focus-visible {
-    border-color: rgba(255, 255, 255, 0.7);
-    background: rgba(120, 120, 120, 0.58);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.22);
+    border-color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.14);
     color: #ffffff;
 }
 
@@ -353,8 +350,7 @@ body.component-selecting {
 
 .chooseComponentOpenScheme #open:active {
     color: #ffffff;
-    background: rgba(86, 86, 86, 0.62);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.14);
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
@@ -417,14 +413,9 @@ body.component-selecting {
 }
 
 @media (max-width: 800px) {
-    .chooseComponentTop {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
     .chooseComponentGitHub {
         align-self: center;
-        width: min(100%, 22em);
+        width: 100%;
         justify-content: center;
     }
 
@@ -493,7 +484,7 @@ body.component-selecting {
     }
 
     .chooseComponentGitHub {
-        width: min(100%, 22em);
+        width: 100%;
         align-self: center;
         justify-content: center;
         padding: 0.62em 0.85em;
