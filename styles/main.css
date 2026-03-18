@@ -411,45 +411,6 @@ body.component-selecting {
     }
 }
 
-@media (max-width: 800px) {
-    #components {
-        grid-template-columns: repeat(auto-fit, minmax(9.2em, 1fr));
-    }
-
-    .componentCard {
-        width: 100%;
-        min-width: 0;
-        margin: 0 0 0.6em;
-        height: 8.2em;
-    }
-
-    @supports (display: grid) {
-        .componentCard {
-            margin: 0;
-        }
-    }
-
-    .chooseComponentContent {
-        padding: 1.15em;
-    }
-
-    .chooseComponentOpenScheme {
-        margin-top: 1.7em;
-        padding-top: 0.75em;
-        flex-direction: column;
-    }
-
-    .chooseComponentOpenScheme .chooseComponentTextarea,
-    .chooseComponentOpenScheme #open {
-        width: 100%;
-    }
-
-    .chooseComponentOpenScheme .chooseComponentTextarea {
-        margin-right: 0;
-        margin-bottom: 0.7em;
-    }
-}
-
 @media (max-width: 560px) and (orientation: portrait) {
     #chooseComponent {
         padding: 0.65em;
