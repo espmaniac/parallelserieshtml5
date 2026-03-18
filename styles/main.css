@@ -18,6 +18,8 @@ body.component-selecting {
 #myCanvas {
     background: #fafafa;
     display: block;
+    position: absolute;
+    top: 0;
 }
 
 #chooseComponent {
@@ -628,7 +630,7 @@ body.component-selecting {
     top: 4em;
     display: flex;
     flex-direction: column;
-
+    z-index: 99;
 }
 
 #tools #mainTools {
@@ -680,13 +682,11 @@ body.component-selecting {
 }
 
 #expression {
-    position: absolute;
-    left: max(6px, env(safe-area-inset-left));
-    right: max(6px, env(safe-area-inset-right));
-    top: calc(100% - max(6px, env(safe-area-inset-bottom)));
-    transform: translateY(-100%);
+    position: relative;
+    bottom: 0;
+    transform: none;
     width: auto;
-    margin: 0;
+    margin: 6px;
     background: rgba(233, 233, 233, 0.35);
     padding: 12px;
     box-sizing: border-box;

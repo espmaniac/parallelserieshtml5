@@ -19,9 +19,19 @@ function getCanvasPixelRatio() {
   return canvasMetrics.pixelRatio;
 }
 
+function resizeSchemeElement() {
+  const expression = document.getElementById("expression");
+  const expressionHeight = expression ? expression.offsetHeight : 0;
+
+  const scheme = document.getElementById("scheme");
+  scheme.style.height =  (window.innerHeight - expressionHeight) + "px";
+}
+
 function resizeCanvas() {
+  const expressionHeight = document.getElementById("expression").getBoundingClientRect().height;
+  const schemeHeight = document.getElementById("scheme").getBoundingClientRect().height;
   canvasMetrics.width = window.innerWidth;
-  canvasMetrics.height = window.innerHeight;
+  canvasMetrics.height = schemeHeight + expressionHeight;
   canvasMetrics.pixelRatio = Math.max(1, window.devicePixelRatio || 1);
 
   canvas.style.width = canvasMetrics.width + "px";
@@ -34,25 +44,7 @@ function resizeCanvas() {
 }
 
 resizeCanvas();
-
-function syncExpressionPanelLayout() {
-  const expression = document.getElementById("expression");
-
-  if (!expression) {
-    return;
-  }
-
-  if (!expression.dataset.topLocked) {
-    const { top } = expression.getBoundingClientRect();
-    expression.style.top = `${top}px`;
-    expression.style.transform = "none";
-    expression.dataset.topLocked = "1";
-  }
-
-  expression.style.height = "auto";
-  expression.style.height = `${expression.scrollHeight}px`;
-}
-
+resizeSchemeElement();
 
 var choosenComponent = {name: "", shortName: "", defaultValue: "", icon_src: ""};
 
@@ -99,7 +91,7 @@ window.onload = function() {
     scheme.offsetY += windowDifY / scheme.zoom;
   
     resizeCanvas();
-    syncExpressionPanelLayout();
+    resizeSchemeElement();
 
     
     if (!context_menu.hidden()) {
@@ -118,25 +110,23 @@ window.onload = function() {
 
 
   canvas.addEventListener("contextmenu", toolmgr.onContextMenu);
-  syncExpressionPanelLayout();
   
   let input = document.getElementById("inp");
 
   input.style.height = input.offsetHeight + "px";
   textAreaAutoHeight();
+  resizeCanvas();
+  
   input.oninput = function() {
     textAreaAutoHeight();
-    syncExpressionPanelLayout();
-  };
-
-  if (window.ResizeObserver) {
-    const inputResizeObserver = new ResizeObserver(function() {
-      syncExpressionPanelLayout();
-    });
-    inputResizeObserver.observe(input);
   }
 
-  syncExpressionPanelLayout();
+  const resizeObserver = new ResizeObserver(() => {
+    resizeCanvas();
+    scheme.renderAll();
+  });
+
+  resizeObserver.observe(input);
 
   initComponents();
 
@@ -188,6 +178,7 @@ window.onload = function() {
     inp.scrollIntoView();
     inp.value = str;
     textAreaAutoHeight();
+    resizeCanvas();
     
     document.getElementById("calc").click();
 
