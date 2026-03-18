@@ -85,8 +85,8 @@ body.component-selecting {
     justify-content: flex-start;
     align-items: stretch;
     flex-direction: column;
-    gap: 1em;
-    margin-bottom: 0.2em;
+    gap: 0.25em;
+    margin-bottom: 0.5em;
 }
 
 .chooseComponentBrand {
@@ -125,39 +125,24 @@ body.component-selecting {
 }
 
 .chooseComponentGitHub {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 0.55em;
+    justify-content: center;
+    gap: 0.65em;
     text-decoration: none;
     color: rgba(248, 248, 248, 0.96);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    background: rgba(255, 255, 255, 0.08);
     border-radius: 32px;
-    padding: 0.72em 1.05em;
-    font-size: 0.9em;
-    font-weight: 560;
-    white-space: nowrap;
-    width: calc((100% - 2em) / 3);
-    min-width: 10em;
-    max-width: 100%;
-    justify-content: center;
-    transition: background 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+    min-height: 9.8em;
 }
 
 .chooseComponentGitHub img {
-    width: 1.05em;
-    height: 1.05em;
+    width: 1.2em;
+    height: 1.2em;
     border: 1px solid rgba(255, 255, 255, 0.45);
     border-radius: 50%;
-    padding: 0.28em;
+    padding: 0.32em;
     background: rgba(0, 0, 0, 0.3);
     filter: brightness(0) saturate(100%) invert(99%) sepia(1%) saturate(21%) hue-rotate(60deg) brightness(105%) contrast(100%);
-}
-
-.chooseComponentGitHub:hover,
-.chooseComponentGitHub:focus-visible {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.55);
 }
 
 .chooseComponentGitHub:focus-visible {
@@ -340,19 +325,16 @@ body.component-selecting {
 }
 
 .chooseComponentOpenScheme #open:hover,
-.chooseComponentOpenScheme #open:focus-visible {
+.chooseComponentOpenScheme #open:focus-visible,
+.chooseComponentOpenScheme #open:active {
     border-color: rgba(255, 255, 255, 0.55);
     background: rgba(255, 255, 255, 0.14);
     color: #ffffff;
+    filter: saturate(1.2);
 }
 
 .chooseComponentOpenScheme #open:focus-visible {
     outline: none;
-}
-
-.chooseComponentOpenScheme #open:active {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.14);
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
@@ -415,12 +397,6 @@ body.component-selecting {
 }
 
 @media (max-width: 800px) {
-    .chooseComponentGitHub {
-        align-self: center;
-        width: 100%;
-        justify-content: center;
-    }
-
     #components {
         grid-template-columns: repeat(auto-fit, minmax(9.2em, 1fr));
     }
@@ -486,12 +462,8 @@ body.component-selecting {
     }
 
     .chooseComponentGitHub {
-        width: 100%;
-        align-self: center;
-        justify-content: center;
         border-radius: 32px;
-        padding: 0.62em 0.85em;
-        font-size: 0.84em;
+        min-height: 7.1em;
     }
 
     #components {
