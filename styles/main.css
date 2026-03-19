@@ -46,19 +46,21 @@ body.component-selecting {
     font-family: "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif;
     padding: 1em;
     box-sizing: border-box;
-  background: linear-gradient(
-    to bottom,
-    rgba(0,0,0,0.8) 0%,       /* сильно тёмно сверху */
-    rgba(80,80,80,0.5) 20%,        /* плавное исчезание затемнения */
-    rgba(80,80,80,0.5) 80%,        /* середина прозрачная */
-    rgba(0,0,0,0.8) 100%      /* сильно тёмно снизу */
-  );
+    background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.8) 0%,
+        rgba(80,80,80,0.5) 20%,
+        rgba(80,80,80,0.5) 80%
+        rgba(0,0,0,0.8) 100%
+    );
 
 }
 
 #alignContent {
     width: 100%;
     max-width: 58em;
+    max-height: calc(100% - 2em);
+    max-height: calc(100% - 2em);
 }
 
 #chooseComponent::before {
@@ -77,8 +79,6 @@ body.component-selecting {
 
 .chooseComponentContent {
     width: 100%;
-    max-height: calc(100vh - 2em);
-    max-height: calc(100dvh - 2em);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 1.25em;
     background: rgba(34, 34, 34, 0.52);
@@ -721,7 +721,7 @@ body.component-selecting {
     top: 4em;
     display: flex;
     flex-direction: column;
-    z-index: 99;
+    z-index: 9;
 }
 
 #tools #mainTools {
