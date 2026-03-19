@@ -22,44 +22,97 @@ body.component-selecting {
     top: 0;
 }
 
-#chooseComponent {
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    inset: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    color: #f3f3f3;
-    z-index: 999;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    font-family: "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif;
-    padding: 1em;
-    box-sizing: border-box;
-    background: linear-gradient(
-        to bottom,
-        rgba(0,0,0,0.8) 0%,
-        rgba(80,80,80,0.5) 20%,
-        rgba(80,80,80,0.5) 80%,
-        rgba(0,0,0,0.8) 100%
-    );
-
+ #chooseComponent {
+	width: 100vw;
+	height: 100vh;
+	height: 100dvh;
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	inset: 0;
+	overflow: hidden;
+	-webkit-overflow-scrolling: touch;
+	color: #f3f3f3;
+	z-index: 999;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+	font-family: "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif;
+	padding: 1em;
+	box-sizing: border-box;
+	background: linear-gradient( to bottom, rgba(0,0,0,0.8) 0%, rgba(80,80,80,0.5) 20%, rgba(80,80,80,0.5) 80%, rgba(0,0,0,0.8) 100% );
 }
 
 #alignContent {
-    width: 100%;
-    max-width: 58em;
-    max-height: calc(100% - 2em);
-    max-height: calc(100% - 2em);
+	width: 100%;
+	max-width: 58em;
+	max-height: 100%;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.chooseComponentContent {
+	width: 100%;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 1.25em;
+	background: rgba(34, 34, 34, 0.52);
+	backdrop-filter: blur(16px) saturate(1.25);
+	-webkit-backdrop-filter: blur(16px) saturate(1.25);
+	padding: 1.75em;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	overflow-y: auto;
+	margin: 0;
+	position: relative;
+	z-index: 1;
+	min-height: 0;
+	flex: 1;
+}
+
+#components {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	margin: 0 auto;
+	width: 100%;
+	flex-shrink: 0;
+}
+
+@supports (display: grid) {
+	#components {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
+		gap: 1em;
+		flex-shrink: 0;
+	}
+
+	.componentCard {
+		width: auto;
+		min-width: 0;
+		margin: 0;
+	}
+}
+
+.componentCard {
+	height: 9.8em;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.65em;
+	border: 1px solid rgba(255, 255, 255, 0.22);
+	border-radius: 0.85em;
+	cursor: pointer;
+	color: #f3f3f3;
+	background: rgba(255, 255, 255, 0.08);
+	transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.2s ease, filter 0.15s ease;
+	flex-shrink: 1;
 }
 
 #chooseComponent::before {
@@ -74,23 +127,6 @@ body.component-selecting {
     -webkit-backdrop-filter: blur(11px);
     pointer-events: none;
     z-index: 0;
-}
-
-.chooseComponentContent {
-    width: 100%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 1.25em;
-    background: rgba(34, 34, 34, 0.52);
-    backdrop-filter: blur(16px) saturate(1.25);
-    -webkit-backdrop-filter: blur(16px) saturate(1.25);
-    padding: 1.75em;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    margin: 0;
-    position: relative;
-    z-index: 1;
 }
 
 .chooseComponentTop {
@@ -181,49 +217,6 @@ body.component-selecting {
     border-color: rgba(255,255,255,0.18);
 }
 
-#components {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin: 0 auto;
-    width: 100%;
-}
-
-.componentCard {
-    width: calc(33.333% - 0.7em);
-    min-width: 8em;
-    margin: 0.35em;
-    min-height: 5.25em;
-}
-
-@supports (display: grid) {
-    #components {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
-        gap: 1em;
-    }
-
-    .componentCard {
-        width: auto;
-        min-width: 0;
-        margin: 0;
-    }
-}
-
-.componentCard {
-    height: 9.8em;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.65em;
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    border-radius: 0.85em;
-    cursor: pointer;
-    color: #f3f3f3;
-    background: rgba(255, 255, 255, 0.08);
-    transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.2s ease, filter 0.15s ease;
-}
 
 .componentCard:hover,
 .componentCard:focus-visible {
