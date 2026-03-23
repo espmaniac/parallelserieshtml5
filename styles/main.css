@@ -47,10 +47,10 @@ body.component-selecting {
 #alignContent {
 	width: 100%;
 	max-width: 58em;
-	height: min(100%, 44rem);
+	height: auto;
 	max-height: 100%;
-	display: grid;
-	grid-template-rows: minmax(0, 1fr) auto;
+	display: flex;
+	flex-direction: column;
 	gap: clamp(0.35em, 1.1vmin, 0.8em);
 	min-height: 0;
 }
@@ -72,7 +72,7 @@ body.component-selecting {
 	position: relative;
 	z-index: 1;
 	min-height: 0;
-	flex: 1;
+	flex: 0 1 auto;
 }
 
 #components {
