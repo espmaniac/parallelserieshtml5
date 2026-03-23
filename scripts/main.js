@@ -232,10 +232,54 @@ function initComponents() {
   document.body.classList.add(selectionClass);
 
   let chooseComponent = document.getElementById("chooseComponent");
+  let alignContent = document.getElementById("alignContent");
+  let rafId = null;
+
+  function fitChooseComponentToViewport() {
+    if (!chooseComponent || !alignContent) {
+      return;
+    }
+
+    chooseComponent.style.setProperty("--chooser-scale", "1");
+
+    const safePadding = 8;
+    const contentRect = alignContent.getBoundingClientRect();
+    const maxWidth = Math.max(1, window.innerWidth - safePadding * 2);
+    const maxHeight = Math.max(1, window.innerHeight - safePadding * 2);
+    const scaleX = maxWidth / Math.max(1, contentRect.width);
+    const scaleY = maxHeight / Math.max(1, contentRect.height);
+    const nextScale = Math.min(1, scaleX, scaleY);
+
+    chooseComponent.style.setProperty("--chooser-scale", nextScale.toFixed(4));
+  }
+
+  function requestChooserFit() {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+    }
+
+    rafId = requestAnimationFrame(function() {
+      rafId = null;
+      fitChooseComponentToViewport();
+    });
+  }
+
+  window.addEventListener("resize", requestChooserFit);
+  requestChooserFit();
+
+  if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === "function") {
+    document.fonts.ready.then(requestChooserFit);
+  }
 
   function closeChooseComponent() {
     document.documentElement.classList.remove(selectionClass);
     document.body.classList.remove(selectionClass);
+    window.removeEventListener("resize", requestChooserFit);
+
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
 
     if (chooseComponent && chooseComponent.parentNode) {
       chooseComponent.parentNode.removeChild(chooseComponent);
