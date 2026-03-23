@@ -82,9 +82,9 @@ body.component-selecting {
 	align-items: stretch;
 	align-content: stretch;
 	gap: clamp(0.38em, 1vmin, 0.75em);
-	margin: 0 auto;
+	margin: 0 auto clamp(0.18em, 0.8vmin, 0.45em);
 	width: 100%;
-	flex: 1 1 auto;
+	flex: 0 0 auto;
 	min-height: 0;
 }
 
@@ -92,11 +92,12 @@ body.component-selecting {
 	width: clamp(6.2em, 30%, 12.4em);
 	min-width: 0;
 	margin: 0;
-	height: auto;
+	height: clamp(4.1em, 11vmin, 6.1em);
 	flex: 1 1 clamp(6.2em, 30%, 12.4em);
-	min-height: clamp(3.1em, 9vmin, 5.2em);
+	min-height: clamp(4.1em, 11vmin, 6.1em);
+	max-height: clamp(4.1em, 11vmin, 6.1em);
 	padding: clamp(0.35em, 1vmin, 0.75em);
-	aspect-ratio: auto;
+	aspect-ratio: 8 / 5;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -277,12 +278,13 @@ body.component-selecting {
 
 .chooseComponentOpenScheme {
     width: 100%;
-    margin: clamp(0.2em, 1vmin, 0.75em) 0 0;
+    margin: clamp(0.25em, 1.1vmin, 0.75em) 0 0;
     padding-top: clamp(0.2em, 0.8vmin, 0.55em);
     box-sizing: border-box;
     display: flex;
     align-items: stretch;
     gap: clamp(0.38em, 1vmin, 0.7em);
+    flex: 0 0 auto;
 }
 
 .chooseComponentOpenScheme .chooseComponentTextarea {
