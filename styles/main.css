@@ -133,6 +133,12 @@ body.component-selecting {
     text-align: left;
 }
 
+.chooseComponentBrandTop {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+}
+
 .brandBadge {
     display: inline-flex;
     align-items: center;
@@ -167,25 +173,10 @@ body.component-selecting {
 .chooseComponentGitHub {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.65em;
+    justify-content: flex-end;
+    margin-left: auto;
     text-decoration: none;
-    color: rgba(248, 248, 248, 0.96);
-    border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(50,50,50,0.55);
-    border-radius: 32px;
-    min-height: clamp(2.4em, 5.3vmin, 2.8em);
-    margin-top: clamp(0.25em, 0.9vmin, 0.75em);
-    padding: clamp(0.45em, 1.2vmin, 0.65em) 1.05em;
-    font-size: clamp(0.8em, 1.8vmin, 0.92em);
-    font-weight: 560;
-    width: 100%;
-    box-sizing: border-box;
-    position: relative;
-    z-index: 1;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    transition: border-color 0.15s ease, background-color 0.2s ease, filter 0.15s ease;
+    line-height: 0;
 }
 
 .chooseComponentGitHub img {
@@ -201,8 +192,7 @@ body.component-selecting {
 .chooseComponentGitHub:hover,
 .chooseComponentGitHub:focus-visible {
     outline: none;
-    background: rgba(0,0,0,0.55);
-    border-color: rgba(255,255,255,0.18);
+    filter: brightness(1.08);
 }
 
 
