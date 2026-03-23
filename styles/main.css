@@ -47,9 +47,11 @@ body.component-selecting {
 #alignContent {
 	width: 100%;
 	max-width: 58em;
+	height: min(100%, 44rem);
 	max-height: 100%;
-	display: flex;
-	flex-direction: column;
+	display: grid;
+	grid-template-rows: minmax(0, 1fr) auto;
+	gap: clamp(0.35em, 1.1vmin, 0.8em);
 	min-height: 0;
 }
 
@@ -60,11 +62,11 @@ body.component-selecting {
 	background: rgba(34, 34, 34, 0.52);
 	backdrop-filter: blur(16px) saturate(1.25);
 	-webkit-backdrop-filter: blur(16px) saturate(1.25);
-	padding: clamp(0.85em, 2.2vmin, 1.75em);
+	padding: clamp(0.75em, 2vmin, 1.35em);
 	box-sizing: border-box;
 	display: flex;
 	flex-direction: column;
-	gap: clamp(0.35em, 1.2vmin, 0.95em);
+	gap: clamp(0.28em, 0.95vmin, 0.75em);
 	overflow: hidden;
 	margin: 0;
 	position: relative;
@@ -74,10 +76,12 @@ body.component-selecting {
 }
 
 #components {
-	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	grid-auto-rows: minmax(0, 1fr);
-	gap: clamp(0.45em, 1.3vmin, 1em);
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: stretch;
+	align-content: stretch;
+	gap: clamp(0.38em, 1vmin, 0.75em);
 	margin: 0 auto;
 	width: 100%;
 	flex: 1 1 auto;
@@ -85,10 +89,11 @@ body.component-selecting {
 }
 
 .componentCard {
-	width: auto;
+	width: clamp(6.2em, 30%, 12.4em);
 	min-width: 0;
 	margin: 0;
-	height: 100%;
+	height: auto;
+	flex: 1 1 clamp(6.2em, 30%, 12.4em);
 	min-height: clamp(3.1em, 9vmin, 5.2em);
 	padding: clamp(0.35em, 1vmin, 0.75em);
 	aspect-ratio: auto;
@@ -140,7 +145,7 @@ body.component-selecting {
     border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, 0.28);
     background: rgba(255, 255, 255, 0.1);
-    font-size: 0.78em;
+    font-size: clamp(0.64em, 1.3vmin, 0.78em);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     font-weight: 650;
@@ -157,7 +162,7 @@ body.component-selecting {
 }
 
 .chooseComponentHint {
-    margin: clamp(0.4em, 1vmin, 0.7em) 0 clamp(0.65em, 1.7vmin, 1.4em);
+    margin: clamp(0.25em, 0.7vmin, 0.55em) 0 clamp(0.4em, 1.1vmin, 0.85em);
     color: rgba(225, 225, 225, 0.9);
     max-width: 34em;
     font-size: clamp(0.82em, 1.9vmin, 0.98em);
@@ -175,7 +180,7 @@ body.component-selecting {
     background: rgba(50,50,50,0.55);
     border-radius: 32px;
     min-height: clamp(2.4em, 5.3vmin, 2.8em);
-    margin-top: clamp(0.25em, 0.9vmin, 0.75em);
+    margin-top: 0;
     padding: clamp(0.45em, 1.2vmin, 0.65em) 1.05em;
     font-size: clamp(0.8em, 1.8vmin, 0.92em);
     font-weight: 560;
@@ -272,8 +277,8 @@ body.component-selecting {
 
 .chooseComponentOpenScheme {
     width: 100%;
-    margin: clamp(0.6em, 2vmin, 2.1em) 0 0;
-    padding-top: clamp(0.35em, 1.2vmin, 1.05em);
+    margin: clamp(0.2em, 1vmin, 0.75em) 0 0;
+    padding-top: clamp(0.2em, 0.8vmin, 0.55em);
     box-sizing: border-box;
     display: flex;
     align-items: stretch;
@@ -283,7 +288,9 @@ body.component-selecting {
 .chooseComponentOpenScheme .chooseComponentTextarea {
     max-width: 100%;
     box-sizing: border-box;
-    width: 80%;
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
     margin-right: 0;
     background: rgba(10, 10, 10, 0.45);
     color: #f0f0f0;
@@ -298,6 +305,8 @@ body.component-selecting {
     overflow: hidden;
     overflow-wrap: anywhere;
     word-break: break-word;
+    font-size: clamp(0.82rem, 2.1vmin, 1.05rem);
+    line-height: 1.2;
 }
 
 .chooseComponentOpenScheme .chooseComponentTextarea::placeholder {
@@ -315,7 +324,8 @@ body.component-selecting {
 .chooseComponentOpenScheme #open {
     max-width: 100%;
     box-sizing: border-box;
-    width: 20%;
+    width: auto;
+    flex: 0 0 clamp(4.4em, 16vw, 6.3em);
     min-height: clamp(2.45em, 6vmin, 3.2em);
     background: rgba(255, 255, 255, 0.08);
     color: #f3f3f3;
@@ -326,6 +336,7 @@ body.component-selecting {
     justify-content: center;
     position: relative;
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    font-size: clamp(0.82rem, 2.1vmin, 1.02rem);
 }
 
 .chooseComponentOpenScheme #open:hover,
@@ -502,6 +513,7 @@ body.component-selecting {
     }
 
 }
+
 
 #scheme {
     position: relative;
