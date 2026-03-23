@@ -118,8 +118,6 @@ window.onload = function() {
   
   let input = document.getElementById("inp");
 
-  input.style.height = input.offsetHeight + "px";
-  textAreaAutoHeight();
   resizeCanvas();
   
   input.oninput = function() {
