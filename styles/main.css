@@ -519,7 +519,7 @@ body.component-selecting {
     background: rgba(0,0,0,0.35);
     border-radius: 32px;
     padding: clamp(0.25rem, 0.9vmin, 0.5rem) clamp(0.75rem, 2.4vmin, 1.1rem);
-    gap: clamp(0.2rem, 0.8vmin, 0.45rem);
+    gap: clamp(0.3rem, 1vmin, 0.6rem);
 }
 
 #tools button {
@@ -528,7 +528,7 @@ body.component-selecting {
     --tool-icon-height: clamp(0.55rem, 2.1vmin, 1rem);
     width: var(--tool-size);
     height: var(--tool-size);
-    padding: clamp(0.2rem, 0.9vmin, 0.45rem);
+    padding: clamp(0.15rem, 0.7vmin, 0.35rem);
     margin: 0;
     background: rgba(50,50,50,0.55);
     border: 1px solid rgba(255,255,255,0.08);
