@@ -205,11 +205,11 @@ body.component-selecting {
 }
 
 .componentIcon {
-    width: 68%;
-    height: clamp(1.15em, 4.5vmin, 2.35em);
+    width: 15vmin;
+    height: 5vmin;
     background: url("../icons/res_eu.svg") center center no-repeat;
 	background-size: 70%;
-	padding: 1em;
+	padding: 0.5em;
 }
 
 .componentName {
