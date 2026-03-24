@@ -208,6 +208,8 @@ body.component-selecting {
     width: 68%;
     height: clamp(1.15em, 4.5vmin, 2.35em);
     background: url("../icons/res_eu.svg") center center / contain no-repeat;
+	background-size: 70%;
+	padding: 1em;
 }
 
 .componentName {
