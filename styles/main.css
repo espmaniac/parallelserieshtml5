@@ -523,11 +523,12 @@ body.component-selecting {
 }
 
 #tools button {
-    --tool-size: clamp(2rem, 7vmin, 3.15rem);
+    --tool-width: clamp(2.5rem, 8.2vmin, 3.7rem);
+    --tool-height: clamp(1.85rem, 6vmin, 2.7rem);
     --tool-icon-width: clamp(1.1rem, 4.2vmin, 2rem);
     --tool-icon-height: clamp(0.55rem, 2.1vmin, 1rem);
-    width: var(--tool-size);
-    height: var(--tool-size);
+    width: var(--tool-width);
+    height: var(--tool-height);
     padding: clamp(0.15rem, 0.7vmin, 0.35rem);
     margin: 0;
     background: rgba(50,50,50,0.55);
