@@ -371,14 +371,14 @@ body.component-selecting {
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 6px;
-    text-decoration: none;
+    padding: 0;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 #headerUtility svg {
-    width: 1.28em;
-    height: 1.28em;
+    width: 100%;
+    height: 100%;
 }
 
 #headerUtility:hover,
