@@ -379,7 +379,7 @@ body.component-selecting {
 #headerUtility svg {
     width: 100%;
     height: 100%;
-    transform: scale(1.35);
+    transform: scale(1.5);
     transform-origin: center;
 }
 
@@ -408,7 +408,7 @@ body.component-selecting {
     display: none;
 }
 
-#header button {
+#header button:not(#headerUtility) {
     margin: 0 0.5em;
     padding: 0 0.8em;
     height: 78%;
@@ -425,13 +425,13 @@ body.component-selecting {
     transition: all 0.2s ease;
 }
 
-#header button:hover {
+#header button:not(#headerUtility):hover {
     background: rgba(255,255,255,0.12);
     border-color: rgba(255,255,255,0.18);
     color: #fff;
 }
 
-#header button:active {
+#header button:not(#headerUtility):active {
     background: rgba(255,255,255,0.18);
 }
 
@@ -524,7 +524,7 @@ body.component-selecting {
         max-height: 16em;
     }
 
-    #header button {
+    #header button:not(#headerUtility) {
         width: calc(100% - 1em);
         margin: 0.25em 0.5em;
         min-height: 2.2em;
