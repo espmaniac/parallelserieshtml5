@@ -416,11 +416,59 @@ function initModals() {
 
   let save = document.getElementById("save");
   var saveModal = document.getElementById("saveModal");
+  var settingsModal = document.getElementById("settingsModal");
+  let headerUtility = document.getElementById("headerUtility");
+  let expression = document.getElementById("expression");
+  let expressionToggle = document.getElementById("expressionToggle");
+  let componentOptions = document.querySelectorAll(".settingsComponentOption");
+
+  function updateComponentModalState() {
+    for (let i = 0; i < componentOptions.length; ++i) {
+      let option = componentOptions[i];
+      if (option.dataset.component === choosenComponent.shortName) {
+        option.classList.add("active");
+      } else {
+        option.classList.remove("active");
+      }
+    }
+  }
+
+  function syncExpressionToggleFromView() {
+    expressionToggle.checked = expression.style.display !== "none";
+  }
+
+  function updateExpressionVisibility(isVisible) {
+    expression.style.display = isVisible ? "block" : "none";
+    resizeSchemeElement();
+    resizeCanvas();
+    scheme.renderAll();
+  }
+
   modalInit(saveModal);
+  modalInit(settingsModal);
   save.addEventListener("click", function() {    
     saveModal.style.display="block";
     document.getElementById("saveText").value = scheme.serialize();
   });
+
+  headerUtility.addEventListener("click", function() {
+    updateComponentModalState();
+    syncExpressionToggleFromView();
+    settingsModal.style.display = "block";
+  });
+
+  for (let i = 0; i < componentOptions.length; ++i) {
+    componentOptions[i].addEventListener("click", function() {
+      selectComponent(this.dataset.component);
+      updateComponentModalState();
+      scheme.renderAll();
+    });
+  }
+
+  expressionToggle.addEventListener("change", function() {
+    updateExpressionVisibility(this.checked);
+  });
+
   let saveBtn = document.getElementById("saveFileBtn");
   saveBtn.addEventListener("click", function() {
     navigator.clipboard.writeText(document.getElementById("saveText").value);

@@ -1063,6 +1063,60 @@ body.component-selecting {
     background: rgba(0, 0, 0, 0.72) !important;
 }
 
+#settingsModal .modalDialog {
+    height: min(56vh, 440px);
+    min-height: min(56vh, 440px);
+}
+
+.settingsModalContent {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.settingsSection {
+    background: rgba(10, 10, 10, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 12px;
+}
+
+.settingsSection h4 {
+    margin: 0 0 10px 0;
+    color: rgba(242, 242, 242, 0.9);
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.settingsComponentList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.settingsComponentOption {
+    background: rgba(20, 20, 20, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(240, 240, 240, 0.86);
+    border-radius: 10px;
+    min-height: 40px;
+    text-align: left;
+    padding: 0 12px;
+}
+
+.settingsComponentOption.active {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #fff;
+}
+
+.settingsToggleRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: rgba(240, 240, 240, 0.88);
+}
+
 #saveText, #openScheme {
     font-size: 12px;
 }
