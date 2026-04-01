@@ -429,6 +429,15 @@ function openEditValueModal(component) {
   editValueInput.select();
 }
 
+function isAnyModalOpen() {
+  const modals = document.querySelectorAll(".modal");
+  for (let i = 0; i < modals.length; ++i) {
+    if (modals[i].style.display === "block") return true;
+  }
+
+  return false;
+}
+
 function renameExistingComponents(shortName) {
   const renamedComponents = {};
   let componentIndex = 1;
