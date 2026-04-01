@@ -412,6 +412,22 @@ function modalInit(element) {
   });
 }
 
+function renameExistingComponents(shortName) {
+  const renamedComponents = {};
+  let componentIndex = 1;
+
+  for (let key in scheme.components) {
+    const component = scheme.components[key];
+    const newName = shortName + componentIndex.toString();
+    component.name.value = newName;
+    renamedComponents[newName] = component;
+    componentIndex++;
+  }
+
+  scheme.components = renamedComponents;
+  Component.nameCount = componentIndex;
+}
+
 function initModals() {
 
   let save = document.getElementById("save");
@@ -460,6 +476,7 @@ function initModals() {
   for (let i = 0; i < componentOptions.length; ++i) {
     componentOptions[i].addEventListener("click", function() {
       selectComponent(this.dataset.component);
+      renameExistingComponents(choosenComponent.shortName);
       updateComponentModalState();
       scheme.renderAll();
     });

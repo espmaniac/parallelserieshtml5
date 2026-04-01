@@ -1101,7 +1101,22 @@ body.component-selecting {
     border-radius: 10px;
     min-height: 40px;
     text-align: left;
-    padding: 0 12px;
+    padding: 0 12px 0 52px;
+    background-repeat: no-repeat;
+    background-size: 28px 28px;
+    background-position: 12px center;
+}
+
+.settingsComponentOption[data-component="R"] {
+    background-image: url("../icons/res_eu.svg");
+}
+
+.settingsComponentOption[data-component="C"] {
+    background-image: url("../icons/capacitor.svg");
+}
+
+.settingsComponentOption[data-component="L"] {
+    background-image: url("../icons/inductor.svg");
 }
 
 .settingsComponentOption.active {
