@@ -412,6 +412,23 @@ function modalInit(element) {
   });
 }
 
+const editValueModalState = {
+  component: null
+};
+
+function openEditValueModal(component) {
+  const editValueModal = document.getElementById("editValueModal");
+  const editValueInput = document.getElementById("editValueInput");
+
+  if (!component || !editValueModal || !editValueInput) return;
+
+  editValueModalState.component = component;
+  editValueInput.value = component.value.value;
+  editValueModal.style.display = "block";
+  editValueInput.focus();
+  editValueInput.select();
+}
+
 function renameExistingComponents(shortName) {
   const renamedComponents = {};
   let componentIndex = 1;
@@ -433,10 +450,13 @@ function initModals() {
   let save = document.getElementById("save");
   var saveModal = document.getElementById("saveModal");
   var settingsModal = document.getElementById("settingsModal");
+  var editValueModal = document.getElementById("editValueModal");
   let headerUtility = document.getElementById("headerUtility");
   let expression = document.getElementById("expression");
   let expressionToggle = document.getElementById("expressionToggle");
   let componentOptions = document.querySelectorAll(".settingsComponentOption");
+  let editValueForm = document.getElementById("editValueForm");
+  let editValueInput = document.getElementById("editValueInput");
 
   function updateComponentModalState() {
     for (let i = 0; i < componentOptions.length; ++i) {
@@ -462,6 +482,7 @@ function initModals() {
 
   modalInit(saveModal);
   modalInit(settingsModal);
+  modalInit(editValueModal);
   save.addEventListener("click", function() {    
     saveModal.style.display="block";
     document.getElementById("saveText").value = scheme.serialize();
@@ -489,5 +510,18 @@ function initModals() {
   let saveBtn = document.getElementById("saveFileBtn");
   saveBtn.addEventListener("click", function() {
     navigator.clipboard.writeText(document.getElementById("saveText").value);
+  });
+
+  editValueForm.addEventListener("submit", function(event) {
+    event.preventDefault();
+
+    const component = editValueModalState.component;
+    if (!component) {
+      editValueModal.style.display = "none";
+      return;
+    }
+
+    scheme.execute(new ChangeComponentValue(component, editValueInput.value));
+    editValueModal.style.display = "none";
   });
 }

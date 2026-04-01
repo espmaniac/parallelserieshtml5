@@ -327,8 +327,7 @@ var toolmgr = {
             context_menu.main_menu.addItem(destNodeMenu);
 
             context_menu.main_menu.addItem(new Item("Edit Value", function() {
-                let newValue = prompt(`new ${component.name.value} value`);
-                scheme.execute(new ChangeComponentValue(component, newValue));
+                openEditValueModal(component);
             }));
 
             context_menu.main_menu.addItem(new Item("Rotate -45", function() {

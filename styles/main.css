@@ -1068,6 +1068,47 @@ body.component-selecting {
     min-height: min(56vh, 440px);
 }
 
+.editValueModalDialog {
+    height: min(38vh, 300px);
+    min-height: min(38vh, 300px);
+}
+
+.editValueLabel {
+    color: rgba(242, 242, 242, 0.92);
+    margin-bottom: 8px;
+}
+
+.editValueInput {
+    width: 100%;
+    background: rgba(10, 10, 10, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    color: rgba(245, 245, 245, 0.92);
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 0 12px;
+}
+
+#editValueApplyBtn {
+    margin-top: 12px;
+    width: 100%;
+    min-height: 40px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(12, 12, 12, 0.5);
+    color: rgba(245, 245, 245, 0.92);
+    cursor: pointer;
+}
+
+#editValueApplyBtn:hover {
+    background: rgba(18, 18, 18, 0.62);
+    border-color: rgba(255, 255, 255, 0.24);
+}
+
+#editValueApplyBtn:active {
+    background: rgba(0, 0, 0, 0.72);
+}
+
 .settingsModalContent {
     display: flex;
     flex-direction: column;
