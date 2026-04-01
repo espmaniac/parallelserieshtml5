@@ -2,6 +2,8 @@ var toolmgr = {
     activeCmd: null,
 
     onMouseDown(event) {
+      if (isAnyModalOpen()) return;
+
       const mouseX = event.clientX - canvas.getBoundingClientRect().left;
       const mouseY = event.clientY - canvas.getBoundingClientRect().top;
 
@@ -37,6 +39,8 @@ var toolmgr = {
     },
 
     onMouseMove(event) {
+        if (isAnyModalOpen()) return;
+
         let mouseX = event.clientX - canvas.getBoundingClientRect().left;
         let mouseY = event.clientY - canvas.getBoundingClientRect().top;
         let cmd = toolmgr.activeCmd;
@@ -65,6 +69,8 @@ var toolmgr = {
     },
 
     onMouseUp(event) {
+        if (isAnyModalOpen()) return;
+
         let mouseX = event.clientX - canvas.getBoundingClientRect().left;
         let mouseY = event.clientY - canvas.getBoundingClientRect().top;
         let cmd = toolmgr.activeCmd;
@@ -104,6 +110,8 @@ var toolmgr = {
     },
 
     onMouseWheel(event) { // zoom
+        if (isAnyModalOpen()) return;
+
         event.preventDefault();
 
         let mouseX = event.clientX - canvas.getBoundingClientRect().left;
@@ -118,6 +126,8 @@ var toolmgr = {
     },
 
     onTouchStart(event) {
+        if (isAnyModalOpen()) return;
+
         event.preventDefault();
 
         context_menu.hide();
@@ -186,6 +196,7 @@ var toolmgr = {
     },
 
     onTouchMove(event) {
+        if (isAnyModalOpen()) return;
 
         event.preventDefault();
 
@@ -253,6 +264,8 @@ var toolmgr = {
     },
 
     onTouchEnd(event) {
+        if (isAnyModalOpen()) return;
+
         event.preventDefault();
         let pointerX = event.changedTouches[0].clientX - canvas.getBoundingClientRect().left;
         let pointerY = event.changedTouches[0].clientY - canvas.getBoundingClientRect().top;
@@ -297,6 +310,8 @@ var toolmgr = {
     },
 
     onContextMenu(event) {
+        if (isAnyModalOpen()) return;
+
         event.preventDefault();
 
         const canvasRect = canvas.getBoundingClientRect();
@@ -327,8 +342,7 @@ var toolmgr = {
             context_menu.main_menu.addItem(destNodeMenu);
 
             context_menu.main_menu.addItem(new Item("Edit Value", function() {
-                let newValue = prompt(`new ${component.name.value} value`);
-                scheme.execute(new ChangeComponentValue(component, newValue));
+                openEditValueModal(component);
             }));
 
             context_menu.main_menu.addItem(new Item("Rotate -45", function() {
@@ -394,6 +408,8 @@ var toolmgr = {
     },
 
     onKeyDown(event) {
+        if (isAnyModalOpen()) return;
+
         switch(event.keyCode) {
             case 8: case 46:
                 let elm = (scheme.selectedComponents.length) 
