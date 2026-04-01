@@ -1095,32 +1095,51 @@ body.component-selecting {
 }
 
 .settingsComponentOption {
-    background: rgba(20, 20, 20, 0.35);
+    background-color: rgba(20, 20, 20, 0.35);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: rgba(240, 240, 240, 0.86);
     border-radius: 10px;
     min-height: 40px;
     text-align: left;
     padding: 0 12px 0 52px;
-    background-repeat: no-repeat;
-    background-size: 28px 28px;
-    background-position: 12px center;
+    position: relative;
 }
 
 .settingsComponentOption[data-component="R"] {
-    background-image: url("../icons/res_eu.svg");
+    --component-icon: url("../icons/res_eu.svg");
 }
 
 .settingsComponentOption[data-component="C"] {
-    background-image: url("../icons/capacitor.svg");
+    --component-icon: url("../icons/capacitor.svg");
 }
 
 .settingsComponentOption[data-component="L"] {
-    background-image: url("../icons/inductor.svg");
+    --component-icon: url("../icons/inductor.svg");
+}
+
+.settingsComponentOption::before {
+    content: "";
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-image: var(--component-icon);
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    filter: brightness(0) invert(1) opacity(0.95);
+}
+
+.settingsComponentOption:hover,
+.settingsComponentOption:focus-visible {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.24);
 }
 
 .settingsComponentOption.active {
-    background: rgba(255, 255, 255, 0.16);
+    background-color: rgba(255, 255, 255, 0.16);
     border-color: rgba(255, 255, 255, 0.35);
     color: #fff;
 }
