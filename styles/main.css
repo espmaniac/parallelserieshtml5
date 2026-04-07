@@ -883,8 +883,9 @@ body.component-selecting {
     top: 50%;
     margin: 0 auto;
     width: min(92vw, 620px);
-    height: min(62vh, 500px);
-    min-height: min(62vh, 500px);
+    height: auto;
+    min-height: fit-content;
+    max-height: min(90vh, 500px);
     padding: 12px;
     box-sizing: border-box;
     transform: translateY(-50%);
@@ -926,7 +927,8 @@ body.component-selecting {
     box-sizing: border-box;
     display: flex;
     align-items: stretch;
-    flex: 1;
+    flex: 1 1 auto;
+    overflow: auto;
     border-radius: 22px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-top: none;
@@ -989,26 +991,31 @@ body.component-selecting {
 
 .modalDialog #saveScheme {
     width: 100%;
-    height: 100%;
-    min-height: 100%;
+    height: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 
 .modalContent #saveScheme {
-    height: 100%;
+    height: auto;
+    min-height: 0;
+    flex: 1 1 auto;
 }
 
 .modalContent .textarea,
 .modalContent #saveFileBtn {
-    height: 100%;
-    min-height: 100%;
+    height: auto;
+    min-height: 0;
 }
 
 .modalDialog .form {
     width: 100%;
-    height: 100%;
-    min-height: 100%;
-    flex: 1;
+    height: auto;
+    min-height: 0;
+    flex: 1 1 auto;
     display: flex;
     justify-content: center;
     flex-direction: column;
@@ -1022,9 +1029,9 @@ body.component-selecting {
     border: 1px solid rgba(255, 255, 255, 0.12);
     color: rgba(245, 245, 245, 0.92);
     border-radius: 12px;
-    height: 80%;
-    min-height: 80%;
-    flex: 1;
+    height: auto;
+    min-height: 140px;
+    flex: 1 1 auto;
     align-self: stretch;
     box-sizing: border-box;
     resize: none;
@@ -1040,15 +1047,16 @@ body.component-selecting {
     color: rgba(245, 245, 245, 0.92);
     border-radius: 12px;
     width: 100%;
-    height: 10%;
-    min-height: 30px;
+    height: auto;
+    min-height: 40px;
+    flex: 0 0 auto;
     align-self: stretch;
     box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0 14px;
-    margin-top: 12px;
+    margin-top: 0;
 
     backdrop-filter: blur(1px);
     -webkit-backdrop-filter: blur(1px);
@@ -1064,13 +1072,11 @@ body.component-selecting {
 }
 
 #settingsModal .modalDialog {
-    height: min(56vh, 440px);
-    min-height: min(56vh, 440px);
+    max-height: min(72vh, 440px);
 }
 
 .editValueModalDialog {
-    height: min(38vh, 300px);
-    min-height: min(38vh, 300px);
+    max-height: min(58vh, 300px);
 }
 
 .editValueLabel {
