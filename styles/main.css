@@ -892,12 +892,11 @@ body.component-selecting {
     transform: none;
     display: flex;
     flex-direction: column;
-
     background: rgba(0,0,0, 0.34);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 32px;
     box-shadow: 0 20px 44px rgba(0, 0, 0, 0.42);
-
+	box-sizing: content-box;
 }
 
 .modalHeader {
