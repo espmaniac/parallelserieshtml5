@@ -424,7 +424,7 @@ function openEditValueModal(component) {
 
   editValueModalState.component = component;
   editValueInput.value = component.value.value;
-  editValueModal.style.display = "block";
+  editValueModal.style.display = "flex";
   editValueInput.focus();
   editValueInput.select();
 }
@@ -432,7 +432,7 @@ function openEditValueModal(component) {
 function isAnyModalOpen() {
   const modals = document.querySelectorAll(".modal");
   for (let i = 0; i < modals.length; ++i) {
-    if (modals[i].style.display === "block") return true;
+    if (modals[i].style.display !== "none" && modals[i].style.display !== "") return true;
   }
 
   return false;
@@ -493,14 +493,14 @@ function initModals() {
   modalInit(settingsModal);
   modalInit(editValueModal);
   save.addEventListener("click", function() {    
-    saveModal.style.display="block";
+    saveModal.style.display="flex";
     document.getElementById("saveText").value = scheme.serialize();
   });
 
   headerUtility.addEventListener("click", function() {
     updateComponentModalState();
     syncExpressionToggleFromView();
-    settingsModal.style.display = "block";
+    settingsModal.style.display = "flex";
   });
 
   for (let i = 0; i < componentOptions.length; ++i) {
