@@ -886,7 +886,6 @@ body.component-selecting {
     margin: 0 auto;
     width: min(92vw, 620px);
     height: auto;
-    min-height: fit-content;
     max-height: min(calc(100vh - max(24px, 8vh)), 500px);
     padding: 12px;
     box-sizing: border-box;
