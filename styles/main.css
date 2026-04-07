@@ -876,6 +876,8 @@ body.component-selecting {
     overflow: auto;
     align-items: center;
     justify-content: center;
+    padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
 
     background: rgba(6, 6, 8, 0.35);
 }
@@ -886,7 +888,7 @@ body.component-selecting {
     margin: 0 auto;
     width: min(92vw, 620px);
     height: auto;
-    max-height: min(calc(100vh - max(24px, 8vh)), 500px);
+    max-height: min(90%, 500px);
     padding: 12px;
     transform: none;
     display: flex;
@@ -1071,11 +1073,11 @@ body.component-selecting {
 }
 
 #settingsModal .modalDialog {
-    max-height: min(72vh, 440px);
+    max-height: min(88%, 440px);
 }
 
 .editValueModalDialog {
-    max-height: min(58vh, 300px);
+    max-height: min(82%, 300px);
 }
 
 .editValueLabel {
