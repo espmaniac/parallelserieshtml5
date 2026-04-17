@@ -1031,12 +1031,10 @@ body.component-selecting {
     color: rgba(245, 245, 245, 0.92);
     border-radius: 12px;
     height: auto;
-    min-height: 140px;
     flex: 1 1 auto;
     align-self: stretch;
     box-sizing: border-box;
     resize: none;
-
     backdrop-filter: blur(1px);
     -webkit-backdrop-filter: blur(1px);
 }
