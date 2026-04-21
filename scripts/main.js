@@ -93,11 +93,9 @@ window.onload = function() {
     let windowDifY = (window.innerHeight - getCanvasHeight()) / 2;
     scheme.offsetX += windowDifX / scheme.zoom;
     scheme.offsetY += windowDifY / scheme.zoom;
-  
-    resizeCanvas();
 
     resizeSchemeElement();
-
+    resizeCanvas();
     
     if (!context_menu.hidden()) {
       let pos = context_menu.element.getBoundingClientRect();
