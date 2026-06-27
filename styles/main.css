@@ -111,9 +111,9 @@ body.component-selecting {
     position: fixed;
     inset: 0;
     background-color: rgba(0, 0, 0, 0.44);
-    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'><defs><radialGradient id='g' cx='50%' cy='50%' r='50%'><stop offset='0%' stop-color='black' stop-opacity='0.25'/><stop offset='70%' stop-color='black' stop-opacity='0.1'/><stop offset='100%' stop-color='black' stop-opacity='0'/></radialGradient></defs><circle cx='3' cy='3' r='3' fill='url(%23g)'/><circle cx='12' cy='3' r='3' fill='url(%23g)'/><circle cx='3' cy='12' r='3' fill='url(%23g)'/><circle cx='12' cy='12' r='3' fill='url(%23g)'/></svg>") fixed;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 83.138 72'><path d='M0,60L0,36 M0,36L20.784,24 M20.784,24L41.569,36 M41.569,36L41.569,60 M41.569,60L20.784,72 M20.784,72L0,60 M20.784,24L20.784,0 M20.784,0L41.569,-12 M41.569,-12L62.354,0 M62.354,0L62.354,24 M62.354,24L41.569,36 M62.354,24L83.138,36 M83.138,60L62.354,72 M62.354,72L41.569,60 M20.784,96L20.784,72 M62.354,72L62.354,96 M62.354,96L41.569,108 M41.569,108L20.784,96' fill='none' stroke='black' stroke-opacity='0.24' stroke-width='1.5' stroke-linejoin='round' stroke-linecap='butt'/></svg>") fixed;
     background-repeat: repeat;
-    background-size: 18px 18px;
+    background-size: 41.569px 36px;
     backdrop-filter: blur(11px);
     -webkit-backdrop-filter: blur(11px);
     pointer-events: none;
