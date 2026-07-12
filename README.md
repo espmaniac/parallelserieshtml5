@@ -21,6 +21,8 @@
   - Resistors, capacitors, and inductors.
 - **Series & Parallel Calculations**
   - Instantly compute equivalent values for selected sections of your circuit.  
+  - Open a structured solution walkthrough that explains series reductions, parallel reductions, inactive branches, and star-mesh transformations step by step.
+  - Select the solution method from an extensible method registry. The current method is **Series/Parallel + Star-Mesh**.
   - **Important:** To perform calculations, specify **StartNode** and **DestNode** using the **context menu** on components or wires.
 - **JSON Storage**
   - Save and load circuits for future editing or sharing.
