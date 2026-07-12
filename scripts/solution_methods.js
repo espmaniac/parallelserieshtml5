@@ -26,6 +26,8 @@ class SolutionMethodRegistry {
         if (!method) {
             return {
                 expression: null,
+                componentExpression: null,
+                answer: null,
                 steps: [{
                     type: "error",
                     title: "Unknown solution method",
@@ -50,6 +52,7 @@ solutionMethodRegistry.register({
         const expression = graph.toString(startNode, destNode);
         return {
             expression: expression || null,
+            componentExpression: graph.getComponentExpression(),
             answer: null,
             steps: graph.getSolutionSteps()
         };
