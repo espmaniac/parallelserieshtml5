@@ -62,7 +62,9 @@
         </div>
     </div>
     
-    <div id="header">
+    <main id="workspace">
+        <div id="editorPane">
+            <div id="header">
         <input type="checkbox" id="menuToggle" aria-label="Toggle menu">
         <label for="menuToggle" id="menuToggleLabel">☰ Menu</label>
 
@@ -84,23 +86,23 @@
         <div id="right">
             <button id="clear">Clear</button>
         </div>        
-    </div>
-
-    <main id="workspace">
-        <div id="scheme">
-            <div id="tools">
-                <div id="mainTools">
-                  <button id="cursorTool" class="active">
-                      <img src="icons/cursor.svg" alt="" width="40" height="20">
-                  </button>
-                  <button id="wireTool">
-                      <img src="icons/wire.svg" alt="" width="40" height="20">
-                  </button>
-
-                </div>
             </div>
 
-            <canvas id="myCanvas"></canvas>
+            <div id="scheme">
+                <div id="tools">
+                    <div id="mainTools">
+                      <button id="cursorTool" class="active">
+                          <img src="icons/cursor.svg" alt="" width="40" height="20">
+                      </button>
+                      <button id="wireTool">
+                          <img src="icons/wire.svg" alt="" width="40" height="20">
+                      </button>
+
+                    </div>
+                </div>
+
+                <canvas id="myCanvas"></canvas>
+            </div>
         </div>
 
         <aside id="solutionInspector" aria-labelledby="solutionInspectorTitle" hidden>

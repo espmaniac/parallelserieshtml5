@@ -354,7 +354,7 @@ function renderSolutionInspector(method, solution, answer) {
 }
 
 function isSolutionInspectorMobile() {
-  return window.matchMedia("(max-width: 768px)").matches;
+  return window.matchMedia("(max-width: 900px)").matches;
 }
 
 function updateSolutionInspectorResizeOrientation() {
