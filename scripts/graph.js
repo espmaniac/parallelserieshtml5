@@ -1,509 +1,451 @@
-class GraphNode {
+class GraphUnionFind {
     constructor() {
-        this.parents = [];
-        this.children = [];
-        this.branches = new Map(); // Map<GraphNode, string> - branch label for child
-        this.value = null;
+        this.parent = new Map();
+        this.rank = new Map();
+    }
+
+    add(value) {
+        if (!this.parent.has(value)) {
+            this.parent.set(value, value);
+            this.rank.set(value, 0);
+        }
+    }
+
+    find(value) {
+        const parent = this.parent.get(value);
+        if (parent !== value) {
+            const root = this.find(parent);
+            this.parent.set(value, root);
+            return root;
+        }
+        return parent;
+    }
+
+    union(left, right) {
+        const leftRoot = this.find(left);
+        const rightRoot = this.find(right);
+        if (leftRoot === rightRoot) return;
+
+        const leftRank = this.rank.get(leftRoot);
+        const rightRank = this.rank.get(rightRoot);
+        if (leftRank < rightRank) {
+            this.parent.set(leftRoot, rightRoot);
+        } else if (leftRank > rightRank) {
+            this.parent.set(rightRoot, leftRoot);
+        } else {
+            this.parent.set(rightRoot, leftRoot);
+            this.rank.set(leftRoot, leftRank + 1);
+        }
     }
 }
 
 class Graph {
-    constructor() {
-        this.nodes = []; // merged nodes
-    }
-
     toString(startNode, destNode) {
-        let start = this.mergeNodes(startNode, []);
-        let end = null;
-        start.value = "start";
+        if (!startNode || !destNode) return undefined;
 
-        let addNodes = new MacroCommand();
+        const collected = this._collectNetwork(startNode);
+        if (!collected.nodes.has(destNode)) return undefined;
 
-        for (let i = 1; i < this.nodes.length; ++i) {
-            let node = this.nodes[i];
-            node.value = i;
-            if (node.x === destNode.x && node.y === destNode.y) {
-                end = node;
-                node.value = "end";
-            } else {
-                let newLabel = new LabelNode(`N${i}`);
-                newLabel.node = node;
-                newLabel.className = "GraphLabelNode";
-                addNodes.addCommand(new AddLabelNode(newLabel));
+        const network = this._createReducedNetwork(collected, startNode, destNode);
+        if (!network) return undefined;
+        if (network.start === network.end) return "0";
+
+        while (true) {
+            this._reduceSeriesParallel(network);
+
+            const internalNodes = Array.from(network.nodes).filter((node) => {
+                return node !== network.start && node !== network.end;
+            });
+
+            if (internalNodes.length === 0) break;
+
+            const candidate = this._chooseEliminationNode(network, internalNodes);
+            if (!candidate || !this._eliminateNode(network, candidate)) {
+                return undefined;
             }
         }
 
-        // If we failed to find end in merged nodes, abort
-        if (!end) return undefined;
-
-        // Compute BFS distances for guidance (do not prune topology, only orient GraphNode)
-        this._distEnd = this._computeDistances(end);
-        this._distStart = this._computeDistances(start);
-
-        let graphNodes = new Map();
-        let pathExist = this.buildPath(start, end, [], graphNodes);
-
-        if (pathExist !== -1) {
-            try { scheme.execute(addNodes); } catch (e) { /* ignore */ }
-
-            // Build AST, simplify and render
-            const rawAst = this._buildAST(pathExist, null, new Map());
-            const rawStr = this._astToString(rawAst);
-
-            const simpAst = this._simplifyAST(rawAst);
-            const cleanStr = this._astToString(simpAst);
-
-            console.log(printGraphNode(pathExist));
-            try { console.log("raw expression:", rawStr); } catch (e) {}
-            try { console.log("cleaned expression:", cleanStr); } catch (e) {}
-
-            return cleanStr;
-        } else {
-            return undefined;
-        }
-    }
-
-    // Generic BFS distances from a given node over merged-node undirected graph
-    _computeDistances(src) {
-        const dist = new Map();
-        const q = [src];
-        dist.set(src, 0);
-
-        while (q.length) {
-            const cur = q.shift();
-            const d = dist.get(cur);
-            const conns = cur.connections || [];
-            for (let i = 0; i < conns.length; ++i) {
-                const nei = conns[i].node;
-                if (dist.has(nei)) continue;
-                dist.set(nei, d + 1);
-                q.push(nei);
-            }
-        }
-        return dist;
-    }
-
-    // mergeNodes kept as before (adds nodes from wires as "0" connections)
-    mergeNodes(startNode, visited = []) {
-        let mergeNode = new Node();
-        mergeNode.x = startNode.x;
-        mergeNode.y = startNode.y;
-
-        let find = this.nodes.find((n) => {
-            return n.x === mergeNode.x && n.y === mergeNode.y;
+        this._combineParallelEdges(network);
+        const terminalEdges = network.edges.filter((edge) => {
+            return this._connects(edge, network.start, network.end);
         });
 
-        if (!find) this.nodes.push(mergeNode);
-        else mergeNode = find;
+        if (terminalEdges.length === 0) return undefined;
 
-        if (visited.includes(startNode)) return mergeNode;
-
-        visited.push(startNode);
-
-        let connections = startNode.connections.slice();
-
-        for (let i = 0; i < connections.length; ++i) {
-            let connection = connections[i];
-
-            let result = this.mergeNodes(connection.node, visited);
-            
-            if (result !== -1) {
-                if (result.x !== mergeNode.x || result.y !== mergeNode.y) {
-                    let exist = mergeNode.connections.find((n) => {
-                        return n.node.x === result.x && n.node.y === result.y;
-                    });
-
-                    if (!exist) {
-                        mergeNode.connections.push({ node: result, value: connection.value });
-                    }
-                    let resultFind = result.connections.find((n) => {
-                        return n.node.x === mergeNode.x && n.node.y === mergeNode.y;
-                    });
-                    if (!resultFind) result.connections.push({ node: mergeNode, value: connection.value });
-                }
-            }
-        }
-
-        return mergeNode;
+        const result = this._parallelAst(terminalEdges.map((edge) => edge.ast));
+        return this._astToString(result, true);
     }
 
-    // buildPath: create GraphNode graph; store branch label keyed by child object (not by child.value)
-    buildPath(startNode, destNode, visited, graphNodes = new Map()) {
-        let result = -1;
-        visited.push(startNode);
+    _collectNetwork(startNode) {
+        const nodes = new Set([startNode]);
+        const edges = [];
+        const stack = [startNode];
+        const nodeIds = new Map();
+        const seenObjects = new Set();
+        const seenPrimitiveEdges = new Set();
+        let nextNodeId = 0;
 
-        let startGraphNode = new GraphNode();
-        startGraphNode.value = startNode.value;
+        const nodeId = (node) => {
+            if (!nodeIds.has(node)) nodeIds.set(node, nextNodeId++);
+            return nodeIds.get(node);
+        };
 
-        if (graphNodes.has(startNode.value)) startGraphNode = graphNodes.get(startNode.value);
-        else graphNodes.set(startNode.value, startGraphNode);
+        while (stack.length > 0) {
+            const node = stack.pop();
+            nodeId(node);
 
-        if (startNode === destNode) {
-            visited.pop();
-            return startGraphNode;
-        }
-
-        for (let i = 0; i < startNode.connections.length; i++) {
-            const edge = startNode.connections[i];
-            let node = edge.node;
-
-            // Avoid revisiting the same merged Node within the current DFS path
-            if (visited.includes(node)) continue;
-
-            // Distance-guided filtering:
-            // Keep an edge if it brings us closer to 'end' OR moves us away from 'start'.
-            if (this._distEnd && this._distStart) {
-                const dEcur = this._distEnd.get(startNode);
-                const dEnext = this._distEnd.get(node);
-                if (dEnext === undefined) continue; // cannot reach end at all
-
-                const dScur = this._distStart.get(startNode);
-                const dSnext = this._distStart.get(node);
-
-                const reducesEnd = (dEcur !== undefined && dEnext < dEcur);
-                const movesAwayStart = (dScur !== undefined && dSnext !== undefined && dSnext > dScur);
-
-                if (!reducesEnd && !movesAwayStart) continue;
-            }
-
-            let child = this.buildPath(node, destNode, visited, graphNodes);
-
-            if (child !== -1) {
-                result = startGraphNode;
-                if (startGraphNode.children.includes(child)) continue;
-
-                // Prevent creating a cycle in GraphNode: if 'startGraphNode' is reachable from 'child',
-                // adding edge startGraphNode -> child would form a cycle. Skip such edge.
-                if (this._gnReachable(child, startGraphNode)) {
-                    continue;
+            for (const connection of (node.connections || [])) {
+                const other = connection.node;
+                if (!nodes.has(other)) {
+                    nodes.add(other);
+                    stack.push(other);
                 }
 
-                startGraphNode.children.push(child);
-                child.parents.push(startGraphNode);
-
-                // store branch label with child object as key
-                let label = (typeof edge.value === "string")
-                    ? edge.value
-                    : edge.value.value;
-
-                startGraphNode.branches.set(child, String(label));
-            }
-        }
-
-        visited.pop();
-        return result;
-    }
-
-    /**********************
-     * GraphNode reachability helper (to avoid cycles)
-     **********************/
-    // DFS over GraphNode.children: is 'target' reachable from 'from'?
-    _gnReachable(from, target) {
-        if (from === target) return true;
-        const seen = new Set();
-        const stack = [from];
-        while (stack.length) {
-            const cur = stack.pop();
-            if (seen.has(cur)) continue;
-            seen.add(cur);
-            if (cur === target) return true;
-            for (const child of cur.children) {
-                if (!seen.has(child)) stack.push(child);
-            }
-        }
-        return false;
-    }
-
-    /**********************
-     * Reconvergence helpers
-     **********************/
-    _reachableSet(start, limit = null) {
-        const visited = new Set();
-        const stack = [start];
-        while (stack.length) {
-            const cur = stack.pop();
-            if (visited.has(cur)) continue;
-            visited.add(cur);
-            if (limit && cur === limit) continue;
-            for (const c of cur.children) stack.push(c);
-        }
-        return visited;
-    }
-
-    _bfsDistance(start, target, limit = null) {
-        if (start === target) return 0;
-        const q = [{ node: start, dist: 0 }];
-        const seen = new Set([start]);
-        while (q.length) {
-            const { node, dist } = q.shift();
-            if (limit && node === limit) continue;
-            for (const c of node.children) {
-                if (seen.has(c)) continue;
-                if (c === target) return dist + 1;
-                seen.add(c);
-                q.push({ node: c, dist: dist + 1 });
-            }
-        }
-        return Infinity;
-    }
-
-    _findReconverge(children, limit = null) {
-        if (!children || children.length === 0) return null;
-        const sets = children.map(ch => this._reachableSet(ch, limit));
-        let intersection = null;
-        for (const s of sets) {
-            if (intersection === null) intersection = new Set(s);
-            else {
-                for (const x of Array.from(intersection)) {
-                    if (!s.has(x)) intersection.delete(x);
+                const value = connection.value;
+                if (value && typeof value === "object") {
+                    if (seenObjects.has(value)) continue;
+                    seenObjects.add(value);
+                } else {
+                    const leftId = nodeId(node);
+                    const rightId = nodeId(other);
+                    const key = `${Math.min(leftId, rightId)}:${Math.max(leftId, rightId)}:${String(value)}`;
+                    if (seenPrimitiveEdges.has(key)) continue;
+                    seenPrimitiveEdges.add(key);
                 }
+
+                edges.push({ a: node, b: other, value: value });
             }
         }
-        if (!intersection || intersection.size === 0) return null;
 
+        return { nodes: nodes, edges: edges };
+    }
+
+    _createReducedNetwork(collected, startNode, destNode) {
+        const unionFind = new GraphUnionFind();
+        for (const node of collected.nodes) unionFind.add(node);
+
+        for (const edge of collected.edges) {
+            if (this._isZeroValue(edge.value)) unionFind.union(edge.a, edge.b);
+        }
+
+        const start = unionFind.find(startNode);
+        const end = unionFind.find(destNode);
+        const nodes = new Set();
+        for (const node of collected.nodes) nodes.add(unionFind.find(node));
+
+        const edges = [];
+        for (const edge of collected.edges) {
+            if (this._isZeroValue(edge.value)) continue;
+
+            const a = unionFind.find(edge.a);
+            const b = unionFind.find(edge.b);
+            if (a === b) continue;
+
+            const text = this._valueText(edge.value);
+            const value = this._parseValue(text);
+            if (!(value > 0) || !Number.isFinite(value)) return null;
+
+            edges.push({
+                a: a,
+                b: b,
+                admittance: this._toAdmittance(value),
+                ast: { type: "value", value: text }
+            });
+        }
+
+        return {
+            nodes: nodes,
+            edges: edges,
+            start: start,
+            end: end
+        };
+    }
+
+    _reduceSeriesParallel(network) {
+        let changed = true;
+
+        while (changed) {
+            changed = this._combineParallelEdges(network);
+            if (this._removeDanglingNodes(network)) {
+                changed = true;
+                continue;
+            }
+            if (this._reduceOneSeriesNode(network)) changed = true;
+        }
+    }
+
+    _combineParallelEdges(network) {
+        const nodeIds = new Map();
+        let nextNodeId = 0;
+        for (const node of network.nodes) nodeIds.set(node, nextNodeId++);
+
+        const groups = new Map();
+        for (const edge of network.edges) {
+            if (edge.a === edge.b) continue;
+            const aId = nodeIds.get(edge.a);
+            const bId = nodeIds.get(edge.b);
+            const key = `${Math.min(aId, bId)}:${Math.max(aId, bId)}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(edge);
+        }
+
+        let changed = false;
+        const edges = [];
+        for (const group of groups.values()) {
+            if (group.length === 1) {
+                edges.push(group[0]);
+                continue;
+            }
+
+            changed = true;
+            edges.push({
+                a: group[0].a,
+                b: group[0].b,
+                admittance: group.reduce((sum, edge) => sum + edge.admittance, 0),
+                ast: this._parallelAst(group.map((edge) => edge.ast))
+            });
+        }
+
+        network.edges = edges;
+        return changed;
+    }
+
+    _removeDanglingNodes(network) {
+        const degree = this._degreeMap(network);
+        const removable = Array.from(network.nodes).filter((node) => {
+            return node !== network.start &&
+                node !== network.end &&
+                (degree.get(node) || 0) <= 1;
+        });
+
+        if (removable.length === 0) return false;
+
+        const removeSet = new Set(removable);
+        network.edges = network.edges.filter((edge) => {
+            return !removeSet.has(edge.a) && !removeSet.has(edge.b);
+        });
+        for (const node of removable) network.nodes.delete(node);
+        return true;
+    }
+
+    _reduceOneSeriesNode(network) {
+        const degree = this._degreeMap(network);
+        const node = Array.from(network.nodes).find((candidate) => {
+            return candidate !== network.start &&
+                candidate !== network.end &&
+                degree.get(candidate) === 2;
+        });
+
+        if (!node) return false;
+
+        const incident = network.edges.filter((edge) => edge.a === node || edge.b === node);
+        const left = incident[0];
+        const right = incident[1];
+        const leftNode = this._otherEnd(left, node);
+        const rightNode = this._otherEnd(right, node);
+
+        network.edges = network.edges.filter((edge) => edge !== left && edge !== right);
+        network.nodes.delete(node);
+
+        if (leftNode !== rightNode) {
+            const denominator = left.admittance + right.admittance;
+            if (!(denominator > 0) || !Number.isFinite(denominator)) return false;
+
+            network.edges.push({
+                a: leftNode,
+                b: rightNode,
+                admittance: (left.admittance * right.admittance) / denominator,
+                ast: this._seriesAst([left.ast, right.ast])
+            });
+        }
+
+        return true;
+    }
+
+    _chooseEliminationNode(network, internalNodes) {
+        const degree = this._degreeMap(network);
         let best = null;
-        let bestScore = Infinity;
-        for (const cand of intersection) {
-            let total = 0;
-            let unreachable = false;
-            for (const ch of children) {
-                const d = this._bfsDistance(ch, cand, limit);
-                if (d === Infinity) { unreachable = true; break; }
-                total += d;
+        let bestDegree = Infinity;
+
+        for (const node of internalNodes) {
+            const nodeDegree = degree.get(node) || 0;
+            if (nodeDegree < bestDegree) {
+                best = node;
+                bestDegree = nodeDegree;
             }
-            if (unreachable) continue;
-            if (total < bestScore) { bestScore = total; best = cand; }
         }
+
         return best;
     }
 
-    /* ===================
-       AST builder + simplify + render
-       =================== */
-
-    // _buildAST(node, stopNode, memo)
-    // AST types:
-    //  - { type: "value", val: string }
-    //  - { type: "series", parts: [AST...] }
-    //  - { type: "parallel", branches: [AST...] }
-    _buildAST(node, stopNode = null, memo = new Map()) {
-        if (!node) return null;
-
-        // memoization per (node, stopNode)
-        let stopMap = memo.get(node);
-        if (!stopMap) { stopMap = new Map(); memo.set(node, stopMap); }
-        if (stopMap.has(stopNode)) return stopMap.get(stopNode);
-
-        // placeholder to prevent recursion loops
-        stopMap.set(stopNode, null);
-
-        if (stopNode && node === stopNode) {
-            stopMap.set(stopNode, null);
-            return null;
+    _eliminateNode(network, node) {
+        const incident = network.edges.filter((edge) => edge.a === node || edge.b === node);
+        if (incident.length === 0) {
+            network.nodes.delete(node);
+            return true;
         }
 
-        if (node.children.length === 0) {
-            stopMap.set(stopNode, null);
-            return null;
-        }
+        const totalAdmittance = incident.reduce((sum, edge) => sum + edge.admittance, 0);
+        if (!(totalAdmittance > 0) || !Number.isFinite(totalAdmittance)) return false;
 
-        // parallel
-        if (node.children.length > 1) {
-            const reconverge = this._findReconverge(node.children, stopNode);
+        network.edges = network.edges.filter((edge) => !incident.includes(edge));
+        network.nodes.delete(node);
 
-            const branches = [];
-            for (let i = 0; i < node.children.length; ++i) {
-                const child = node.children[i];
-                // get label from branches Map using child object as key
-                const branchLabel = node.branches.has(child) ? String(node.branches.get(child)) : "";
+        for (let i = 0; i < incident.length; ++i) {
+            for (let j = i + 1; j < incident.length; ++j) {
+                const a = this._otherEnd(incident[i], node);
+                const b = this._otherEnd(incident[j], node);
+                if (a === b) continue;
 
-                const childAst = this._buildAST(child, reconverge ? reconverge : stopNode, memo);
+                const admittance = (incident[i].admittance * incident[j].admittance) / totalAdmittance;
+                if (!(admittance > 0) || !Number.isFinite(admittance)) continue;
 
-                const parts = [];
-                if (branchLabel !== "") parts.push({ type: "value", val: branchLabel });
-                if (childAst) {
-                    if (childAst.type === "series") for (const p of childAst.parts) parts.push(p);
-                    else parts.push(childAst);
-                }
-
-                if (parts.length === 0) parts.push({ type: "value", val: "0" });
-                const branchNode = (parts.length === 1) ? parts[0] : { type: "series", parts: parts };
-                branches.push(branchNode);
-            }
-
-            const parallelNode = { type: "parallel", branches: branches };
-
-            if (reconverge && reconverge !== stopNode) {
-                const rest = this._buildAST(reconverge, stopNode, memo);
-                if (rest) {
-                    const out = { type: "series", parts: [parallelNode, rest] };
-                    stopMap.set(stopNode, out);
-                    return out;
-                }
-            }
-
-            stopMap.set(stopNode, parallelNode);
-            return parallelNode;
-        }
-
-        // single child -> series
-        const child = node.children[0];
-        const branchLabel = node.branches.has(child) ? String(node.branches.get(child)) : "";
-        if (stopNode && child === stopNode) {
-            if (!branchLabel || branchLabel === "") {
-                stopMap.set(stopNode, null);
-                return null;
-            }
-            const valNode = { type: "value", val: branchLabel };
-            stopMap.set(stopNode, valNode);
-            return valNode;
-        }
-
-        const childAst = this._buildAST(child, stopNode, memo);
-
-        const parts = [];
-        if (branchLabel !== "") parts.push({ type: "value", val: branchLabel });
-        if (childAst) {
-            if (childAst.type === "series") for (const p of childAst.parts) parts.push(p);
-            else parts.push(childAst);
-        }
-
-        if (parts.length === 0) {
-            const zero = { type: "value", val: "0" };
-            stopMap.set(stopNode, zero);
-            return zero;
-        }
-
-        const out = (parts.length === 1) ? parts[0] : { type: "series", parts: parts };
-        stopMap.set(stopNode, out);
-        return out;
-    }
-
-    _isZeroAST(ast) {
-        return ast && ast.type === "value" && String(ast.val).trim() === "0";
-    }
-
-    _simplifyAST(node) {
-        if (!node) return null;
-
-        if (node.type === "value") {
-            const v = (node.val === null || node.val === undefined || String(node.val).trim() === "") ? "0" : String(node.val).trim();
-            return { type: "value", val: v };
-        }
-
-        if (node.type === "series") {
-            const parts = [];
-            for (const p of node.parts) {
-                const sp = this._simplifyAST(p);
-                if (!sp) continue;
-                if (sp.type === "series") for (const sub of sp.parts) parts.push(sub);
-                else parts.push(sp);
-            }
-
-            const nonZero = [];
-            let zeros = 0;
-            for (const p of parts) {
-                if (this._isZeroAST(p)) zeros++;
-                else nonZero.push(p);
-            }
-
-            if (nonZero.length === 0) return { type: "value", val: "0" };
-            if (zeros > 0) nonZero.push({ type: "value", val: "0" });
-            if (nonZero.length === 1) return nonZero[0];
-            return { type: "series", parts: nonZero };
-        }
-
-        if (node.type === "parallel") {
-            let branches = [];
-            for (const b of node.branches) {
-                const sb = this._simplifyAST(b);
-                if (!sb) continue;
-                if (sb.type === "parallel") for (const sub of sb.branches) branches.push(sub);
-                else branches.push(sb);
-            }
-
-            if (branches.length === 0) return { type: "value", val: "0" };
-            if (branches.length === 1) return branches[0];
-            return { type: "parallel", branches: branches };
-        }
-
-        return null;
-    }
-
-    _astToString(node, opts = { topLevel: true }) {
-        if (!node) return "";
-
-        const render = (n) => {
-            if (!n) return "";
-            if (n.type === "value") return String(n.val);
-            if (n.type === "series") {
-                const parts = n.parts.map(p => render(p));
-                return parts.join(" + ");
-            }
-            if (n.type === "parallel") {
-                const branches = n.branches.map(b => {
-                    const s = render(b);
-                    if (s.indexOf(" + ") >= 0) return "(" + s + ")";
-                    return s;
+                const transformedValue = this._fromAdmittance(admittance);
+                network.edges.push({
+                    a: a,
+                    b: b,
+                    admittance: admittance,
+                    ast: { type: "value", value: this._formatNumber(transformedValue) }
                 });
-                return "(" + branches.join(" // ") + ")";
             }
-            return "";
-        };
-
-        let out = render(node);
-        if (opts.topLevel) out = this._stripOuterParensText(out);
-        return out;
-    }
-
-    _stripOuterParensText(s) {
-        if (!s) return s;
-        s = s.trim();
-        while (s.length >= 2 && s[0] === '(' && s[s.length - 1] === ')') {
-            let depth = 0;
-            let valid = true;
-            for (let i = 0; i < s.length; ++i) {
-                let ch = s[i];
-                if (ch === '(') depth++;
-                else if (ch === ')') depth--;
-                if (depth === 0 && i < s.length - 1) { valid = false; break; }
-            }
-            if (!valid) break;
-            s = s.substring(1, s.length - 1).trim();
         }
-        return s;
+
+        return true;
     }
 
-    // public entry kept for compatibility
-    buildString(startNode, visited = []) {
-        if (!startNode) return "";
-        const rawAst = this._buildAST(startNode, null, new Map());
-        const simp = this._simplifyAST(rawAst);
-        return this._astToString(simp, { topLevel: true });
+    _degreeMap(network) {
+        const degree = new Map();
+        for (const node of network.nodes) degree.set(node, 0);
+        for (const edge of network.edges) {
+            degree.set(edge.a, (degree.get(edge.a) || 0) + 1);
+            degree.set(edge.b, (degree.get(edge.b) || 0) + 1);
+        }
+        return degree;
+    }
+
+    _seriesAst(parts) {
+        const flattened = [];
+        for (const part of parts) {
+            if (part.type === "series") flattened.push(...part.parts);
+            else flattened.push(part);
+        }
+        if (flattened.length === 1) return flattened[0];
+        return { type: "series", parts: flattened };
+    }
+
+    _parallelAst(branches) {
+        const flattened = [];
+        for (const branch of branches) {
+            if (branch.type === "parallel") flattened.push(...branch.branches);
+            else flattened.push(branch);
+        }
+        if (flattened.length === 1) return flattened[0];
+        return { type: "parallel", branches: flattened };
+    }
+
+    _astToString(ast, topLevel = false) {
+        if (ast.type === "value") return ast.value;
+
+        if (ast.type === "series") {
+            return ast.parts.map((part) => {
+                const text = this._astToString(part, false);
+                return part.type === "parallel" ? `(${this._stripOuterParentheses(text)})` : text;
+            }).join(" + ");
+        }
+
+        const text = ast.branches.map((branch) => {
+            const branchText = this._astToString(branch, false);
+            return branch.type === "series" ? `(${branchText})` : branchText;
+        }).join(" // ");
+
+        return topLevel ? text : `(${text})`;
+    }
+
+    _stripOuterParentheses(text) {
+        const trimmed = text.trim();
+        if (trimmed[0] === "(" && trimmed[trimmed.length - 1] === ")") {
+            return trimmed.substring(1, trimmed.length - 1);
+        }
+        return trimmed;
+    }
+
+    _otherEnd(edge, node) {
+        return edge.a === node ? edge.b : edge.a;
+    }
+
+    _connects(edge, left, right) {
+        return (edge.a === left && edge.b === right) ||
+            (edge.a === right && edge.b === left);
+    }
+
+    _isZeroValue(value) {
+        return this._valueText(value).trim() === "0";
+    }
+
+    _valueText(value) {
+        if (value && typeof value === "object" && value.value !== undefined) {
+            return String(value.value).trim();
+        }
+        return String(value).trim();
+    }
+
+    _componentType() {
+        if (typeof choosenComponent !== "undefined" && choosenComponent.shortName) {
+            return choosenComponent.shortName;
+        }
+        return "R";
+    }
+
+    _toAdmittance(value) {
+        return this._componentType() === "C" ? value : 1 / value;
+    }
+
+    _fromAdmittance(admittance) {
+        return this._componentType() === "C" ? admittance : 1 / admittance;
+    }
+
+    _parseValue(text) {
+        const normalized = String(text).trim().replace(",", ".");
+        const match = normalized.match(/^([0-9]*\.?[0-9]+)([a-zA-Z]+)?$/);
+        if (!match) return null;
+
+        let value = Number(match[1]);
+        const suffix = match[2];
+        if (!suffix) return value;
+
+        const prefixes = (typeof PREFIXES !== "undefined" && Array.isArray(PREFIXES))
+            ? PREFIXES
+            : [];
+        const prefix = prefixes.find((item) => {
+            return item.symbol === suffix || item.name === suffix;
+        });
+
+        if (!prefix) return null;
+        value *= Math.pow(10, prefix.exponent);
+        return value;
+    }
+
+    _formatNumber(value) {
+        if (value === 0) return "0";
+
+        const rounded = Number(value.toPrecision(15));
+        const text = String(rounded);
+        if (!/[eE]/.test(text)) return text;
+
+        const sign = text[0] === "-" ? "-" : "";
+        const unsigned = sign ? text.substring(1) : text;
+        const parts = unsigned.toLowerCase().split("e");
+        const exponent = Number(parts[1]);
+        const coefficient = parts[0].split(".");
+        const digits = coefficient.join("");
+        const decimalPosition = coefficient[0].length + exponent;
+
+        if (decimalPosition <= 0) {
+            return sign + "0." + "0".repeat(-decimalPosition) + digits;
+        }
+        if (decimalPosition >= digits.length) {
+            return sign + digits + "0".repeat(decimalPosition - digits.length);
+        }
+        return sign + digits.substring(0, decimalPosition) + "." + digits.substring(decimalPosition);
     }
 }
-
-
-// helper for debugging
-function printGraphNode(node, visitedPrint = []) {
-    if (visitedPrint.includes(node)) return -1;
-    visitedPrint.push(node);
-
-    let local_str = `${node.value}:`;
-    let strs = [];
-
-    for (let i = 0; i < node.children.length; ++i) {
-        let child = node.children[i];
-        local_str += ` ${child.value}`;
-
-        let res = printGraphNode(child, visitedPrint);
-        if (typeof res === "string") strs.push(res);
-    }
-
-    for (let s in strs) {
-        local_str += `\n` + strs[s];
-    }
-
-    return local_str;
-}
-
