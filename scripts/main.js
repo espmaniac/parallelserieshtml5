@@ -26,16 +26,15 @@ function resizeSchemeElement() {
 
   const expression = document.getElementById("expression");
   const expressionHeight = expression ? expression.offsetHeight : 0;
-  const scheme = document.getElementById("scheme");
-  scheme.style.height =  (window.innerHeight - expressionHeight) + "px";
+  const workspace = document.getElementById("workspace");
+  workspace.style.height = Math.max(180, window.innerHeight - expressionHeight) + "px";
   input.style.height = saveHeight;
 }
 
 function resizeCanvas() {
-  const expressionHeight = document.getElementById("expression").getBoundingClientRect().height;
-  const schemeHeight = document.getElementById("scheme").getBoundingClientRect().height;
-  canvasMetrics.width = window.innerWidth;
-  canvasMetrics.height = schemeHeight + expressionHeight;
+  const schemeRect = document.getElementById("scheme").getBoundingClientRect();
+  canvasMetrics.width = schemeRect.width;
+  canvasMetrics.height = schemeRect.height;
   canvasMetrics.pixelRatio = Math.max(1, window.devicePixelRatio || 1);
 
   canvas.style.width = canvasMetrics.width + "px";
@@ -47,8 +46,27 @@ function resizeCanvas() {
   ctx.setTransform(canvasMetrics.pixelRatio, 0, 0, canvasMetrics.pixelRatio, 0, 0);
 }
 
-resizeCanvas();
 resizeSchemeElement();
+resizeCanvas();
+
+function resizeWorkspacePreservingView() {
+  const previousWidth = getCanvasWidth();
+  const previousHeight = getCanvasHeight();
+
+  resizeSchemeElement();
+  resizeCanvas();
+
+  const deltaX = (getCanvasWidth() - previousWidth) / 2;
+  const deltaY = (getCanvasHeight() - previousHeight) / 2;
+
+  if (previousWidth > 0 && previousHeight > 0 && typeof scheme !== "undefined") {
+    scheme.offsetX += deltaX / scheme.zoom;
+    scheme.offsetY += deltaY / scheme.zoom;
+    scheme.renderAll();
+  }
+
+  return { x: deltaX, y: deltaY };
+}
 
 var choosenComponent = {name: "", shortName: "", defaultValue: "", icon_src: ""};
 
@@ -89,25 +107,18 @@ window.onload = function() {
 
 
   window.onresize = function() {
-    let windowDifX = (window.innerWidth - getCanvasWidth()) / 2;
-    let windowDifY = (window.innerHeight - getCanvasHeight()) / 2;
-    scheme.offsetX += windowDifX / scheme.zoom;
-    scheme.offsetY += windowDifY / scheme.zoom;
-
-    resizeSchemeElement();
-    resizeCanvas();
+    const canvasDifference = resizeWorkspacePreservingView();
+    updateSolutionInspectorResizeOrientation();
     
     if (!context_menu.hidden()) {
       let pos = context_menu.element.getBoundingClientRect();
 
-      let x = pos.left + windowDifX;
+      let x = pos.left + canvasDifference.x;
       
-      let y = pos.top + windowDifY;
+      let y = pos.top + canvasDifference.y;
 
       context_menu.setPos(x, y);
     }
-
-    scheme.renderAll();
   };
 
 
@@ -123,9 +134,7 @@ window.onload = function() {
   }
 
   const resizeObserver = new ResizeObserver(() => {
-    resizeCanvas();
-    scheme.renderAll();
-    resizeSchemeElement();
+    resizeWorkspacePreservingView();
   });
 
   resizeObserver.observe(input);
@@ -136,12 +145,16 @@ window.onload = function() {
 
 
   initModals();
+  initSolutionInspector();
   
   var btnClear = document.getElementById("clear");
   btnClear.addEventListener("click", function() {
     let del = confirm("Do you want to clear the circuit?");
     
-    if (del) scheme.clear();
+    if (del) {
+      scheme.clear();
+      setSolutionInspectorOpen(false);
+    }
 
     scheme.renderAll();
   });
@@ -153,7 +166,7 @@ window.onload = function() {
 
 
   document.getElementById("calculate").addEventListener("click", function(e) {
-    solveCircuitWithSelectedMethod(true);
+    solveCircuitWithSelectedMethod();
   });
 
 
@@ -220,7 +233,7 @@ function selectedSolutionMethodId() {
   return methods.length > 0 ? methods[0].id : "";
 }
 
-function solveCircuitWithSelectedMethod(scrollToExpression) {
+function solveCircuitWithSelectedMethod() {
   const methodId = selectedSolutionMethodId();
   const method = solutionMethodRegistry.get(methodId);
   let solution;
@@ -252,10 +265,9 @@ function solveCircuitWithSelectedMethod(scrollToExpression) {
 
     if (solution.expression) {
       const input = document.getElementById("inp");
-      if (scrollToExpression) input.scrollIntoView();
       input.value = solution.expression;
       textAreaAutoHeight();
-      resizeCanvas();
+      resizeWorkspacePreservingView();
       answer = evaluateExpression(solution.expression).answer;
     }
   }
@@ -264,14 +276,11 @@ function solveCircuitWithSelectedMethod(scrollToExpression) {
     document.getElementById("result").innerText = "Answer: " + answer;
   }
 
-  renderSolutionModal(method, solution, answer);
-  const modal = document.getElementById("solutionModal");
-  modal.style.display = "flex";
-  const closeButton = modal.querySelector(".close");
-  if (closeButton) closeButton.focus();
+  renderSolutionInspector(method, solution, answer);
+  setSolutionInspectorOpen(true);
 }
 
-function renderSolutionModal(method, solution, answer) {
+function renderSolutionInspector(method, solution, answer) {
   const description = document.getElementById("solutionMethodDescription");
   description.textContent = method ? method.description : "No solution method is available.";
 
@@ -339,6 +348,170 @@ function renderSolutionModal(method, solution, answer) {
 
     stepsElement.appendChild(item);
   }
+
+  const content = document.querySelector(".solutionInspectorContent");
+  if (content) content.scrollTop = 0;
+}
+
+function isSolutionInspectorMobile() {
+  return window.matchMedia("(max-width: 768px)").matches;
+}
+
+function updateSolutionInspectorResizeOrientation() {
+  const handle = document.getElementById("solutionInspectorResizeHandle");
+  if (!handle) return;
+
+  const mobile = isSolutionInspectorMobile();
+  handle.setAttribute("aria-orientation", mobile ? "horizontal" : "vertical");
+  handle.title = mobile ? "Drag to change inspector height" : "Drag to change inspector width";
+}
+
+function setSolutionInspectorDimension(size, mobile) {
+  const inspector = document.getElementById("solutionInspector");
+  const workspace = document.getElementById("workspace");
+  if (!inspector || !workspace) return;
+
+  if (mobile) {
+    const maximum = Math.max(210, workspace.getBoundingClientRect().height * 0.7);
+    const height = Math.min(maximum, Math.max(210, size));
+    inspector.style.setProperty("--solution-inspector-mobile-height", height + "px");
+  } else {
+    const maximum = Math.max(320, Math.min(720, window.innerWidth * 0.55));
+    const width = Math.min(maximum, Math.max(320, size));
+    inspector.style.setProperty("--solution-inspector-width", width + "px");
+  }
+}
+
+function setSolutionInspectorOpen(open) {
+  const inspector = document.getElementById("solutionInspector");
+  const calculateButton = document.getElementById("calculate");
+  if (!inspector) return;
+
+  const wasOpen = !inspector.hidden;
+  inspector.hidden = !open;
+  if (calculateButton) calculateButton.setAttribute("aria-expanded", open ? "true" : "false");
+  if (typeof context_menu !== "undefined" && context_menu.element && !context_menu.hidden()) {
+    context_menu.hide();
+  }
+
+  if (wasOpen === open) return;
+
+  window.requestAnimationFrame(() => {
+    resizeWorkspacePreservingView();
+  });
+}
+
+function initSolutionInspector() {
+  const inspector = document.getElementById("solutionInspector");
+  const closeButton = document.getElementById("solutionInspectorClose");
+  const handle = document.getElementById("solutionInspectorResizeHandle");
+  const methodSelect = document.getElementById("solutionMethodSelect");
+  if (!inspector || !closeButton || !handle || !methodSelect) return;
+
+  const methods = solutionMethodRegistry.list();
+  methodSelect.replaceChildren();
+  for (const method of methods) {
+    const option = document.createElement("option");
+    option.value = method.id;
+    option.textContent = method.label;
+    methodSelect.appendChild(option);
+  }
+  methodSelect.disabled = methods.length <= 1;
+  if (methods.length > 0) {
+    document.getElementById("solutionMethodDescription").textContent = methods[0].description;
+  }
+
+  methodSelect.addEventListener("change", function() {
+    solveCircuitWithSelectedMethod();
+  });
+
+  closeButton.addEventListener("click", function() {
+    setSolutionInspectorOpen(false);
+    document.getElementById("calculate").focus({ preventScroll: true });
+  });
+
+  inspector.addEventListener("keydown", function(event) {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    setSolutionInspectorOpen(false);
+    document.getElementById("calculate").focus({ preventScroll: true });
+  });
+
+  try {
+    const savedWidth = Number(localStorage.getItem("solutionInspectorWidth"));
+    const savedHeight = Number(localStorage.getItem("solutionInspectorHeight"));
+    if (savedWidth > 0) inspector.style.setProperty("--solution-inspector-width", savedWidth + "px");
+    if (savedHeight > 0) inspector.style.setProperty("--solution-inspector-mobile-height", savedHeight + "px");
+  } catch (error) {
+    // Storage can be unavailable in privacy-restricted browser contexts.
+  }
+
+  updateSolutionInspectorResizeOrientation();
+
+  handle.addEventListener("pointerdown", function(event) {
+    if (event.button !== 0) return;
+    event.preventDefault();
+
+    const mobile = isSolutionInspectorMobile();
+    const startPosition = mobile ? event.clientY : event.clientX;
+    const startSize = mobile
+      ? inspector.getBoundingClientRect().height
+      : inspector.getBoundingClientRect().width;
+    let pendingSize = startSize;
+    let animationFrame = null;
+
+    const applyPendingSize = function() {
+      setSolutionInspectorDimension(pendingSize, mobile);
+      resizeWorkspacePreservingView();
+      animationFrame = null;
+    };
+
+    const onPointerMove = function(moveEvent) {
+      pendingSize = mobile
+        ? startSize + (startPosition - moveEvent.clientY)
+        : startSize + (startPosition - moveEvent.clientX);
+      if (animationFrame === null) animationFrame = window.requestAnimationFrame(applyPendingSize);
+    };
+
+    const finishResize = function() {
+      if (animationFrame !== null) {
+        window.cancelAnimationFrame(animationFrame);
+        applyPendingSize();
+      }
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerup", finishResize);
+      document.removeEventListener("pointercancel", finishResize);
+      document.body.classList.remove("solution-inspector-resizing");
+
+      try {
+        const rect = inspector.getBoundingClientRect();
+        localStorage.setItem(mobile ? "solutionInspectorHeight" : "solutionInspectorWidth", String(mobile ? rect.height : rect.width));
+      } catch (error) {
+        // Storage can be unavailable in privacy-restricted browser contexts.
+      }
+    };
+
+    document.body.classList.add("solution-inspector-resizing");
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerup", finishResize);
+    document.addEventListener("pointercancel", finishResize);
+  });
+
+  handle.addEventListener("keydown", function(event) {
+    const mobile = isSolutionInspectorMobile();
+    const rect = inspector.getBoundingClientRect();
+    let size = mobile ? rect.height : rect.width;
+
+    if (mobile && event.key === "ArrowUp") size += 24;
+    else if (mobile && event.key === "ArrowDown") size -= 24;
+    else if (!mobile && event.key === "ArrowLeft") size += 24;
+    else if (!mobile && event.key === "ArrowRight") size -= 24;
+    else return;
+
+    event.preventDefault();
+    setSolutionInspectorDimension(size, mobile);
+    resizeWorkspacePreservingView();
+  });
 }
 
 function textAreaAutoHeight() {     
@@ -580,7 +753,6 @@ function initModals() {
   let save = document.getElementById("save");
   var saveModal = document.getElementById("saveModal");
   var settingsModal = document.getElementById("settingsModal");
-  var solutionModal = document.getElementById("solutionModal");
   var editValueModal = document.getElementById("editValueModal");
   let headerUtility = document.getElementById("headerUtility");
   let expression = document.getElementById("expression");
@@ -588,7 +760,6 @@ function initModals() {
   let componentOptions = document.querySelectorAll(".settingsComponentOption");
   let editValueForm = document.getElementById("editValueForm");
   let editValueInput = document.getElementById("editValueInput");
-  let solutionMethodSelect = document.getElementById("solutionMethodSelect");
 
   function updateComponentModalState() {
     for (let i = 0; i < componentOptions.length; ++i) {
@@ -607,31 +778,12 @@ function initModals() {
 
   function updateExpressionVisibility(isVisible) {
     expression.style.display = isVisible ? "block" : "none";
-    resizeSchemeElement();
-    resizeCanvas();
-    scheme.renderAll();
+    resizeWorkspacePreservingView();
   }
 
   modalInit(saveModal);
   modalInit(settingsModal);
-  modalInit(solutionModal);
   modalInit(editValueModal);
-
-  const methods = solutionMethodRegistry.list();
-  solutionMethodSelect.replaceChildren();
-  for (const method of methods) {
-    const option = document.createElement("option");
-    option.value = method.id;
-    option.textContent = method.label;
-    solutionMethodSelect.appendChild(option);
-  }
-  solutionMethodSelect.disabled = methods.length <= 1;
-  if (methods.length > 0) {
-    document.getElementById("solutionMethodDescription").textContent = methods[0].description;
-  }
-  solutionMethodSelect.addEventListener("change", function() {
-    solveCircuitWithSelectedMethod(false);
-  });
 
   save.addEventListener("click", function() {
     saveModal.style.display="flex";

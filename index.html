@@ -76,7 +76,7 @@
             <!--<button id="open">Open</button>-->
             <button id="save">Save</button>
             <button id="equivalent">Equivalent</button>
-            <button id="calculate">Parallel/Series</button>
+            <button id="calculate" aria-controls="solutionInspector" aria-expanded="false">Parallel/Series</button>
         </div>
 
         <a href="https://github.com/espmaniac/parallelserieshtml5" target="_blank" rel="noopener noreferrer"><img src="icons/github.png" alt="github" id="github"></a>
@@ -86,22 +86,62 @@
         </div>        
     </div>
 
-    <div id="scheme">
-        <div id="tools">
-            <div id="mainTools">
-              <button id="cursorTool" class="active">
-                  <img src="icons/cursor.svg" alt="" width="40" height="20">
-              </button>
-              <button id="wireTool">
-                  <img src="icons/wire.svg" alt="" width="40" height="20">
-              </button>
+    <main id="workspace">
+        <div id="scheme">
+            <div id="tools">
+                <div id="mainTools">
+                  <button id="cursorTool" class="active">
+                      <img src="icons/cursor.svg" alt="" width="40" height="20">
+                  </button>
+                  <button id="wireTool">
+                      <img src="icons/wire.svg" alt="" width="40" height="20">
+                  </button>
 
+                </div>
             </div>
+
+            <canvas id="myCanvas"></canvas>
         </div>
 
-        <canvas id="myCanvas"></canvas>
+        <aside id="solutionInspector" aria-labelledby="solutionInspectorTitle" hidden>
+            <div id="solutionInspectorResizeHandle" role="separator" aria-label="Resize solution inspector" aria-orientation="vertical" tabindex="0"></div>
+            <div class="solutionInspectorHeader">
+                <div>
+                    <span>Solution Inspector</span>
+                    <h3 id="solutionInspectorTitle">Circuit Solution</h3>
+                </div>
+                <button id="solutionInspectorClose" type="button" aria-label="Close solution inspector">×</button>
+            </div>
+            <div class="solutionInspectorContent">
+                <section class="solutionMethodSection" aria-labelledby="solutionMethodHeading">
+                    <h4 id="solutionMethodHeading">Solution method</h4>
+                    <label class="solutionMethodLabel" for="solutionMethodSelect">Method</label>
+                    <select id="solutionMethodSelect"></select>
+                    <p id="solutionMethodDescription"></p>
+                </section>
 
-    </div>
+                <section class="solutionSummary" aria-label="Solution summary">
+                    <div class="solutionSummaryItem">
+                        <span>Component expression</span>
+                        <code id="solutionComponentExpression">—</code>
+                    </div>
+                    <div class="solutionSummaryItem">
+                        <span>Value expression</span>
+                        <code id="solutionExpression">—</code>
+                    </div>
+                    <div class="solutionSummaryItem">
+                        <span>Answer</span>
+                        <strong id="solutionAnswer">—</strong>
+                    </div>
+                </section>
+
+                <section class="solutionProcessSection" aria-labelledby="solutionProcessHeading">
+                    <h4 id="solutionProcessHeading">Solution process</h4>
+                    <ol id="solutionSteps" aria-live="polite"></ol>
+                </section>
+            </div>
+        </aside>
+    </main>
 
     <div id="expression">
         <label for="inp">Parallel / Series expression</label>
@@ -156,43 +196,6 @@
                 </div>
             </div>
 
-        </div>
-    </div>
-
-    <div class="modal" id="solutionModal" role="dialog" aria-modal="true" aria-labelledby="solutionModalTitle">
-        <div class="modalDialog solutionModalDialog">
-            <div class="modalHeader">
-                <h3 id="solutionModalTitle">Circuit Solution</h3>
-                <button class="close" type="button" aria-label="Close solution">x</button>
-            </div>
-            <div class="modalContent solutionModalContent">
-                <section class="solutionMethodSection" aria-labelledby="solutionMethodHeading">
-                    <h4 id="solutionMethodHeading">Solution method</h4>
-                    <label class="solutionMethodLabel" for="solutionMethodSelect">Method</label>
-                    <select id="solutionMethodSelect"></select>
-                    <p id="solutionMethodDescription"></p>
-                </section>
-
-                <section class="solutionSummary" aria-label="Solution summary">
-                    <div class="solutionSummaryItem">
-                        <span>Component expression</span>
-                        <code id="solutionComponentExpression">—</code>
-                    </div>
-                    <div class="solutionSummaryItem">
-                        <span>Value expression</span>
-                        <code id="solutionExpression">—</code>
-                    </div>
-                    <div class="solutionSummaryItem">
-                        <span>Answer</span>
-                        <strong id="solutionAnswer">—</strong>
-                    </div>
-                </section>
-
-                <section class="solutionProcessSection" aria-labelledby="solutionProcessHeading">
-                    <h4 id="solutionProcessHeading">Solution process</h4>
-                    <ol id="solutionSteps" aria-live="polite"></ol>
-                </section>
-            </div>
         </div>
     </div>
 
