@@ -1314,7 +1314,7 @@ body.component-selecting {
 
 .solutionSummary {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(150px, 1fr);
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 2fr) minmax(130px, 0.75fr);
     gap: 10px;
 }
 
@@ -1335,6 +1335,7 @@ body.component-selecting {
     text-transform: uppercase;
 }
 
+#solutionComponentExpression,
 #solutionExpression,
 #solutionAnswer {
     color: rgba(250, 250, 250, 0.96);

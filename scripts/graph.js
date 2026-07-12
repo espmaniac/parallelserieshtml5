@@ -44,10 +44,16 @@ class Graph {
         this.solutionSteps = [];
         this.nodeNames = new Map();
         this.nextNodeNumber = 1;
+        this.nextTransformedBranchNumber = 1;
+        this.componentExpression = null;
     }
 
     getSolutionSteps() {
         return this.solutionSteps.map((step) => Object.assign({}, step));
+    }
+
+    getComponentExpression() {
+        return this.componentExpression;
     }
 
     toString(startNode, destNode) {
@@ -87,6 +93,7 @@ class Graph {
         );
 
         if (network.start === network.end) {
+            this.componentExpression = "0";
             this._addStep(
                 "result",
                 "Final expression",
@@ -133,11 +140,12 @@ class Graph {
 
         const result = this._parallelAst(terminalEdges.map((edge) => edge.ast));
         const expression = this._astToString(result, true);
+        this.componentExpression = this._astToComponentString(result, false, true);
         this._addStep(
             "result",
             "Final expression",
             "All internal electrical nodes have been eliminated.",
-            null,
+            this.componentExpression,
             expression
         );
         return expression;
@@ -147,6 +155,8 @@ class Graph {
         this.solutionSteps = [];
         this.nodeNames = new Map();
         this.nextNodeNumber = 1;
+        this.nextTransformedBranchNumber = 1;
+        this.componentExpression = null;
     }
 
     _addStep(type, title, description, before = null, after = null) {
@@ -257,7 +267,11 @@ class Graph {
                 a: a,
                 b: b,
                 admittance: this._toAdmittance(value),
-                ast: { type: "value", value: text }
+                ast: {
+                    type: "value",
+                    value: text,
+                    name: this._componentName(edge.value)
+                }
             });
         }
 
@@ -320,11 +334,8 @@ class Graph {
                 "Parallel reduction",
                 `${group.length} branches share the same endpoints, ` +
                     `${this._nodeName(group[0].a)} and ${this._nodeName(group[0].b)}.`,
-                group.map((edge) => {
-                    const branch = this._astToString(edge.ast, true);
-                    return edge.ast.type === "series" ? `(${branch})` : branch;
-                }).join(" // "),
-                `${this._astToString(combinedAst, true)} = ` +
+                this._astToComponentString(combinedAst, true, true),
+                `${this._astToComponentString(combinedAst, false, true)} = ` +
                     this._formatNumber(this._fromAdmittance(combinedAdmittance))
             );
         }
@@ -396,8 +407,8 @@ class Graph {
                 "series",
                 "Series reduction",
                 `${this._nodeName(node)} connects exactly two branches, so the branches are in series.`,
-                `${this._astToString(left.ast, true)} + ${this._astToString(right.ast, true)}`,
-                `${this._astToString(combinedAst, true)} = ` +
+                this._astToComponentString(combinedAst, true, true),
+                `${this._astToComponentString(combinedAst, false, true)} = ` +
                     this._formatNumber(this._fromAdmittance(combinedAdmittance))
             );
         }
@@ -435,7 +446,8 @@ class Graph {
         network.nodes.delete(node);
 
         const before = incident.map((edge) => {
-            return `${this._nodeName(this._otherEnd(edge, node))}: ${this._astToString(edge.ast, true)}`;
+            return `${this._nodeName(this._otherEnd(edge, node))}: ` +
+                this._astToComponentString(edge.ast, true, true);
         }).join("; ");
         const generated = [];
 
@@ -450,13 +462,20 @@ class Graph {
 
                 const transformedValue = this._fromAdmittance(admittance);
                 const formattedValue = this._formatNumber(transformedValue);
+                const transformedName = `SM${this.nextTransformedBranchNumber++}`;
                 network.edges.push({
                     a: a,
                     b: b,
                     admittance: admittance,
-                    ast: { type: "value", value: formattedValue }
+                    ast: {
+                        type: "value",
+                        value: formattedValue,
+                        name: transformedName
+                    }
                 });
-                generated.push(`${this._nodeName(a)} ↔ ${this._nodeName(b)} = ${formattedValue}`);
+                generated.push(
+                    `${transformedName} (${this._nodeName(a)} ↔ ${this._nodeName(b)}) = ${formattedValue}`
+                );
             }
         }
 
@@ -520,6 +539,27 @@ class Graph {
         return topLevel ? text : `(${text})`;
     }
 
+    _astToComponentString(ast, includeValues = false, topLevel = false) {
+        if (ast.type === "value") {
+            if (!ast.name) return ast.value;
+            return includeValues ? `${ast.name} (${ast.value})` : ast.name;
+        }
+
+        if (ast.type === "series") {
+            return ast.parts.map((part) => {
+                const text = this._astToComponentString(part, includeValues, false);
+                return part.type === "parallel" ? `(${this._stripOuterParentheses(text)})` : text;
+            }).join(" + ");
+        }
+
+        const text = ast.branches.map((branch) => {
+            const branchText = this._astToComponentString(branch, includeValues, false);
+            return branch.type === "series" ? `(${branchText})` : branchText;
+        }).join(" // ");
+
+        return topLevel ? text : `(${text})`;
+    }
+
     _stripOuterParentheses(text) {
         const trimmed = text.trim();
         if (trimmed[0] === "(" && trimmed[trimmed.length - 1] === ")") {
@@ -546,6 +586,18 @@ class Graph {
             return String(value.value).trim();
         }
         return String(value).trim();
+    }
+
+    _componentName(value) {
+        if (!value || typeof value !== "object") return null;
+
+        if (value.parent && value.parent.name && value.parent.name.value !== undefined) {
+            return String(value.parent.name.value).trim() || null;
+        }
+        if (value.componentName !== undefined) {
+            return String(value.componentName).trim() || null;
+        }
+        return null;
     }
 
     _componentType() {

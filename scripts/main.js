@@ -229,6 +229,7 @@ function solveCircuitWithSelectedMethod(scrollToExpression) {
   if (!scheme.labels[0].node || !scheme.labels[1].node) {
     solution = {
       expression: null,
+      componentExpression: null,
       steps: [{
         type: "error",
         title: "Missing terminals",
@@ -273,6 +274,9 @@ function solveCircuitWithSelectedMethod(scrollToExpression) {
 function renderSolutionModal(method, solution, answer) {
   const description = document.getElementById("solutionMethodDescription");
   description.textContent = method ? method.description : "No solution method is available.";
+
+  const componentExpression = document.getElementById("solutionComponentExpression");
+  componentExpression.textContent = solution.componentExpression || "Not available";
 
   const expression = document.getElementById("solutionExpression");
   expression.textContent = solution.expression || "Not available";
