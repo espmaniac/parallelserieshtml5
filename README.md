@@ -44,7 +44,7 @@
 
 > **Note:**  
 > - Wires cannot be moved after being drawn.  
-> - Delta (Δ) to Wye (Y) transformations are **not currently implemented**.
+> - The **Parallel/Series** action reduces delta (Δ), bridge, and mixed networks to an expression containing component values, `+`, `//`, and parentheses. Irreducible sections are transformed numerically with star-mesh elimination before the final series/parallel reduction.
 
 ---
 
@@ -284,4 +284,3 @@
 ## 🔗 Live Demo
 
 Try it in your browser: [ParallelSeriesHTML5](https://espmaniac.github.io/parallelserieshtml5/)
-
