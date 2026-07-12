@@ -148,42 +148,12 @@ window.onload = function() {
 
 
   document.getElementById("calc").onclick = function() {
-    let ParSer = new ParallelSeries();
-
-    ParSer.onSeries = onSeries;
-    ParSer.onParallel = onParallel;
-    ParSer.expr = document.getElementById("inp").value;
-    
-    let solution = ParSer.solve();
-    const res = document.getElementById("result");
-    res.innerText = "Answer: " + new String(solution);
+    evaluateExpression(document.getElementById("inp").value);
   };
 
 
   document.getElementById("calculate").addEventListener("click", function(e) {
-
-    if (!scheme.labels[0].node || !scheme.labels[1].node) return;
-
-    let deletePrevNodes = new MacroCommand();
-    for (let i = 2; i < scheme.labels.length; ++i)
-      deletePrevNodes.addCommand(new DeleteElement(scheme.labels[i]));
-    
-    if (scheme.labels.length > 2)
-      scheme.execute(deletePrevNodes);
-    
-    let g = new Graph();
-    let str = g.toString(scheme.labels[0].node, scheme.labels[1].node);
-
-
-    if (!str) return;
-    let inp = document.getElementById("inp");
-    inp.scrollIntoView();
-    inp.value = str;
-    textAreaAutoHeight();
-    resizeCanvas();
-    
-    document.getElementById("calc").click();
-
+    solveCircuitWithSelectedMethod(true);
   });
 
 
@@ -216,6 +186,155 @@ window.onload = function() {
   });
 
   scheme.renderAll();
+}
+
+function evaluateExpression(expression) {
+  const parser = new ParallelSeries();
+  parser.onSeries = onSeries;
+  parser.onParallel = onParallel;
+  parser.expr = expression;
+
+  const value = parser.solve();
+  const answer = parser.lexer.fail ? "error" : String(value);
+  document.getElementById("result").innerText = "Answer: " + answer;
+  return {
+    success: !parser.lexer.fail,
+    value: value,
+    answer: answer
+  };
+}
+
+function removeGeneratedGraphLabels() {
+  const deletePrevNodes = new MacroCommand();
+  for (let i = 2; i < scheme.labels.length; ++i) {
+    deletePrevNodes.addCommand(new DeleteElement(scheme.labels[i]));
+  }
+  if (scheme.labels.length > 2) scheme.execute(deletePrevNodes);
+}
+
+function selectedSolutionMethodId() {
+  const select = document.getElementById("solutionMethodSelect");
+  if (select && select.value) return select.value;
+
+  const methods = solutionMethodRegistry.list();
+  return methods.length > 0 ? methods[0].id : "";
+}
+
+function solveCircuitWithSelectedMethod(scrollToExpression) {
+  const methodId = selectedSolutionMethodId();
+  const method = solutionMethodRegistry.get(methodId);
+  let solution;
+  let answer = "error";
+
+  if (!scheme.labels[0].node || !scheme.labels[1].node) {
+    solution = {
+      expression: null,
+      steps: [{
+        type: "error",
+        title: "Missing terminals",
+        description: "Assign both StartNode and DestNode before solving the circuit.",
+        before: null,
+        after: null
+      }]
+    };
+  } else {
+    removeGeneratedGraphLabels();
+    solution = solutionMethodRegistry.solve(
+      methodId,
+      scheme.labels[0].node,
+      scheme.labels[1].node
+    );
+
+    if (solution.answer !== undefined && solution.answer !== null) {
+      answer = String(solution.answer);
+    }
+
+    if (solution.expression) {
+      const input = document.getElementById("inp");
+      if (scrollToExpression) input.scrollIntoView();
+      input.value = solution.expression;
+      textAreaAutoHeight();
+      resizeCanvas();
+      answer = evaluateExpression(solution.expression).answer;
+    }
+  }
+
+  if (!solution.expression) {
+    document.getElementById("result").innerText = "Answer: " + answer;
+  }
+
+  renderSolutionModal(method, solution, answer);
+  const modal = document.getElementById("solutionModal");
+  modal.style.display = "flex";
+  const closeButton = modal.querySelector(".close");
+  if (closeButton) closeButton.focus();
+}
+
+function renderSolutionModal(method, solution, answer) {
+  const description = document.getElementById("solutionMethodDescription");
+  description.textContent = method ? method.description : "No solution method is available.";
+
+  const expression = document.getElementById("solutionExpression");
+  expression.textContent = solution.expression || "Not available";
+
+  const answerElement = document.getElementById("solutionAnswer");
+  answerElement.textContent = answer;
+
+  const stepsElement = document.getElementById("solutionSteps");
+  stepsElement.replaceChildren();
+
+  const steps = solution.steps || [];
+  for (let i = 0; i < steps.length; ++i) {
+    const step = steps[i];
+    const item = document.createElement("li");
+    item.className = "solutionStep";
+    item.dataset.stepType = step.type || "analysis";
+
+    const heading = document.createElement("div");
+    heading.className = "solutionStepHeading";
+
+    const number = document.createElement("span");
+    number.className = "solutionStepNumber";
+    number.textContent = String(i + 1);
+
+    const title = document.createElement("h5");
+    title.textContent = step.title;
+
+    heading.append(number, title);
+    item.appendChild(heading);
+
+    const details = document.createElement("p");
+    details.textContent = step.description;
+    item.appendChild(details);
+
+    if (step.before || step.after) {
+      const equation = document.createElement("div");
+      equation.className = "solutionEquation";
+
+      if (step.before) {
+        const before = document.createElement("code");
+        before.textContent = step.before;
+        equation.appendChild(before);
+      }
+
+      if (step.before && step.after) {
+        const arrow = document.createElement("span");
+        arrow.textContent = "→";
+        arrow.setAttribute("aria-hidden", "true");
+        equation.appendChild(arrow);
+      }
+
+      if (step.after) {
+        const after = document.createElement("code");
+        after.textContent = step.after;
+        equation.appendChild(after);
+      }
+
+      item.appendChild(equation);
+    }
+
+    stepsElement.appendChild(item);
+  }
 }
 
 function textAreaAutoHeight() {     
@@ -457,6 +576,7 @@ function initModals() {
   let save = document.getElementById("save");
   var saveModal = document.getElementById("saveModal");
   var settingsModal = document.getElementById("settingsModal");
+  var solutionModal = document.getElementById("solutionModal");
   var editValueModal = document.getElementById("editValueModal");
   let headerUtility = document.getElementById("headerUtility");
   let expression = document.getElementById("expression");
@@ -464,6 +584,7 @@ function initModals() {
   let componentOptions = document.querySelectorAll(".settingsComponentOption");
   let editValueForm = document.getElementById("editValueForm");
   let editValueInput = document.getElementById("editValueInput");
+  let solutionMethodSelect = document.getElementById("solutionMethodSelect");
 
   function updateComponentModalState() {
     for (let i = 0; i < componentOptions.length; ++i) {
@@ -489,8 +610,26 @@ function initModals() {
 
   modalInit(saveModal);
   modalInit(settingsModal);
+  modalInit(solutionModal);
   modalInit(editValueModal);
-  save.addEventListener("click", function() {    
+
+  const methods = solutionMethodRegistry.list();
+  solutionMethodSelect.replaceChildren();
+  for (const method of methods) {
+    const option = document.createElement("option");
+    option.value = method.id;
+    option.textContent = method.label;
+    solutionMethodSelect.appendChild(option);
+  }
+  solutionMethodSelect.disabled = methods.length <= 1;
+  if (methods.length > 0) {
+    document.getElementById("solutionMethodDescription").textContent = methods[0].description;
+  }
+  solutionMethodSelect.addEventListener("change", function() {
+    solveCircuitWithSelectedMethod(false);
+  });
+
+  save.addEventListener("click", function() {
     saveModal.style.display="flex";
     document.getElementById("saveText").value = scheme.serialize();
   });

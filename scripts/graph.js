@@ -40,15 +40,62 @@ class GraphUnionFind {
 }
 
 class Graph {
+    constructor() {
+        this.solutionSteps = [];
+        this.nodeNames = new Map();
+        this.nextNodeNumber = 1;
+    }
+
+    getSolutionSteps() {
+        return this.solutionSteps.map((step) => Object.assign({}, step));
+    }
+
     toString(startNode, destNode) {
-        if (!startNode || !destNode) return undefined;
+        this._resetSolution();
+
+        if (!startNode || !destNode) {
+            this._addStep(
+                "error",
+                "Missing terminals",
+                "Assign both StartNode and DestNode before solving the circuit."
+            );
+            return undefined;
+        }
 
         const collected = this._collectNetwork(startNode);
-        if (!collected.nodes.has(destNode)) return undefined;
+        if (!collected.nodes.has(destNode)) {
+            this._addStep(
+                "error",
+                "No path between terminals",
+                "DestNode is not electrically connected to StartNode."
+            );
+            return undefined;
+        }
 
         const network = this._createReducedNetwork(collected, startNode, destNode);
         if (!network) return undefined;
-        if (network.start === network.end) return "0";
+
+        this._assignNodeNames(network);
+        const componentCount = collected.edges.filter((edge) => !this._isZeroValue(edge.value)).length;
+        const wireCount = collected.edges.length - componentCount;
+        this._addStep(
+            "analysis",
+            "Build the electrical graph",
+            `Found ${componentCount} component ${componentCount === 1 ? "branch" : "branches"}. ` +
+                `${wireCount} wire ${wireCount === 1 ? "connection was" : "connections were"} merged into ` +
+                `${network.nodes.size} electrical ${network.nodes.size === 1 ? "node" : "nodes"}.`
+        );
+
+        if (network.start === network.end) {
+            this._addStep(
+                "result",
+                "Final expression",
+                "StartNode and DestNode are connected by an ideal wire.",
+                null,
+                "0"
+            );
+            return "0";
+        }
 
         while (true) {
             this._reduceSeriesParallel(network);
@@ -61,6 +108,11 @@ class Graph {
 
             const candidate = this._chooseEliminationNode(network, internalNodes);
             if (!candidate || !this._eliminateNode(network, candidate)) {
+                this._addStep(
+                    "error",
+                    "Reduction failed",
+                    "The remaining network could not be transformed into a finite equivalent branch."
+                );
                 return undefined;
             }
         }
@@ -70,10 +122,59 @@ class Graph {
             return this._connects(edge, network.start, network.end);
         });
 
-        if (terminalEdges.length === 0) return undefined;
+        if (terminalEdges.length === 0) {
+            this._addStep(
+                "error",
+                "No terminal branch",
+                "The transformed network does not contain a branch between StartNode and DestNode."
+            );
+            return undefined;
+        }
 
         const result = this._parallelAst(terminalEdges.map((edge) => edge.ast));
-        return this._astToString(result, true);
+        const expression = this._astToString(result, true);
+        this._addStep(
+            "result",
+            "Final expression",
+            "All internal electrical nodes have been eliminated.",
+            null,
+            expression
+        );
+        return expression;
+    }
+
+    _resetSolution() {
+        this.solutionSteps = [];
+        this.nodeNames = new Map();
+        this.nextNodeNumber = 1;
+    }
+
+    _addStep(type, title, description, before = null, after = null) {
+        this.solutionSteps.push({
+            type: type,
+            title: title,
+            description: description,
+            before: before,
+            after: after
+        });
+    }
+
+    _assignNodeNames(network) {
+        this.nodeNames.set(network.start, "StartNode");
+        if (network.end !== network.start) this.nodeNames.set(network.end, "DestNode");
+
+        for (const node of network.nodes) {
+            if (!this.nodeNames.has(node)) {
+                this.nodeNames.set(node, `N${this.nextNodeNumber++}`);
+            }
+        }
+    }
+
+    _nodeName(node) {
+        if (!this.nodeNames.has(node)) {
+            this.nodeNames.set(node, `N${this.nextNodeNumber++}`);
+        }
+        return this.nodeNames.get(node);
     }
 
     _collectNetwork(startNode) {
@@ -143,7 +244,14 @@ class Graph {
 
             const text = this._valueText(edge.value);
             const value = this._parseValue(text);
-            if (!(value > 0) || !Number.isFinite(value)) return null;
+            if (!(value > 0) || !Number.isFinite(value)) {
+                this._addStep(
+                    "error",
+                    "Invalid component value",
+                    `The value "${text}" is not a supported positive component value.`
+                );
+                return null;
+            }
 
             edges.push({
                 a: a,
@@ -198,12 +306,27 @@ class Graph {
             }
 
             changed = true;
+            const combinedAst = this._parallelAst(group.map((edge) => edge.ast));
+            const combinedAdmittance = group.reduce((sum, edge) => sum + edge.admittance, 0);
             edges.push({
                 a: group[0].a,
                 b: group[0].b,
-                admittance: group.reduce((sum, edge) => sum + edge.admittance, 0),
-                ast: this._parallelAst(group.map((edge) => edge.ast))
+                admittance: combinedAdmittance,
+                ast: combinedAst
             });
+
+            this._addStep(
+                "parallel",
+                "Parallel reduction",
+                `${group.length} branches share the same endpoints, ` +
+                    `${this._nodeName(group[0].a)} and ${this._nodeName(group[0].b)}.`,
+                group.map((edge) => {
+                    const branch = this._astToString(edge.ast, true);
+                    return edge.ast.type === "series" ? `(${branch})` : branch;
+                }).join(" // "),
+                `${this._astToString(combinedAst, true)} = ` +
+                    this._formatNumber(this._fromAdmittance(combinedAdmittance))
+            );
         }
 
         network.edges = edges;
@@ -220,11 +343,20 @@ class Graph {
 
         if (removable.length === 0) return false;
 
+        const removedNames = removable.map((node) => this._nodeName(node));
+
         const removeSet = new Set(removable);
         network.edges = network.edges.filter((edge) => {
             return !removeSet.has(edge.a) && !removeSet.has(edge.b);
         });
         for (const node of removable) network.nodes.delete(node);
+
+        this._addStep(
+            "inactive",
+            "Remove inactive branches",
+            `${removedNames.join(", ")} ${removedNames.length === 1 ? "is" : "are"} connected at only one point ` +
+                "and cannot carry current between StartNode and DestNode."
+        );
         return true;
     }
 
@@ -251,12 +383,23 @@ class Graph {
             const denominator = left.admittance + right.admittance;
             if (!(denominator > 0) || !Number.isFinite(denominator)) return false;
 
+            const combinedAst = this._seriesAst([left.ast, right.ast]);
+            const combinedAdmittance = (left.admittance * right.admittance) / denominator;
             network.edges.push({
                 a: leftNode,
                 b: rightNode,
-                admittance: (left.admittance * right.admittance) / denominator,
-                ast: this._seriesAst([left.ast, right.ast])
+                admittance: combinedAdmittance,
+                ast: combinedAst
             });
+
+            this._addStep(
+                "series",
+                "Series reduction",
+                `${this._nodeName(node)} connects exactly two branches, so the branches are in series.`,
+                `${this._astToString(left.ast, true)} + ${this._astToString(right.ast, true)}`,
+                `${this._astToString(combinedAst, true)} = ` +
+                    this._formatNumber(this._fromAdmittance(combinedAdmittance))
+            );
         }
 
         return true;
@@ -291,6 +434,11 @@ class Graph {
         network.edges = network.edges.filter((edge) => !incident.includes(edge));
         network.nodes.delete(node);
 
+        const before = incident.map((edge) => {
+            return `${this._nodeName(this._otherEnd(edge, node))}: ${this._astToString(edge.ast, true)}`;
+        }).join("; ");
+        const generated = [];
+
         for (let i = 0; i < incident.length; ++i) {
             for (let j = i + 1; j < incident.length; ++j) {
                 const a = this._otherEnd(incident[i], node);
@@ -301,14 +449,25 @@ class Graph {
                 if (!(admittance > 0) || !Number.isFinite(admittance)) continue;
 
                 const transformedValue = this._fromAdmittance(admittance);
+                const formattedValue = this._formatNumber(transformedValue);
                 network.edges.push({
                     a: a,
                     b: b,
                     admittance: admittance,
-                    ast: { type: "value", value: this._formatNumber(transformedValue) }
+                    ast: { type: "value", value: formattedValue }
                 });
+                generated.push(`${this._nodeName(a)} ↔ ${this._nodeName(b)} = ${formattedValue}`);
             }
         }
+
+        this._addStep(
+            "transform",
+            "Star–mesh transformation",
+            `${this._nodeName(node)} has ${incident.length} connected branches and cannot be removed by direct ` +
+                "series/parallel reduction. It is eliminated with Yij = Yi × Yj / ΣY.",
+            before,
+            generated.join("; ")
+        );
 
         return true;
     }

@@ -159,6 +159,39 @@
         </div>
     </div>
 
+    <div class="modal" id="solutionModal" role="dialog" aria-modal="true" aria-labelledby="solutionModalTitle">
+        <div class="modalDialog solutionModalDialog">
+            <div class="modalHeader">
+                <h3 id="solutionModalTitle">Circuit Solution</h3>
+                <button class="close" type="button" aria-label="Close solution">x</button>
+            </div>
+            <div class="modalContent solutionModalContent">
+                <section class="solutionMethodSection" aria-labelledby="solutionMethodHeading">
+                    <h4 id="solutionMethodHeading">Solution method</h4>
+                    <label class="solutionMethodLabel" for="solutionMethodSelect">Method</label>
+                    <select id="solutionMethodSelect"></select>
+                    <p id="solutionMethodDescription"></p>
+                </section>
+
+                <section class="solutionSummary" aria-label="Solution summary">
+                    <div class="solutionSummaryItem">
+                        <span>Expression</span>
+                        <code id="solutionExpression">—</code>
+                    </div>
+                    <div class="solutionSummaryItem">
+                        <span>Answer</span>
+                        <strong id="solutionAnswer">—</strong>
+                    </div>
+                </section>
+
+                <section class="solutionProcessSection" aria-labelledby="solutionProcessHeading">
+                    <h4 id="solutionProcessHeading">Solution process</h4>
+                    <ol id="solutionSteps" aria-live="polite"></ol>
+                </section>
+            </div>
+        </div>
+    </div>
+
     <div class="modal" id="editValueModal">
         <div class="modalDialog editValueModalDialog">
             <div class="modalHeader">
@@ -181,8 +214,7 @@
     </div>
     
     <script src="scripts/parallelseries.js" defer></script>
-    
-    
+    <script src="scripts/solution_methods.js" defer></script>
     <script src="scripts/main.js" defer></script>
     <script src="scripts/text.js" defer></script>
     <script src="scripts/labelnode.js" defer></script>
