@@ -255,6 +255,8 @@ function solveCircuitWithSelectedMethod() {
   let solution;
   let answer = "error";
 
+  removeGeneratedGraphLabels();
+
   if (!scheme.labels[0].node || !scheme.labels[1].node) {
     solution = {
       expression: null,
@@ -268,7 +270,6 @@ function solveCircuitWithSelectedMethod() {
       }]
     };
   } else {
-    removeGeneratedGraphLabels();
     solution = solutionMethodRegistry.solve(
       methodId,
       scheme.labels[0].node,
