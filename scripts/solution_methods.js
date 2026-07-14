@@ -53,6 +53,7 @@ solutionMethodRegistry.register({
         return {
             expression: expression || null,
             componentExpression: graph.getComponentExpression(),
+            nodeLabels: graph.getNodeLabels(),
             answer: null,
             steps: graph.getSolutionSteps()
         };
