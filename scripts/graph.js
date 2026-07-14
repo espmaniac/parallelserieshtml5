@@ -43,6 +43,7 @@ class Graph {
     constructor() {
         this.solutionSteps = [];
         this.nodeNames = new Map();
+        this.nodeLabels = [];
         this.nextNodeNumber = 1;
         this.nextTransformedBranchNumber = 1;
         this.componentExpression = null;
@@ -54,6 +55,12 @@ class Graph {
 
     getComponentExpression() {
         return this.componentExpression;
+    }
+
+    getNodeLabels() {
+        return this.nodeLabels.map((label) => {
+            return { name: label.name, node: label.node };
+        });
     }
 
     toString(startNode, destNode) {
@@ -154,6 +161,7 @@ class Graph {
     _resetSolution() {
         this.solutionSteps = [];
         this.nodeNames = new Map();
+        this.nodeLabels = [];
         this.nextNodeNumber = 1;
         this.nextTransformedBranchNumber = 1;
         this.componentExpression = null;
@@ -175,7 +183,9 @@ class Graph {
 
         for (const node of network.nodes) {
             if (!this.nodeNames.has(node)) {
-                this.nodeNames.set(node, `N${this.nextNodeNumber++}`);
+                const name = `N${this.nextNodeNumber++}`;
+                this.nodeNames.set(node, name);
+                this.nodeLabels.push({ name: name, node: node });
             }
         }
     }

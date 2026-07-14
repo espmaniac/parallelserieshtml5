@@ -225,6 +225,22 @@ function removeGeneratedGraphLabels() {
   if (scheme.labels.length > 2) scheme.execute(deletePrevNodes);
 }
 
+function addGeneratedGraphLabels(nodeLabels) {
+  if (!Array.isArray(nodeLabels) || nodeLabels.length === 0) return;
+
+  const addNodes = new MacroCommand();
+  for (const nodeLabel of nodeLabels) {
+    if (!nodeLabel || !nodeLabel.name || !nodeLabel.node) continue;
+
+    const label = new LabelNode(nodeLabel.name);
+    label.node = nodeLabel.node;
+    label.className = "GraphLabelNode";
+    addNodes.addCommand(new AddLabelNode(label));
+  }
+
+  if (addNodes.cmds.length > 0) scheme.execute(addNodes);
+}
+
 function selectedSolutionMethodId() {
   const select = document.getElementById("solutionMethodSelect");
   if (select && select.value) return select.value;
@@ -264,6 +280,8 @@ function solveCircuitWithSelectedMethod() {
     }
 
     if (solution.expression) {
+      addGeneratedGraphLabels(solution.nodeLabels);
+
       const input = document.getElementById("inp");
       input.value = solution.expression;
       textAreaAutoHeight();
