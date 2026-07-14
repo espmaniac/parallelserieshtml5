@@ -30,11 +30,19 @@ function tryConnect(element) {
         tryConnectWire(wire.nodes, element);
     }
 
-    if (n.connections.length >= 3)
-      for (let j = element.nodes.length - 1; j < n.connections.length; ++j) {
+    if (n.connections.length >= 3) {
+      for (let j = 0; j < n.connections.length; ++j) {
         let node = n.connections[j].node;
+
+        // Connection order can change when a wire is split. Exclude the
+        // element's own internal edge explicitly and only group co-located
+        // nodes into a junction.
+        if (element.nodes.includes(node)) continue;
+        if (node.x !== n.x || node.y !== n.y) continue;
+
         junction(n.x, n.y, n, node);
       }
+    }
   }
 }
 
@@ -145,23 +153,33 @@ function junctionAt(x,y, jArr) {
 }
 
 function splitWireAtNode(wire, node) {
-    let endX = wire.nodes[1].x;
-    let endY = wire.nodes[1].y;
+    let startNode = wire.nodes[0];
+    let endNode = wire.nodes[1];
+    let splitNode = new Node();
     let w2 = new Wire();
     let drawW2 = new DrawWire(w2);
 
+    splitNode.x = node.x;
+    splitNode.y = node.y;
+    splitNode.parent = wire;
+
     w2.nodes[0].x = node.x;
     w2.nodes[0].y = node.y;
-    w2.nodes[1].x = endX;
-    w2.nodes[1].y = endY;
 
-    wire.nodes[1].x = node.x;
-    wire.nodes[1].y = node.y;
+    // Keep the original endpoint object at the original endpoint. Labels and
+    // commands can hold references to it, so moving it to the split point
+    // would also move StartNode/DestNode there.
+    disconnectNodes(startNode, endNode);
+    wire.nodes[1] = splitNode;
+    connectNodes(startNode, splitNode, "0");
 
-    deleteNode(wire.nodes[0]);
-    deleteNode(wire.nodes[1]);
+    let generatedEndNode = w2.nodes[1];
+    disconnectNodes(w2.nodes[0], generatedEndNode);
+    generatedEndNode.parent = null;
 
-    connectNodes(wire.nodes[0], wire.nodes[1], "0");
+    w2.nodes[1] = endNode;
+    endNode.parent = w2;
+    connectNodes(w2.nodes[0], endNode, "0");
 
     scheme.execute(drawW2);
     scheme.wires.push(w2);
