@@ -30,11 +30,19 @@ function tryConnect(element) {
         tryConnectWire(wire.nodes, element);
     }
 
-    if (n.connections.length >= 3)
-      for (let j = element.nodes.length - 1; j < n.connections.length; ++j) {
+    if (n.connections.length >= 3) {
+      for (let j = 0; j < n.connections.length; ++j) {
         let node = n.connections[j].node;
+
+        // Connection order can change when a wire is split. Exclude the
+        // element's own internal edge explicitly and only group co-located
+        // nodes into a junction.
+        if (element.nodes.includes(node)) continue;
+        if (node.x !== n.x || node.y !== n.y) continue;
+
         junction(n.x, n.y, n, node);
       }
+    }
   }
 }
 
