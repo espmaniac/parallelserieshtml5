@@ -169,7 +169,7 @@ class Graph {
             "All internal electrical nodes have been eliminated.",
             this.componentExpression,
             expression,
-            this._captureNetwork(network, terminalEdges)
+            this._captureNetwork(network, terminalEdges, true)
         );
         return expression;
     }
@@ -580,12 +580,15 @@ class Graph {
         return `E${this.nextVisualEdgeNumber++}`;
     }
 
-    _captureNetwork(network, highlightedEdges = []) {
+    _captureNetwork(network, highlightedEdges = [], useEquivalentName = false) {
         if (!network) return null;
 
         const nodes = Array.from(network.nodes);
         const nodeIds = new Map();
         const highlighted = new Set(highlightedEdges);
+        const equivalentEdge = useEquivalentName && highlightedEdges.length === 1
+            ? highlightedEdges[0]
+            : null;
         for (const node of nodes) nodeIds.set(node, this._nodeName(node));
 
         return {
@@ -607,9 +610,11 @@ class Graph {
                     id: edge.visualId || this._nextVisualEdgeId(),
                     a: nodeIds.get(edge.a),
                     b: nodeIds.get(edge.b),
-                    name: edge.generatedBy === "star-mesh"
-                        ? this._equivalentComponentName(edge.ast)
-                        : this._componentNameFromSources(edge.sourceNames, edge.ast),
+                    name: edge === equivalentEdge
+                        ? `${this._componentType()}eq`
+                        : (edge.generatedBy === "star-mesh"
+                            ? this._equivalentComponentName(edge.ast)
+                            : this._componentNameFromSources(edge.sourceNames, edge.ast)),
                     value: edge.displayValue || this._formatNumber(this._fromAdmittance(edge.admittance)),
                     expression: this._astToComponentString(edge.ast, false, true),
                     generated: edge.generated === true,
