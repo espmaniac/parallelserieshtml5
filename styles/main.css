@@ -1544,11 +1544,11 @@ body.solution-inspector-resizing #solutionInspectorResizeHandle::after {
     line-height: 1.4;
 }
 
-body.solution-playback-mode #myCanvas {
+body.solution-playback-mode:not(.solution-playback-step) #myCanvas {
     cursor: default;
 }
 
-body.solution-playback-mode #tools {
+body.solution-playback-mode:not(.solution-playback-step) #tools {
     pointer-events: none;
     opacity: 0.62;
 }

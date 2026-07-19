@@ -152,8 +152,8 @@ window.onload = function() {
     let del = confirm("Do you want to clear the circuit?");
     
     if (del) {
-      scheme.clear();
       setSolutionInspectorOpen(false);
+      scheme.clear();
     }
 
     scheme.renderAll();
