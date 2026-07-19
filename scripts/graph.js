@@ -46,11 +46,22 @@ class Graph {
         this.nodeLabels = [];
         this.nextNodeNumber = 1;
         this.nextTransformedBranchNumber = 1;
+        this.nextVisualEdgeNumber = 1;
         this.componentExpression = null;
     }
 
     getSolutionSteps() {
-        return this.solutionSteps.map((step) => Object.assign({}, step));
+        return this.solutionSteps.map((step) => {
+            const copy = Object.assign({}, step);
+            if (step.snapshot) {
+                copy.snapshot = {
+                    componentType: step.snapshot.componentType,
+                    nodes: step.snapshot.nodes.map((node) => Object.assign({}, node)),
+                    edges: step.snapshot.edges.map((edge) => Object.assign({}, edge))
+                };
+            }
+            return copy;
+        });
     }
 
     getComponentExpression() {
@@ -96,7 +107,10 @@ class Graph {
             "Build the electrical graph",
             `Found ${componentCount} component ${componentCount === 1 ? "branch" : "branches"}. ` +
                 `${wireCount} wire ${wireCount === 1 ? "connection was" : "connections were"} merged into ` +
-                `${network.nodes.size} electrical ${network.nodes.size === 1 ? "node" : "nodes"}.`
+                `${network.nodes.size} electrical ${network.nodes.size === 1 ? "node" : "nodes"}.`,
+            null,
+            null,
+            this._captureNetwork(network)
         );
 
         if (network.start === network.end) {
@@ -106,7 +120,8 @@ class Graph {
                 "Final expression",
                 "StartNode and DestNode are connected by an ideal wire.",
                 null,
-                "0"
+                "0",
+                this._captureNetwork(network)
             );
             return "0";
         }
@@ -153,7 +168,8 @@ class Graph {
             "Final expression",
             "All internal electrical nodes have been eliminated.",
             this.componentExpression,
-            expression
+            expression,
+            this._captureNetwork(network, terminalEdges)
         );
         return expression;
     }
@@ -164,16 +180,18 @@ class Graph {
         this.nodeLabels = [];
         this.nextNodeNumber = 1;
         this.nextTransformedBranchNumber = 1;
+        this.nextVisualEdgeNumber = 1;
         this.componentExpression = null;
     }
 
-    _addStep(type, title, description, before = null, after = null) {
+    _addStep(type, title, description, before = null, after = null, snapshot = null) {
         this.solutionSteps.push({
             type: type,
             title: title,
             description: description,
             before: before,
-            after: after
+            after: after,
+            snapshot: snapshot
         });
     }
 
@@ -273,23 +291,58 @@ class Graph {
                 return null;
             }
 
+            const componentName = this._componentName(edge.value);
             edges.push({
                 a: a,
                 b: b,
                 admittance: this._toAdmittance(value),
+                displayValue: text,
+                visualId: this._nextVisualEdgeId(),
+                generated: false,
+                generatedBy: null,
+                sourceNames: componentName ? [componentName] : [],
                 ast: {
                     type: "value",
                     value: text,
-                    name: this._componentName(edge.value)
+                    name: componentName
                 }
             });
+        }
+
+        const positions = new Map();
+        const groupedNodes = new Map();
+        for (const node of collected.nodes) {
+            const root = unionFind.find(node);
+            if (!groupedNodes.has(root)) groupedNodes.set(root, []);
+            groupedNodes.get(root).push(node);
+        }
+
+        for (const [root, grouped] of groupedNodes.entries()) {
+            const positioned = grouped.filter((node) => {
+                return Number.isFinite(node.x) && Number.isFinite(node.y);
+            });
+            const x = positioned.length > 0
+                ? positioned.reduce((sum, node) => sum + node.x, 0) / positioned.length
+                : 0;
+            const y = positioned.length > 0
+                ? positioned.reduce((sum, node) => sum + node.y, 0) / positioned.length
+                : 0;
+            positions.set(root, { x: x, y: y });
+        }
+
+        if (Number.isFinite(startNode.x) && Number.isFinite(startNode.y)) {
+            positions.set(start, { x: startNode.x, y: startNode.y });
+        }
+        if (Number.isFinite(destNode.x) && Number.isFinite(destNode.y)) {
+            positions.set(end, { x: destNode.x, y: destNode.y });
         }
 
         return {
             nodes: nodes,
             edges: edges,
             start: start,
-            end: end
+            end: end,
+            positions: positions
         };
     }
 
@@ -321,23 +374,24 @@ class Graph {
             groups.get(key).push(edge);
         }
 
-        let changed = false;
-        const edges = [];
         for (const group of groups.values()) {
-            if (group.length === 1) {
-                edges.push(group[0]);
-                continue;
-            }
+            if (group.length === 1) continue;
 
-            changed = true;
             const combinedAst = this._parallelAst(group.map((edge) => edge.ast));
             const combinedAdmittance = group.reduce((sum, edge) => sum + edge.admittance, 0);
-            edges.push({
+            const combinedEdge = {
                 a: group[0].a,
                 b: group[0].b,
                 admittance: combinedAdmittance,
+                displayValue: this._formatNumber(this._fromAdmittance(combinedAdmittance)),
+                visualId: this._nextVisualEdgeId(),
+                generated: true,
+                generatedBy: "parallel",
+                sourceNames: this._sourceNamesForEdges(group),
                 ast: combinedAst
-            });
+            };
+            network.edges = network.edges.filter((edge) => !group.includes(edge));
+            network.edges.push(combinedEdge);
 
             this._addStep(
                 "parallel",
@@ -345,13 +399,15 @@ class Graph {
                 `${group.length} branches share the same endpoints, ` +
                     `${this._nodeName(group[0].a)} and ${this._nodeName(group[0].b)}.`,
                 this._astToComponentString(combinedAst, true, true),
-                `${this._astToComponentString(combinedAst, false, true)} = ` +
-                    this._formatNumber(this._fromAdmittance(combinedAdmittance))
+                `${this._componentNameFromSources(combinedEdge.sourceNames, combinedAst)} = ` +
+                    this._formatNumber(this._fromAdmittance(combinedAdmittance)),
+                this._captureNetwork(network, [combinedEdge])
             );
+
+            return true;
         }
 
-        network.edges = edges;
-        return changed;
+        return false;
     }
 
     _removeDanglingNodes(network) {
@@ -376,7 +432,10 @@ class Graph {
             "inactive",
             "Remove inactive branches",
             `${removedNames.join(", ")} ${removedNames.length === 1 ? "is" : "are"} connected at only one point ` +
-                "and cannot carry current between StartNode and DestNode."
+                "and cannot carry current between StartNode and DestNode.",
+            null,
+            null,
+            this._captureNetwork(network)
         );
         return true;
     }
@@ -406,20 +465,27 @@ class Graph {
 
             const combinedAst = this._seriesAst([left.ast, right.ast]);
             const combinedAdmittance = (left.admittance * right.admittance) / denominator;
-            network.edges.push({
+            const combinedEdge = {
                 a: leftNode,
                 b: rightNode,
                 admittance: combinedAdmittance,
+                displayValue: this._formatNumber(this._fromAdmittance(combinedAdmittance)),
+                visualId: this._nextVisualEdgeId(),
+                generated: true,
+                generatedBy: "series",
+                sourceNames: this._sourceNamesForEdges([left, right]),
                 ast: combinedAst
-            });
+            };
+            network.edges.push(combinedEdge);
 
             this._addStep(
                 "series",
                 "Series reduction",
                 `${this._nodeName(node)} connects exactly two branches, so the branches are in series.`,
                 this._astToComponentString(combinedAst, true, true),
-                `${this._astToComponentString(combinedAst, false, true)} = ` +
-                    this._formatNumber(this._fromAdmittance(combinedAdmittance))
+                `${this._componentNameFromSources(combinedEdge.sourceNames, combinedAst)} = ` +
+                    this._formatNumber(this._fromAdmittance(combinedAdmittance)),
+                this._captureNetwork(network, [combinedEdge])
             );
         }
 
@@ -460,6 +526,7 @@ class Graph {
                 this._astToComponentString(edge.ast, true, true);
         }).join("; ");
         const generated = [];
+        const generatedEdges = [];
 
         for (let i = 0; i < incident.length; ++i) {
             for (let j = i + 1; j < incident.length; ++j) {
@@ -473,16 +540,23 @@ class Graph {
                 const transformedValue = this._fromAdmittance(admittance);
                 const formattedValue = this._formatNumber(transformedValue);
                 const transformedName = `SM${this.nextTransformedBranchNumber++}`;
-                network.edges.push({
+                const generatedEdge = {
                     a: a,
                     b: b,
                     admittance: admittance,
+                    displayValue: formattedValue,
+                    visualId: this._nextVisualEdgeId(),
+                    generated: true,
+                    generatedBy: "star-mesh",
+                    sourceNames: this._sourceNamesForEdges(incident),
                     ast: {
                         type: "value",
                         value: formattedValue,
                         name: transformedName
                     }
-                });
+                };
+                network.edges.push(generatedEdge);
+                generatedEdges.push(generatedEdge);
                 generated.push(
                     `${transformedName} (${this._nodeName(a)} ↔ ${this._nodeName(b)}) = ${formattedValue}`
                 );
@@ -495,10 +569,110 @@ class Graph {
             `${this._nodeName(node)} has ${incident.length} connected branches and cannot be removed by direct ` +
                 "series/parallel reduction. It is eliminated with Yij = Yi × Yj / ΣY.",
             before,
-            generated.join("; ")
+            generated.join("; "),
+            this._captureNetwork(network, generatedEdges)
         );
 
         return true;
+    }
+
+    _nextVisualEdgeId() {
+        return `E${this.nextVisualEdgeNumber++}`;
+    }
+
+    _captureNetwork(network, highlightedEdges = []) {
+        if (!network) return null;
+
+        const nodes = Array.from(network.nodes);
+        const nodeIds = new Map();
+        const highlighted = new Set(highlightedEdges);
+        for (let i = 0; i < nodes.length; ++i) nodeIds.set(nodes[i], `N${i}`);
+
+        return {
+            componentType: this._componentType(),
+            nodes: nodes.map((node, index) => {
+                const position = network.positions && network.positions.get(node);
+                return {
+                    id: nodeIds.get(node),
+                    name: this._nodeName(node),
+                    terminal: node === network.start
+                        ? "start"
+                        : (node === network.end ? "end" : null),
+                    x: position && Number.isFinite(position.x) ? position.x : index * 120,
+                    y: position && Number.isFinite(position.y) ? position.y : 0
+                };
+            }),
+            edges: network.edges.map((edge) => {
+                return {
+                    id: edge.visualId || this._nextVisualEdgeId(),
+                    a: nodeIds.get(edge.a),
+                    b: nodeIds.get(edge.b),
+                    name: edge.generatedBy === "star-mesh"
+                        ? this._equivalentComponentName(edge.ast)
+                        : this._componentNameFromSources(edge.sourceNames, edge.ast),
+                    value: edge.displayValue || this._formatNumber(this._fromAdmittance(edge.admittance)),
+                    expression: this._astToComponentString(edge.ast, false, true),
+                    generated: edge.generated === true,
+                    highlighted: highlighted.has(edge)
+                };
+            })
+        };
+    }
+
+    _equivalentComponentName(ast) {
+        const names = [];
+        const collectNames = (part) => {
+            if (!part) return;
+            if (part.type === "value") {
+                if (part.name && !names.includes(part.name)) names.push(part.name);
+                return;
+            }
+
+            const children = part.type === "series" ? part.parts : part.branches;
+            for (const child of (children || [])) collectNames(child);
+        };
+        collectNames(ast);
+
+        if (names.length === 0) return `${this._componentType()}eq`;
+        if (names.length === 1) return names[0];
+
+        const parsed = names.map((name) => String(name).match(/^([A-Za-z]+)(\d+)$/));
+        const samePrefix = parsed.every((match) => {
+            return match && match[1] === parsed[0][1];
+        });
+        if (samePrefix) {
+            const suffixes = parsed
+                .map((match) => Number(match[2]))
+                .filter((number, index, values) => values.indexOf(number) === index)
+                .sort((left, right) => left - right);
+            return parsed[0][1] + suffixes.join(",");
+        }
+
+        return names.join(",");
+    }
+
+    _sourceNamesForEdges(edges) {
+        const names = [];
+        for (const edge of edges) {
+            for (const name of (edge.sourceNames || [])) {
+                if (name && !names.includes(name)) names.push(name);
+            }
+        }
+        return names;
+    }
+
+    _componentNameFromSources(sourceNames, fallbackAst) {
+        const names = Array.isArray(sourceNames) ? sourceNames.filter(Boolean) : [];
+        if (names.length === 0) return this._equivalentComponentName(fallbackAst);
+        if (names.length === 1) return names[0];
+
+        const syntheticAst = {
+            type: "series",
+            parts: names.map((name) => {
+                return { type: "value", value: "", name: name };
+            })
+        };
+        return this._equivalentComponentName(syntheticAst);
     }
 
     _degreeMap(network) {

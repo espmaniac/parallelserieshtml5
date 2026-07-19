@@ -134,6 +134,21 @@
                     </div>
                 </section>
 
+                <section class="solutionPlaybackSection" aria-labelledby="solutionPlaybackHeading">
+                    <div class="solutionPlaybackHeader">
+                        <div>
+                            <h4 id="solutionPlaybackHeading">Circuit playback</h4>
+                            <p id="solutionPlaybackStatus" aria-live="polite">Original circuit</p>
+                        </div>
+                        <div class="solutionPlaybackControls" aria-label="Circuit playback controls">
+                            <button id="solutionPlaybackOriginal" type="button" disabled>Original</button>
+                            <button id="solutionPlaybackPrevious" type="button" aria-label="Previous circuit state" title="Previous circuit state" disabled>←</button>
+                            <button id="solutionPlaybackNext" type="button" aria-label="Next circuit state" title="Next circuit state" disabled>→</button>
+                        </div>
+                    </div>
+                    <p class="solutionPlaybackHint">Select a solution step to replace the circuit on the main canvas. Close the inspector to restore and edit the original circuit.</p>
+                </section>
+
                 <section class="solutionProcessSection" aria-labelledby="solutionProcessHeading">
                     <h4 id="solutionProcessHeading">Solution process</h4>
                     <ol id="solutionSteps" aria-live="polite"></ol>
@@ -240,5 +255,6 @@
     <script src="scripts/equivalent.js" defer></script>
 
     <script src="scripts/graph.js" defer></script>
+    <script src="scripts/solution_playback.js" defer></script>
 </body>
 </html>
