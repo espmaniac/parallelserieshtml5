@@ -785,8 +785,6 @@ function openEditValueModal(component) {
 }
 
 function isAnyModalOpen() {
-  if (typeof solutionPlayback !== "undefined" && solutionPlayback.isInteractionLocked()) return true;
-
   const modals = document.querySelectorAll(".modal");
   for (let i = 0; i < modals.length; ++i) {
     if (modals[i].style.display !== "none" && modals[i].style.display !== "") return true;

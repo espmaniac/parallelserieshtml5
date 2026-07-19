@@ -1,6 +1,7 @@
 const solutionPlayback = {
     solution: null,
     originalSchemeState: null,
+    originalPlaybackState: null,
     stepSchemeStates: new Map(),
     currentStepIndex: -1,
 
@@ -11,14 +12,15 @@ const solutionPlayback = {
 
         this.solution = solution || null;
         this.originalSchemeState = this.solution ? this._captureSchemeState() : null;
+        this.originalPlaybackState = this.originalSchemeState
+            ? this._cloneOriginalSchemeState()
+            : null;
         this.stepSchemeStates = new Map();
         this.currentStepIndex = -1;
-        if (document.body) {
-            document.body.classList.toggle("solution-playback-mode", Boolean(this.solution));
-            document.body.classList.remove("solution-playback-step");
-        }
+        if (this.originalPlaybackState) this._applySchemeState(this.originalPlaybackState);
         this._updateControls();
         this._updateStepSelection();
+        if (this.originalPlaybackState && typeof scheme !== "undefined") scheme.renderAll();
     },
 
     close() {
@@ -29,12 +31,9 @@ const solutionPlayback = {
 
         this.solution = null;
         this.originalSchemeState = null;
+        this.originalPlaybackState = null;
         this.stepSchemeStates = new Map();
         this.currentStepIndex = -1;
-        if (document.body) {
-            document.body.classList.remove("solution-playback-mode");
-            document.body.classList.remove("solution-playback-step");
-        }
         this._updateControls();
         this._updateStepSelection();
         if (hadSavedScheme && typeof scheme !== "undefined") scheme.renderAll();
@@ -46,9 +45,11 @@ const solutionPlayback = {
         this._hideContextMenu();
         this._cancelActiveInteraction();
         this._saveActivePlaybackState();
-        this._restoreOriginalScheme(false);
+        if (!this.originalPlaybackState) {
+            this.originalPlaybackState = this._cloneOriginalSchemeState();
+        }
+        this._applySchemeState(this.originalPlaybackState);
         this.currentStepIndex = -1;
-        if (document.body) document.body.classList.remove("solution-playback-step");
         this._updateControls();
         this._updateStepSelection();
         scheme.renderAll();
@@ -72,7 +73,6 @@ const solutionPlayback = {
         this._hideContextMenu();
         this._applySchemeState(playbackState);
         this.currentStepIndex = stepIndex;
-        if (document.body) document.body.classList.add("solution-playback-step");
         this._updateControls();
         this._updateStepSelection();
         scheme.renderAll();
@@ -101,15 +101,6 @@ const solutionPlayback = {
             return;
         }
         if (position < indexes.length - 1) this.showStep(indexes[position + 1]);
-    },
-
-    isActive() {
-        return Boolean(this.originalSchemeState && this._stepHasSnapshot(this.currentStepIndex));
-    },
-
-    isInteractionLocked() {
-        const inspector = document.getElementById("solutionInspector");
-        return Boolean(this.solution && inspector && !inspector.hidden && !this.isActive());
     },
 
     _captureSchemeState() {
@@ -145,8 +136,16 @@ const solutionPlayback = {
     },
 
     _saveActivePlaybackState() {
-        if (!this.isActive()) return;
-        this.stepSchemeStates.set(this.currentStepIndex, this._captureSchemeState());
+        if (!this.originalSchemeState) return;
+
+        const state = this._captureSchemeState();
+        if (this.currentStepIndex < 0) {
+            this.originalPlaybackState = state;
+            return;
+        }
+        if (this._stepHasSnapshot(this.currentStepIndex)) {
+            this.stepSchemeStates.set(this.currentStepIndex, state);
+        }
     },
 
     _cancelActiveInteraction() {
