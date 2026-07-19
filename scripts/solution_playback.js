@@ -544,32 +544,55 @@ const solutionPlayback = {
             x: snapToGrid((start.x + end.x) / 2 + normalX * offset),
             y: snapToGrid((start.y + end.y) / 2 + normalY * offset)
         };
-        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        const rawAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+        const angle = Math.round(rawAngle / snapAngle) * snapAngle;
         const componentType = typeof choosenComponent !== "undefined" && choosenComponent.shortName
             ? choosenComponent.shortName
             : "R";
         const name = this._uniqueComponentName(edge.name || `${componentType}eq`, components);
-        const component = new Component(
+        let component = new Component(
             name,
             String(edge.value || "0"),
             snapToGrid(center.x - cellSize),
             snapToGrid(center.y - cellSize / 2),
             angle
         );
+
+        // A short diagonal can be shallower than its snapped component angle.
+        // Anchor the component at the shared end node so its return lead stays
+        // on the outside of the branch instead of crossing a sibling branch.
+        const missesEndNode = component.nodes[1].x !== end.x || component.nodes[1].y !== end.y;
+        if (offset === 0 && distance <= cellSize * 8 && missesEndNode) {
+            const radians = angle * Math.PI / 180;
+            const terminalReach = cellSize * 3;
+            const anchoredCenter = {
+                x: end.x - Math.cos(radians) * terminalReach,
+                y: end.y - Math.sin(radians) * terminalReach
+            };
+            component = new Component(
+                name,
+                String(edge.value || "0"),
+                snapToGrid(anchoredCenter.x - cellSize),
+                snapToGrid(anchoredCenter.y - cellSize / 2),
+                angle
+            );
+        }
         components[name] = component;
 
-        const startWire = this._wireFromComponentToNode(
+        this._wireSnappedPath(
             component.nodes[0],
             worldLayout.get(startId),
-            logicalNodes.get(startId)
+            logicalNodes.get(startId),
+            wires,
+            component.angle
         );
-        const endWire = this._wireFromComponentToNode(
+        this._wireSnappedPath(
             component.nodes[1],
             worldLayout.get(endId),
-            logicalNodes.get(endId)
+            logicalNodes.get(endId),
+            wires,
+            component.angle
         );
-        if (startWire) wires.push(startWire);
-        if (endWire) wires.push(endWire);
     },
 
     _addStructuredPlaybackBranch(edge, laneY, worldLayout, components, wires, logicalNodes) {
@@ -647,21 +670,53 @@ const solutionPlayback = {
         connectedNodes.push(previousNode);
     },
 
-    _wireFromComponentToNode(componentNode, logicalPosition, connectedNodes) {
-        if (!componentNode || !logicalPosition || !connectedNodes) return null;
+    _wireSnappedPath(componentNode, logicalPosition, connectedNodes, wires, componentAngle) {
+        if (!componentNode || !logicalPosition || !connectedNodes || !wires) return;
         if (componentNode.x === logicalPosition.x && componentNode.y === logicalPosition.y) {
             connectedNodes.push(componentNode);
-            return null;
+            return;
         }
 
-        const wire = new Wire();
-        wire.nodes[0].x = componentNode.x;
-        wire.nodes[0].y = componentNode.y;
-        wire.nodes[1].x = logicalPosition.x;
-        wire.nodes[1].y = logicalPosition.y;
-        connectNodes(componentNode, wire.nodes[0], "0");
-        connectedNodes.push(wire.nodes[1]);
-        return wire;
+        const dx = logicalPosition.x - componentNode.x;
+        const dy = logicalPosition.y - componentNode.y;
+        const points = [{ x: componentNode.x, y: componentNode.y }];
+        const isSnappedDirection = dx === 0 || dy === 0 || Math.abs(dx) === Math.abs(dy);
+
+        if (!isSnappedDirection) {
+            const normalizedAngle = ((componentAngle % 180) + 180) % 180;
+            let elbow;
+            if (normalizedAngle === 0) {
+                elbow = { x: logicalPosition.x, y: componentNode.y };
+            } else if (normalizedAngle === 90) {
+                elbow = { x: componentNode.x, y: logicalPosition.y };
+            } else {
+                const diagonalDistance = Math.min(Math.abs(dx), Math.abs(dy));
+                elbow = {
+                    x: componentNode.x + Math.sign(dx) * diagonalDistance,
+                    y: componentNode.y + Math.sign(dy) * diagonalDistance
+                };
+            }
+            points.push({ x: snapToGrid(elbow.x), y: snapToGrid(elbow.y) });
+        }
+        points.push({ x: logicalPosition.x, y: logicalPosition.y });
+
+        const compactPoints = points.filter((point, index) => {
+            return index === 0 || point.x !== points[index - 1].x || point.y !== points[index - 1].y;
+        });
+        let previousNode = componentNode;
+        for (let index = 1; index < compactPoints.length; ++index) {
+            const start = compactPoints[index - 1];
+            const end = compactPoints[index];
+            const wire = new Wire();
+            wire.nodes[0].x = snapToGrid(start.x);
+            wire.nodes[0].y = snapToGrid(start.y);
+            wire.nodes[1].x = snapToGrid(end.x);
+            wire.nodes[1].y = snapToGrid(end.y);
+            connectNodes(previousNode, wire.nodes[0], "0");
+            wires.push(wire);
+            previousNode = wire.nodes[1];
+        }
+        connectedNodes.push(previousNode);
     },
 
     _buildPlaybackLabels(nodes, logicalNodes) {
