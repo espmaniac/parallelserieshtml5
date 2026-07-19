@@ -17,7 +17,7 @@
     <link rel="shortcut icon" href="logo/favicon96x96.ico" type="image/x-icon">
     <link rel="shortcut icon" href="logo/favicon180x180.ico" type="image/x-icon">
     <link rel="shortcut icon" href="logo/favicon512x512.ico" type="image/x-icon">
-    <link rel="stylesheet" href="styles/main.css?v=solution-playback-11">
+    <link rel="stylesheet" href="styles/main.css?v=solution-playback-12">
 </head>
 <body>
 
@@ -109,7 +109,7 @@
             <div id="solutionInspectorResizeHandle" role="separator" aria-label="Resize solution inspector" aria-orientation="vertical" tabindex="0"></div>
             <div class="solutionInspectorHeader">
                 <h3 id="solutionInspectorTitle">Circuit Solution</h3>
-                <button id="solutionInspectorClose" type="button" aria-label="Close solution inspector">×</button>
+                <button id="solutionInspectorClose" type="button" aria-label="Close solution inspector and restore original circuit" title="Close and restore original circuit">×</button>
             </div>
             <div class="solutionInspectorContent">
                 <section class="solutionMethodSection" aria-labelledby="solutionMethodHeading">
@@ -144,9 +144,10 @@
                             <button id="solutionPlaybackOriginal" type="button" disabled>Original</button>
                             <button id="solutionPlaybackPrevious" type="button" aria-label="Previous circuit state" title="Previous circuit state" disabled>←</button>
                             <button id="solutionPlaybackNext" type="button" aria-label="Next circuit state" title="Next circuit state" disabled>→</button>
+                            <button id="solutionPlaybackKeep" type="button" title="Keep this circuit state as one undoable change" disabled>Keep step</button>
                         </div>
                     </div>
-                    <p class="solutionPlaybackHint">The original circuit and every solution step are live circuit states on the main canvas. Complex reduced states are rearranged on the grid for clarity. Changes are temporary; close the inspector to restore the saved circuit.</p>
+                    <p class="solutionPlaybackHint">Each step is applied to the live canvas through one reversible command sequence. Close the inspector to restore the original circuit, or keep a step and use Undo to return to the original later.</p>
                 </section>
 
                 <section class="solutionProcessSection" aria-labelledby="solutionProcessHeading">
@@ -236,15 +237,15 @@
     
     <script src="scripts/parallelseries.js" defer></script>
     <script src="scripts/solution_methods.js" defer></script>
-    <script src="scripts/main.js?v=solution-playback-11" defer></script>
-    <script src="scripts/text.js?v=solution-playback-11" defer></script>
+    <script src="scripts/main.js?v=solution-playback-12" defer></script>
+    <script src="scripts/text.js?v=solution-playback-12" defer></script>
     <script src="scripts/labelnode.js" defer></script>
     <script src="scripts/scheme.js" defer></script>
     
     <script src="scripts/tool_manager.js" defer></script>
     <script src="scripts/context_menu.js" defer></script>
     <script src="scripts/connector.js" defer></script>
-    <script src="scripts/command.js?v=solution-playback-11" defer></script>
+    <script src="scripts/command.js?v=solution-playback-12" defer></script>
     
     <script src="scripts/component.js" defer></script>
     <script src="scripts/junction.js" defer></script>
@@ -254,7 +255,7 @@
 
     <script src="scripts/equivalent.js" defer></script>
 
-    <script src="scripts/graph.js?v=solution-playback-11" defer></script>
-    <script src="scripts/solution_playback.js?v=solution-playback-11" defer></script>
+    <script src="scripts/graph.js?v=solution-playback-12" defer></script>
+    <script src="scripts/solution_playback.js?v=solution-playback-12" defer></script>
 </body>
 </html>

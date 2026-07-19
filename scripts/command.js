@@ -287,27 +287,84 @@ class AddLabelNode extends Command {
 
 }
 
+class CircuitStateCommand extends Command {
+    constructor(beforeState, afterState, label = "Circuit state") {
+        super();
+        this.name = "CircuitStateCommand";
+        this.label = label;
+        this.beforeState = beforeState;
+        this.afterState = afterState;
+    }
+
+    applyState(state) {
+        if (!state) return;
+
+        scheme.components = state.components;
+        scheme.selectedComponents = state.selectedComponents;
+        scheme.wires = state.wires;
+        scheme.selectedWires = state.selectedWires;
+        scheme.junctions = state.junctions;
+        scheme.labels = state.labels;
+        Component.nameCount = state.componentNameCount;
+    }
+
+    execute() {
+        this.applyState(this.afterState);
+    }
+
+    unexecute() {
+        this.applyState(this.beforeState);
+    }
+}
+
 class MacroCommand extends Command {
-    constructor() {
+    constructor(label = "Grouped changes") {
         super();
         this.cmds = [];
         this.name = "MacroCommand";
+        this.label = label;
+        this.appliedCount = 0;
+        this.executionLimit = null;
     }
 
     addCommand(cmd) {
         this.cmds.push(cmd);
     }
 
-    execute() {
-        for (let i = 0; i < this.cmds.length; ++i) {
-            this.cmds[i].execute();
+    setExecutionLimit(count) {
+        if (count === null || count === undefined) {
+            this.executionLimit = null;
+            return;
         }
+
+        this.executionLimit = Math.max(0, Math.min(this.cmds.length, count));
+    }
+
+    seek(count) {
+        const target = Math.max(0, Math.min(this.cmds.length, count));
+
+        while (this.appliedCount < target) {
+            this.cmds[this.appliedCount].execute();
+            this.appliedCount++;
+        }
+
+        while (this.appliedCount > target) {
+            this.appliedCount--;
+            this.cmds[this.appliedCount].unexecute();
+        }
+
+        return this.appliedCount;
+    }
+
+    execute() {
+        const target = this.executionLimit === null
+            ? this.cmds.length
+            : this.executionLimit;
+        this.seek(target);
     }
 
     unexecute() {
-        for (let i = this.cmds.length - 1; i >= 0; --i) {
-            this.cmds[i].unexecute();
-        }
+        this.seek(0);
     }
 
 }

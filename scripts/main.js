@@ -427,13 +427,16 @@ function setSolutionInspectorDimension(size, mobile) {
   }
 }
 
-function setSolutionInspectorOpen(open) {
+function setSolutionInspectorOpen(open, keepCurrentState = false) {
   const inspector = document.getElementById("solutionInspector");
   const calculateButton = document.getElementById("calculate");
   if (!inspector) return;
 
   const wasOpen = !inspector.hidden;
-  if (!open) solutionPlayback.close();
+  if (!open) {
+    const kept = keepCurrentState && solutionPlayback.keepCurrent();
+    if (!kept) solutionPlayback.close();
+  }
   inspector.hidden = !open;
   if (calculateButton) calculateButton.setAttribute("aria-expanded", open ? "true" : "false");
   if (typeof context_menu !== "undefined" && context_menu.element && !context_menu.hidden()) {
@@ -455,7 +458,8 @@ function initSolutionInspector() {
   const originalButton = document.getElementById("solutionPlaybackOriginal");
   const previousButton = document.getElementById("solutionPlaybackPrevious");
   const nextButton = document.getElementById("solutionPlaybackNext");
-  if (!inspector || !closeButton || !handle || !methodSelect || !originalButton || !previousButton || !nextButton) return;
+  const keepButton = document.getElementById("solutionPlaybackKeep");
+  if (!inspector || !closeButton || !handle || !methodSelect || !originalButton || !previousButton || !nextButton || !keepButton) return;
 
   const methods = solutionMethodRegistry.list();
   methodSelect.replaceChildren();
@@ -484,6 +488,11 @@ function initSolutionInspector() {
 
   nextButton.addEventListener("click", function() {
     solutionPlayback.next();
+  });
+
+  keepButton.addEventListener("click", function() {
+    setSolutionInspectorOpen(false, true);
+    document.getElementById("calculate").focus({ preventScroll: true });
   });
 
   closeButton.addEventListener("click", function() {

@@ -1537,6 +1537,18 @@ body.solution-inspector-resizing #solutionInspectorResizeHandle::after {
     opacity: 0.42;
 }
 
+#solutionPlaybackKeep {
+    border-color: #777777;
+    background: #4b4b4b;
+    font-weight: 600;
+}
+
+#solutionPlaybackKeep:hover:not(:disabled),
+#solutionPlaybackKeep:focus-visible:not(:disabled) {
+    border-color: #b5b5b5;
+    background: #5a5a5a;
+}
+
 .solutionPlaybackHint {
     margin: 10px 0 0;
     color: #adadad;

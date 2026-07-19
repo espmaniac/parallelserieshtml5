@@ -1,25 +1,85 @@
 const solutionPlayback = {
     solution: null,
     originalSchemeState: null,
+    originalHistory: null,
     originalPlaybackState: null,
     stepSchemeStates: new Map(),
+    stepCommandCounts: new Map(),
+    playbackCommand: null,
+    originalCommandCount: 0,
     structuredLayoutStartIndex: -1,
     currentStepIndex: -1,
 
     configure(solution) {
         this._hideContextMenu();
         this._cancelActiveInteraction();
-        if (this.originalSchemeState) this._restoreOriginalScheme(false);
+        if (this.originalSchemeState) this.close();
 
         this.solution = solution || null;
         this.originalSchemeState = this.solution ? this._captureSchemeState() : null;
+        this.originalHistory = this.originalSchemeState ? {
+            undoStack: scheme.undoStack,
+            redoStack: scheme.redoStack
+        } : null;
         this.originalPlaybackState = this.originalSchemeState
             ? this._cloneOriginalSchemeState()
             : null;
         this.stepSchemeStates = new Map();
+        this.stepCommandCounts = new Map();
+        this.playbackCommand = null;
+        this.originalCommandCount = 0;
         this.structuredLayoutStartIndex = this._findStructuredLayoutStartIndex(this.solution);
         this.currentStepIndex = -1;
-        if (this.originalPlaybackState) this._applySchemeState(this.originalPlaybackState);
+
+        if (this.originalPlaybackState) {
+            this.playbackCommand = new MacroCommand("Circuit solution");
+            this.playbackCommand.solutionSteps = [];
+            this.playbackCommand.addCommand(new CircuitStateCommand(
+                this.originalSchemeState,
+                this.originalPlaybackState,
+                "Open circuit solution"
+            ));
+            this.originalCommandCount = this.playbackCommand.cmds.length;
+
+            let previousState = this.originalPlaybackState;
+            const steps = this.solution && Array.isArray(this.solution.steps)
+                ? this.solution.steps
+                : [];
+
+            for (let stepIndex = 0; stepIndex < steps.length; ++stepIndex) {
+                const step = steps[stepIndex];
+                if (!step || !step.snapshot) continue;
+
+                let playbackState = step.type === "analysis"
+                    ? this.originalPlaybackState
+                    : this._buildSchemeState(
+                        step.snapshot,
+                        this.structuredLayoutStartIndex >= 0 && stepIndex >= this.structuredLayoutStartIndex
+                    );
+                if (!playbackState) continue;
+
+                if (playbackState !== previousState) {
+                    this.playbackCommand.addCommand(new CircuitStateCommand(
+                        previousState,
+                        playbackState,
+                        `Step ${stepIndex + 1}: ${step.title || "Circuit reduction"}`
+                    ));
+                    previousState = playbackState;
+                }
+
+                this.stepSchemeStates.set(stepIndex, playbackState);
+                this.stepCommandCounts.set(stepIndex, this.playbackCommand.cmds.length);
+                this.playbackCommand.solutionSteps.push({
+                    stepIndex: stepIndex,
+                    commandCount: this.playbackCommand.cmds.length,
+                    title: step.title || "Circuit reduction"
+                });
+            }
+
+            this.playbackCommand.seek(this.originalCommandCount);
+            this._resetPreviewHistory();
+        }
+
         this._updateControls();
         this._updateStepSelection();
         if (this.originalPlaybackState && typeof scheme !== "undefined") scheme.renderAll();
@@ -29,29 +89,41 @@ const solutionPlayback = {
         this._hideContextMenu();
         this._cancelActiveInteraction();
         const hadSavedScheme = Boolean(this.originalSchemeState);
-        if (hadSavedScheme) this._restoreOriginalScheme(false);
-
-        this.solution = null;
-        this.originalSchemeState = null;
-        this.originalPlaybackState = null;
-        this.stepSchemeStates = new Map();
-        this.structuredLayoutStartIndex = -1;
-        this.currentStepIndex = -1;
+        if (this.playbackCommand) this.playbackCommand.seek(0);
+        this._restoreOriginalHistory(true);
+        this._resetSession();
         this._updateControls();
         this._updateStepSelection();
         if (hadSavedScheme && typeof scheme !== "undefined") scheme.renderAll();
     },
 
-    showOriginal() {
-        if (!this.originalSchemeState) return;
+    keepCurrent() {
+        if (!this.playbackCommand || !this.originalHistory || this.currentStepIndex < 0) return false;
 
         this._hideContextMenu();
         this._cancelActiveInteraction();
-        this._saveActivePlaybackState();
-        if (!this.originalPlaybackState) {
-            this.originalPlaybackState = this._cloneOriginalSchemeState();
-        }
-        this._applySchemeState(this.originalPlaybackState);
+        this._syncActivePlaybackState();
+
+        const committedCommand = this.playbackCommand;
+        committedCommand.committedStepIndex = this.currentStepIndex;
+        committedCommand.setExecutionLimit(committedCommand.appliedCount);
+
+        this._restoreOriginalHistory(true);
+        scheme.execute(committedCommand);
+        this._resetSession();
+        this._updateControls();
+        this._updateStepSelection();
+        return true;
+    },
+
+    showOriginal() {
+        if (!this.playbackCommand) return;
+
+        this._hideContextMenu();
+        this._cancelActiveInteraction();
+        this._syncActivePlaybackState();
+        this.playbackCommand.seek(this.originalCommandCount);
+        this._resetPreviewHistory();
         this.currentStepIndex = -1;
         this._updateControls();
         this._updateStepSelection();
@@ -59,25 +131,14 @@ const solutionPlayback = {
     },
 
     showStep(stepIndex) {
-        if (!this._stepHasSnapshot(stepIndex) || !this.originalSchemeState) return;
+        if (!this._stepHasSnapshot(stepIndex) || !this.playbackCommand) return;
+        if (!this.stepCommandCounts.has(stepIndex)) return;
 
         this._cancelActiveInteraction();
-        this._saveActivePlaybackState();
-        const step = this.solution.steps[stepIndex];
-        let playbackState = this.stepSchemeStates.get(stepIndex);
-        if (!playbackState) {
-            playbackState = step.type === "analysis"
-                ? this._cloneOriginalSchemeState()
-                : this._buildSchemeState(
-                    step.snapshot,
-                    this.structuredLayoutStartIndex >= 0 && stepIndex >= this.structuredLayoutStartIndex
-                );
-            if (playbackState) this.stepSchemeStates.set(stepIndex, playbackState);
-        }
-        if (!playbackState) return;
-
+        this._syncActivePlaybackState();
         this._hideContextMenu();
-        this._applySchemeState(playbackState);
+        this.playbackCommand.seek(this.stepCommandCounts.get(stepIndex));
+        this._resetPreviewHistory();
         this.currentStepIndex = stepIndex;
         this._updateControls();
         this._updateStepSelection();
@@ -117,41 +178,50 @@ const solutionPlayback = {
             selectedWires: scheme.selectedWires,
             junctions: scheme.junctions,
             labels: scheme.labels,
-            undoStack: scheme.undoStack,
-            redoStack: scheme.redoStack,
             componentNameCount: Component.nameCount
         };
     },
 
-    _applySchemeState(state) {
-        scheme.components = state.components;
-        scheme.selectedComponents = state.selectedComponents;
-        scheme.wires = state.wires;
-        scheme.selectedWires = state.selectedWires;
-        scheme.junctions = state.junctions;
-        scheme.labels = state.labels;
-        scheme.undoStack = state.undoStack;
-        scheme.redoStack = state.redoStack;
-        Component.nameCount = state.componentNameCount;
+    _syncActivePlaybackState() {
+        if (!this.originalPlaybackState || !this.playbackCommand) return;
+
+        const activeState = this.currentStepIndex < 0
+            ? this.originalPlaybackState
+            : this.stepSchemeStates.get(this.currentStepIndex);
+        if (!activeState) return;
+
+        activeState.components = scheme.components;
+        activeState.selectedComponents = scheme.selectedComponents;
+        activeState.wires = scheme.wires;
+        activeState.selectedWires = scheme.selectedWires;
+        activeState.junctions = scheme.junctions;
+        activeState.labels = scheme.labels;
+        activeState.componentNameCount = Component.nameCount;
     },
 
-    _restoreOriginalScheme(render = true) {
-        if (!this.originalSchemeState) return;
-        this._applySchemeState(this.originalSchemeState);
-        if (render) scheme.renderAll();
+    _resetPreviewHistory() {
+        if (typeof scheme === "undefined") return;
+        scheme.undoStack = [];
+        scheme.redoStack = [];
     },
 
-    _saveActivePlaybackState() {
-        if (!this.originalSchemeState) return;
+    _restoreOriginalHistory(restoreRedo) {
+        if (!this.originalHistory || typeof scheme === "undefined") return;
+        scheme.undoStack = this.originalHistory.undoStack;
+        scheme.redoStack = restoreRedo ? this.originalHistory.redoStack : [];
+    },
 
-        const state = this._captureSchemeState();
-        if (this.currentStepIndex < 0) {
-            this.originalPlaybackState = state;
-            return;
-        }
-        if (this._stepHasSnapshot(this.currentStepIndex)) {
-            this.stepSchemeStates.set(this.currentStepIndex, state);
-        }
+    _resetSession() {
+        this.solution = null;
+        this.originalSchemeState = null;
+        this.originalHistory = null;
+        this.originalPlaybackState = null;
+        this.stepSchemeStates = new Map();
+        this.stepCommandCounts = new Map();
+        this.playbackCommand = null;
+        this.originalCommandCount = 0;
+        this.structuredLayoutStartIndex = -1;
+        this.currentStepIndex = -1;
     },
 
     _cancelActiveInteraction() {
@@ -265,9 +335,7 @@ const solutionPlayback = {
             selectedWires: [],
             junctions: junctions,
             labels: labels,
-            undoStack: [],
-            redoStack: [],
-            componentNameCount: Object.keys(components).length + 1
+            componentNameCount: this._nextPlaybackComponentNameCount(components)
         };
     },
 
@@ -523,8 +591,6 @@ const solutionPlayback = {
             selectedWires: this.originalSchemeState.selectedWires.slice(),
             junctions: junctions,
             labels: labels,
-            undoStack: [],
-            redoStack: [],
             componentNameCount: this.originalSchemeState.componentNameCount
         };
     },
@@ -1677,13 +1743,22 @@ const solutionPlayback = {
         return `${preferredName}.${suffix}`;
     },
 
+    _nextPlaybackComponentNameCount(components) {
+        const componentType = typeof choosenComponent !== "undefined" && choosenComponent.shortName
+            ? choosenComponent.shortName
+            : "R";
+        let count = 1;
+        while (Object.prototype.hasOwnProperty.call(components, `${componentType}${count}`)) count++;
+        return count;
+    },
+
     _snapshotStepIndexes() {
         const steps = this.solution && Array.isArray(this.solution.steps)
             ? this.solution.steps
             : [];
         const indexes = [];
         for (let i = 0; i < steps.length; ++i) {
-            if (steps[i] && steps[i].snapshot) indexes.push(i);
+            if (steps[i] && steps[i].snapshot && this.stepCommandCounts.has(i)) indexes.push(i);
         }
         return indexes;
     },
@@ -1703,7 +1778,8 @@ const solutionPlayback = {
         const original = document.getElementById("solutionPlaybackOriginal");
         const previous = document.getElementById("solutionPlaybackPrevious");
         const next = document.getElementById("solutionPlaybackNext");
-        if (!status || !original || !previous || !next) return;
+        const keep = document.getElementById("solutionPlaybackKeep");
+        if (!status || !original || !previous || !next || !keep) return;
 
         const indexes = this._snapshotStepIndexes();
         const position = indexes.indexOf(this.currentStepIndex);
@@ -1717,6 +1793,7 @@ const solutionPlayback = {
         original.disabled = this.currentStepIndex < 0;
         previous.disabled = this.currentStepIndex < 0;
         next.disabled = indexes.length === 0 || position === indexes.length - 1;
+        keep.disabled = this.currentStepIndex < 0;
     },
 
     _updateStepSelection() {
