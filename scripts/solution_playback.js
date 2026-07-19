@@ -544,8 +544,7 @@ const solutionPlayback = {
             x: snapToGrid((start.x + end.x) / 2 + normalX * offset),
             y: snapToGrid((start.y + end.y) / 2 + normalY * offset)
         };
-        const rawAngle = Math.atan2(dy, dx) * 180 / Math.PI;
-        const angle = Math.round(rawAngle / snapAngle) * snapAngle;
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
         const componentType = typeof choosenComponent !== "undefined" && choosenComponent.shortName
             ? choosenComponent.shortName
             : "R";
@@ -650,6 +649,10 @@ const solutionPlayback = {
 
     _wireFromComponentToNode(componentNode, logicalPosition, connectedNodes) {
         if (!componentNode || !logicalPosition || !connectedNodes) return null;
+        if (componentNode.x === logicalPosition.x && componentNode.y === logicalPosition.y) {
+            connectedNodes.push(componentNode);
+            return null;
+        }
 
         const wire = new Wire();
         wire.nodes[0].x = componentNode.x;
