@@ -1,47 +1,29 @@
 const solutionPlayback = {
     solution: null,
-    originalSchemeState: null,
     originalHistory: null,
-    originalPlaybackState: null,
-    stepSchemeStates: new Map(),
     stepCommandCounts: new Map(),
     playbackCommand: null,
-    originalCommandCount: 0,
     structuredLayoutStartIndex: -1,
     currentStepIndex: -1,
 
     configure(solution) {
         this._hideContextMenu();
         this._cancelActiveInteraction();
-        if (this.originalSchemeState) this.close();
+        if (this.playbackCommand) this.close();
 
         this.solution = solution || null;
-        this.originalSchemeState = this.solution ? this._captureSchemeState() : null;
-        this.originalHistory = this.originalSchemeState ? {
+        this.originalHistory = this.solution ? {
             undoStack: scheme.undoStack,
             redoStack: scheme.redoStack
         } : null;
-        this.originalPlaybackState = this.originalSchemeState
-            ? this._cloneOriginalSchemeState()
-            : null;
-        this.stepSchemeStates = new Map();
         this.stepCommandCounts = new Map();
-        this.playbackCommand = null;
-        this.originalCommandCount = 0;
+        this.playbackCommand = this.solution ? new MacroCommand("Circuit solution") : null;
         this.structuredLayoutStartIndex = this._findStructuredLayoutStartIndex(this.solution);
         this.currentStepIndex = -1;
 
-        if (this.originalPlaybackState) {
-            this.playbackCommand = new MacroCommand("Circuit solution");
+        if (this.playbackCommand) {
             this.playbackCommand.solutionSteps = [];
-            this.playbackCommand.addCommand(new CircuitStateCommand(
-                this.originalSchemeState,
-                this.originalPlaybackState,
-                "Open circuit solution"
-            ));
-            this.originalCommandCount = this.playbackCommand.cmds.length;
-
-            let previousState = this.originalPlaybackState;
+            let currentModel = this._capturePlaybackModel();
             const steps = this.solution && Array.isArray(this.solution.steps)
                 ? this.solution.steps
                 : [];
@@ -50,24 +32,16 @@ const solutionPlayback = {
                 const step = steps[stepIndex];
                 if (!step || !step.snapshot) continue;
 
-                let playbackState = step.type === "analysis"
-                    ? this.originalPlaybackState
-                    : this._buildSchemeState(
+                let plan = null;
+                if (step.type !== "analysis") {
+                    plan = this._buildPlaybackPlan(
                         step.snapshot,
                         this.structuredLayoutStartIndex >= 0 && stepIndex >= this.structuredLayoutStartIndex
                     );
-                if (!playbackState) continue;
-
-                if (playbackState !== previousState) {
-                    this.playbackCommand.addCommand(new CircuitStateCommand(
-                        previousState,
-                        playbackState,
-                        `Step ${stepIndex + 1}: ${step.title || "Circuit reduction"}`
-                    ));
-                    previousState = playbackState;
+                    if (!plan) continue;
+                    currentModel = this._appendPlaybackTransition(currentModel, plan);
                 }
 
-                this.stepSchemeStates.set(stepIndex, playbackState);
                 this.stepCommandCounts.set(stepIndex, this.playbackCommand.cmds.length);
                 this.playbackCommand.solutionSteps.push({
                     stepIndex: stepIndex,
@@ -75,26 +49,25 @@ const solutionPlayback = {
                     title: step.title || "Circuit reduction"
                 });
             }
-
-            this.playbackCommand.seek(this.originalCommandCount);
             this._resetPreviewHistory();
         }
 
         this._updateControls();
         this._updateStepSelection();
-        if (this.originalPlaybackState && typeof scheme !== "undefined") scheme.renderAll();
+        if (this.playbackCommand && typeof scheme !== "undefined") scheme.renderAll();
     },
 
     close() {
         this._hideContextMenu();
         this._cancelActiveInteraction();
-        const hadSavedScheme = Boolean(this.originalSchemeState);
+        const hadPlayback = Boolean(this.playbackCommand);
+        this._discardPreviewEdits();
         if (this.playbackCommand) this.playbackCommand.seek(0);
         this._restoreOriginalHistory(true);
         this._resetSession();
         this._updateControls();
         this._updateStepSelection();
-        if (hadSavedScheme && typeof scheme !== "undefined") scheme.renderAll();
+        if (hadPlayback && typeof scheme !== "undefined") scheme.renderAll();
     },
 
     keepCurrent() {
@@ -102,7 +75,7 @@ const solutionPlayback = {
 
         this._hideContextMenu();
         this._cancelActiveInteraction();
-        this._syncActivePlaybackState();
+        this._adoptPreviewEdits();
 
         const committedCommand = this.playbackCommand;
         committedCommand.committedStepIndex = this.currentStepIndex;
@@ -121,8 +94,8 @@ const solutionPlayback = {
 
         this._hideContextMenu();
         this._cancelActiveInteraction();
-        this._syncActivePlaybackState();
-        this.playbackCommand.seek(this.originalCommandCount);
+        this._discardPreviewEdits();
+        this.playbackCommand.seek(0);
         this._resetPreviewHistory();
         this.currentStepIndex = -1;
         this._updateControls();
@@ -135,7 +108,7 @@ const solutionPlayback = {
         if (!this.stepCommandCounts.has(stepIndex)) return;
 
         this._cancelActiveInteraction();
-        this._syncActivePlaybackState();
+        this._discardPreviewEdits();
         this._hideContextMenu();
         this.playbackCommand.seek(this.stepCommandCounts.get(stepIndex));
         this._resetPreviewHistory();
@@ -170,37 +143,44 @@ const solutionPlayback = {
         if (position < indexes.length - 1) this.showStep(indexes[position + 1]);
     },
 
-    _captureSchemeState() {
+    _capturePlaybackModel() {
+        const components = new Map();
+        for (const name in scheme.components) {
+            const component = scheme.components[name];
+            components.set(name, {
+                component: component,
+                x: component.x,
+                y: component.y,
+                angle: component.angle,
+                value: component.value.value
+            });
+        }
         return {
-            components: scheme.components,
-            selectedComponents: scheme.selectedComponents,
-            wires: scheme.wires,
-            selectedWires: scheme.selectedWires,
-            junctions: scheme.junctions,
-            labels: scheme.labels,
-            componentNameCount: Component.nameCount
+            components: components,
+            wires: scheme.wires.slice(),
+            labels: scheme.labels.slice()
         };
-    },
-
-    _syncActivePlaybackState() {
-        if (!this.originalPlaybackState || !this.playbackCommand) return;
-
-        const activeState = this.currentStepIndex < 0
-            ? this.originalPlaybackState
-            : this.stepSchemeStates.get(this.currentStepIndex);
-        if (!activeState) return;
-
-        activeState.components = scheme.components;
-        activeState.selectedComponents = scheme.selectedComponents;
-        activeState.wires = scheme.wires;
-        activeState.selectedWires = scheme.selectedWires;
-        activeState.junctions = scheme.junctions;
-        activeState.labels = scheme.labels;
-        activeState.componentNameCount = Component.nameCount;
     },
 
     _resetPreviewHistory() {
         if (typeof scheme === "undefined") return;
+        scheme.undoStack = [];
+        scheme.redoStack = [];
+    },
+
+    _discardPreviewEdits() {
+        if (!this.playbackCommand || typeof scheme === "undefined") return;
+        while (scheme.undoStack.length > 0) {
+            const command = scheme.undoStack.pop();
+            command.unexecute();
+        }
+        scheme.redoStack = [];
+    },
+
+    _adoptPreviewEdits() {
+        if (!this.playbackCommand || typeof scheme === "undefined") return;
+        const commands = scheme.undoStack.slice();
+        if (commands.length > 0) this.playbackCommand.insertExecutedCommands(commands);
         scheme.undoStack = [];
         scheme.redoStack = [];
     },
@@ -213,13 +193,9 @@ const solutionPlayback = {
 
     _resetSession() {
         this.solution = null;
-        this.originalSchemeState = null;
         this.originalHistory = null;
-        this.originalPlaybackState = null;
-        this.stepSchemeStates = new Map();
         this.stepCommandCounts = new Map();
         this.playbackCommand = null;
-        this.originalCommandCount = 0;
         this.structuredLayoutStartIndex = -1;
         this.currentStepIndex = -1;
     },
@@ -248,7 +224,7 @@ const solutionPlayback = {
         }
     },
 
-    _buildSchemeState(snapshot, useStructuredLayout = false) {
+    _buildPlaybackPlan(snapshot, useStructuredLayout = false) {
         if (!snapshot || !Array.isArray(snapshot.nodes) || !Array.isArray(snapshot.edges)) return null;
 
         const worldLayout = useStructuredLayout
@@ -259,7 +235,8 @@ const solutionPlayback = {
 
         const components = {};
         const wires = [];
-        const junctions = [];
+        const componentCommands = new Map();
+        const wireCommands = [];
         const logicalNodes = new Map();
         const edgeGroups = this._edgeGroups(snapshot.edges);
 
@@ -274,7 +251,9 @@ const solutionPlayback = {
                     worldLayout,
                     components,
                     wires,
-                    logicalNodes
+                    logicalNodes,
+                    componentCommands,
+                    wireCommands
                 );
             }
         } else {
@@ -290,53 +269,139 @@ const solutionPlayback = {
                         components,
                         wires,
                         logicalNodes,
+                        componentCommands,
+                        wireCommands,
                         branchAnchors.get(edge) || null
                     );
                 }
             }
         }
 
-        this._coalescePlaybackWireOverlaps(wires, logicalNodes);
-        this._layoutPlaybackComponentTexts(components, wires);
+        this._coalescePlaybackWireOverlaps(wires, logicalNodes, wireCommands);
         if (!useStructuredLayout && this._playbackLayoutHasCollisions(components, wires)) {
-            return this._buildSchemeState(snapshot, true);
+            return this._buildPlaybackPlan(snapshot, true);
         }
 
-        for (const node of snapshot.nodes) {
-            const connectedNodes = logicalNodes.get(node.id) || [];
-            const position = worldLayout.get(node.id);
-            if (connectedNodes.length === 0 && position) {
-                const standalone = new Node();
-                standalone.x = position.x;
-                standalone.y = position.y;
-                connectedNodes.push(standalone);
-            }
-
-            for (let index = 1; index < connectedNodes.length; ++index) {
-                connectNodes(connectedNodes[0], connectedNodes[index], "0");
-            }
-
-            if (connectedNodes.length >= 3 && position) {
-                const junction = new Junction();
-                junction.x = position.x;
-                junction.y = position.y;
-                for (const connectedNode of connectedNodes) connectJunctionNode(junction, connectedNode);
-                junctions.push(junction);
-            }
-        }
-
-        this._addPlaybackCoordinateJunctions(components, wires, junctions);
-
-        const labels = this._buildPlaybackLabels(snapshot.nodes, logicalNodes);
+        const labelTargets = this._buildPlaybackLabelTargets(snapshot.nodes, logicalNodes);
         return {
             components: components,
-            selectedComponents: [],
             wires: wires,
-            selectedWires: [],
-            junctions: junctions,
-            labels: labels,
-            componentNameCount: this._nextPlaybackComponentNameCount(components)
+            componentCommands: componentCommands,
+            wireCommands: wireCommands,
+            labelTargets: labelTargets
         };
+    },
+
+    _appendPlaybackTransition(currentModel, plan) {
+        const nextComponents = new Map();
+        const nodeMap = new Map();
+
+        for (const wire of currentModel.wires) {
+            this.playbackCommand.addCommand(new DeleteElement(wire));
+        }
+
+        for (const [name, current] of currentModel.components.entries()) {
+            if (!Object.prototype.hasOwnProperty.call(plan.components, name)) {
+                this.playbackCommand.addCommand(new DeleteElement(current.component));
+            }
+        }
+
+        for (const name in plan.components) {
+            const target = plan.components[name];
+            const current = currentModel.components.get(name);
+            let component;
+
+            if (current) {
+                component = current.component;
+                if (String(current.value) !== String(target.value.value)) {
+                    this.playbackCommand.addCommand(new ChangeComponentValue(component, target.value.value));
+                }
+
+                const angleChange = this._playbackAngleDifference(current.angle, target.angle);
+                if (angleChange !== 0) {
+                    this.playbackCommand.addCommand(new RotateComponent(component, angleChange));
+                }
+                if (current.x !== target.x || current.y !== target.y) {
+                    const drag = new DragComponent(component, { x: current.x, y: current.y });
+                    drag.toWorld(target.x, target.y);
+                    this.playbackCommand.addCommand(drag);
+                }
+            } else {
+                const add = plan.componentCommands.get(name);
+                component = add.component;
+                this.playbackCommand.addCommand(add);
+            }
+
+            nodeMap.set(target.nodes[0], component.nodes[0]);
+            nodeMap.set(target.nodes[1], component.nodes[1]);
+            nextComponents.set(name, {
+                component: component,
+                x: target.x,
+                y: target.y,
+                angle: target.angle,
+                value: target.value.value
+            });
+        }
+
+        for (const draw of plan.wireCommands) {
+            this.playbackCommand.addCommand(draw);
+            nodeMap.set(draw.wire.nodes[0], draw.wire.nodes[0]);
+            nodeMap.set(draw.wire.nodes[1], draw.wire.nodes[1]);
+        }
+
+        const nextLabels = this._appendPlaybackLabelCommands(
+            currentModel.labels,
+            plan.labelTargets,
+            nodeMap
+        );
+
+        return {
+            components: nextComponents,
+            wires: plan.wireCommands.map((draw) => draw.wire),
+            labels: nextLabels
+        };
+    },
+
+    _appendPlaybackLabelCommands(currentLabels, labelTargets, nodeMap) {
+        const currentByName = new Map();
+        for (const label of currentLabels) currentByName.set(label.label.value, label);
+
+        for (const label of currentLabels) {
+            if (label.className !== "GraphLabelNode") continue;
+            if (!labelTargets.has(label.label.value)) {
+                this.playbackCommand.addCommand(new DeleteElement(label));
+            }
+        }
+
+        const nextLabels = currentLabels.filter((label) => {
+            return label.className !== "GraphLabelNode" || labelTargets.has(label.label.value);
+        });
+        for (const [name, plannedNode] of labelTargets.entries()) {
+            const targetNode = nodeMap.get(plannedNode);
+            if (!targetNode) continue;
+
+            let label = currentByName.get(name);
+            if (!label) {
+                const className = name === "StartNode" || name === "DestNode"
+                    ? "LabelNode"
+                    : "GraphLabelNode";
+                const addLabel = new AddLabelNode(name, className);
+                label = addLabel.label;
+                this.playbackCommand.addCommand(addLabel);
+                nextLabels.push(label);
+            }
+            if (label.node !== targetNode) {
+                this.playbackCommand.addCommand(new SetLabelNode(label, targetNode));
+            }
+        }
+        return nextLabels;
+    },
+
+    _playbackAngleDifference(from, to) {
+        let difference = (to - from) % 360;
+        if (difference > 180) difference -= 360;
+        if (difference < -180) difference += 360;
+        return difference;
     },
 
     _findStructuredLayoutStartIndex(solution) {
@@ -508,93 +573,6 @@ const solutionPlayback = {
         return routes;
     },
 
-    _cloneOriginalSchemeState() {
-        if (!this.originalSchemeState) return null;
-
-        const components = {};
-        const wires = [];
-        const junctions = [];
-        const nodeMap = new Map();
-        const componentMap = new Map();
-
-        for (const key in this.originalSchemeState.components) {
-            const original = this.originalSchemeState.components[key];
-            const component = new Component(
-                original.name.value,
-                original.value.value,
-                original.x,
-                original.y,
-                original.angle
-            );
-            component.select(original.selected);
-            components[key] = component;
-            componentMap.set(original, component);
-            nodeMap.set(original.nodes[0], component.nodes[0]);
-            nodeMap.set(original.nodes[1], component.nodes[1]);
-        }
-
-        for (const original of this.originalSchemeState.wires) {
-            const wire = new Wire();
-            wire.nodes[0].x = original.nodes[0].x;
-            wire.nodes[0].y = original.nodes[0].y;
-            wire.nodes[1].x = original.nodes[1].x;
-            wire.nodes[1].y = original.nodes[1].y;
-            wire.selected = original.selected;
-            wires.push(wire);
-            nodeMap.set(original.nodes[0], wire.nodes[0]);
-            nodeMap.set(original.nodes[1], wire.nodes[1]);
-        }
-
-        for (const [originalNode, clonedNode] of nodeMap.entries()) {
-            for (const connection of originalNode.connections) {
-                const connectedNode = nodeMap.get(connection.node);
-                if (!connectedNode) continue;
-
-                let value = connection.value;
-                if (value && typeof value === "object" && value.parent) {
-                    const clonedParent = componentMap.get(value.parent);
-                    if (clonedParent) value = clonedParent.value;
-                }
-                connectNodes(clonedNode, connectedNode, value);
-            }
-        }
-
-        for (const original of this.originalSchemeState.junctions) {
-            const junction = new Junction();
-            junction.x = original.x;
-            junction.y = original.y;
-            for (const originalNode of original.nodes) {
-                const clonedNode = nodeMap.get(originalNode);
-                if (clonedNode) connectJunctionNode(junction, clonedNode);
-            }
-            junctions.push(junction);
-        }
-
-        const labels = this.originalSchemeState.labels.map((original) => {
-            const label = new LabelNode(original.label.value);
-            label.className = original.className;
-            label.node = nodeMap.get(original.node) || null;
-            label.offX = original.offX;
-            label.offY = original.offY;
-            label.radius = original.radius;
-            label.label.rotate(original.label.angle);
-            label.select(original.selected);
-            return label;
-        });
-
-        return {
-            components: components,
-            selectedComponents: this.originalSchemeState.selectedComponents
-                .map((component) => componentMap.get(component))
-                .filter(Boolean),
-            wires: wires,
-            selectedWires: this.originalSchemeState.selectedWires.slice(),
-            junctions: junctions,
-            labels: labels,
-            componentNameCount: this.originalSchemeState.componentNameCount
-        };
-    },
-
     _playbackBranchAnchors(edgeGroups, worldLayout) {
         const incident = new Map();
         const descriptors = new Map();
@@ -674,7 +652,17 @@ const solutionPlayback = {
         return anchors;
     },
 
-    _addPlaybackBranch(edge, offset, worldLayout, components, wires, logicalNodes, anchor = null) {
+    _addPlaybackBranch(
+        edge,
+        offset,
+        worldLayout,
+        components,
+        wires,
+        logicalNodes,
+        componentCommands,
+        wireCommands,
+        anchor = null
+    ) {
         let startId = edge.a;
         let endId = edge.b;
         let start = worldLayout.get(startId);
@@ -716,14 +704,16 @@ const solutionPlayback = {
             const key = `${snappedCenter.x}:${snappedCenter.y}:${candidateAngle}`;
             if (candidateKeys.has(key)) return;
             candidateKeys.add(key);
+            const command = AddComponent.fromWorld(
+                name,
+                value,
+                snappedCenter.x - cellSize,
+                snappedCenter.y - cellSize / 2,
+                candidateAngle
+            );
             candidates.push({
-                component: new Component(
-                    name,
-                    value,
-                    snapToGrid(snappedCenter.x - cellSize),
-                    snapToGrid(snappedCenter.y - cellSize / 2),
-                    candidateAngle
-                ),
+                command: command,
+                component: command.component,
                 preference: preference
             });
         };
@@ -758,7 +748,7 @@ const solutionPlayback = {
             }
         }
 
-        const component = candidates.map((candidate) => ({
+        const selectedCandidate = candidates.map((candidate) => ({
             candidate: candidate,
             score: this._scorePlaybackComponentCandidate(
                 candidate,
@@ -767,14 +757,17 @@ const solutionPlayback = {
                 components,
                 wires
             )
-        })).sort((left, right) => left.score - right.score)[0].candidate.component;
+        })).sort((left, right) => left.score - right.score)[0].candidate;
+        const component = selectedCandidate.component;
         components[name] = component;
+        componentCommands.set(name, selectedCandidate.command);
 
         this._wireSnappedPath(
             component.nodes[0],
             worldLayout.get(startId),
             logicalNodes.get(startId),
             wires,
+            wireCommands,
             component.angle,
             components,
             component,
@@ -785,6 +778,7 @@ const solutionPlayback = {
             worldLayout.get(endId),
             logicalNodes.get(endId),
             wires,
+            wireCommands,
             component.angle,
             components,
             component,
@@ -854,7 +848,16 @@ const solutionPlayback = {
         return score;
     },
 
-    _addStructuredPlaybackBranch(edge, laneY, worldLayout, components, wires, logicalNodes) {
+    _addStructuredPlaybackBranch(
+        edge,
+        laneY,
+        worldLayout,
+        components,
+        wires,
+        logicalNodes,
+        componentCommands,
+        wireCommands
+    ) {
         let startId = edge.a;
         let endId = edge.b;
         let start = worldLayout.get(startId);
@@ -881,22 +884,23 @@ const solutionPlayback = {
             ? choosenComponent.shortName
             : "R";
         const name = this._uniqueComponentName(edge.name || `${componentType}eq`, components);
-        const component = new Component(
+        const addComponent = AddComponent.fromWorld(
             name,
             String(edge.value || "0"),
             snapToGrid(centerX - cellSize),
             snapToGrid(laneY - cellSize / 2),
             0
         );
-        component.name.y = snapToGrid(laneY - cellSize);
-        component.value.y = snapToGrid(laneY + cellSize);
+        const component = addComponent.component;
         components[name] = component;
+        componentCommands.set(name, addComponent);
 
         this._wireSnappedPath(
             component.nodes[0],
             worldLayout.get(startId),
             logicalNodes.get(startId),
             wires,
+            wireCommands,
             component.angle,
             components,
             component,
@@ -908,6 +912,7 @@ const solutionPlayback = {
             worldLayout.get(endId),
             logicalNodes.get(endId),
             wires,
+            wireCommands,
             component.angle,
             components,
             component,
@@ -952,6 +957,7 @@ const solutionPlayback = {
         logicalPosition,
         connectedNodes,
         wires,
+        wireCommands,
         componentAngle,
         components,
         ownComponent,
@@ -975,26 +981,23 @@ const solutionPlayback = {
             points: points,
             score: this._scorePlaybackPath(points, components, wires, ownComponent)
         })).sort((left, right) => left.score - right.score)[0].points;
-        let previousNode = componentNode;
+        let terminalNode = componentNode;
         for (let index = 1; index < compactPoints.length; ++index) {
             const start = compactPoints[index - 1];
             const end = compactPoints[index];
-            const wire = new Wire();
+            const drawWire = DrawWire.between(start.x, start.y, end.x, end.y);
+            const wire = drawWire.wire;
             wire.playbackNodeId = logicalNodeId;
             wire.nodes[0].playbackNodeId = logicalNodeId;
             wire.nodes[1].playbackNodeId = logicalNodeId;
-            wire.nodes[0].x = snapToGrid(start.x);
-            wire.nodes[0].y = snapToGrid(start.y);
-            wire.nodes[1].x = snapToGrid(end.x);
-            wire.nodes[1].y = snapToGrid(end.y);
-            connectNodes(previousNode, wire.nodes[0], "0");
             wires.push(wire);
-            previousNode = wire.nodes[1];
+            wireCommands.push(drawWire);
+            terminalNode = wire.nodes[1];
         }
-        connectedNodes.push(previousNode);
+        connectedNodes.push(terminalNode);
     },
 
-    _coalescePlaybackWireOverlaps(wires, logicalNodes) {
+    _coalescePlaybackWireOverlaps(wires, logicalNodes, wireCommands) {
         if (!Array.isArray(wires) || wires.length < 2) return;
 
         let changed = true;
@@ -1033,7 +1036,8 @@ const solutionPlayback = {
                             rightIndex,
                             left,
                             right,
-                            logicalNodes
+                            logicalNodes,
+                            wireCommands
                         );
                         changed = true;
                         break overlapSearch;
@@ -1065,7 +1069,8 @@ const solutionPlayback = {
                         outerSharedIndex,
                         inner,
                         innerSharedIndex,
-                        logicalNodes
+                        logicalNodes,
+                        wireCommands
                     );
                     changed = true;
                     break overlapSearch;
@@ -1078,57 +1083,55 @@ const solutionPlayback = {
         }
     },
 
-    _removeDuplicatePlaybackWire(wires, duplicateIndex, keeper, duplicate, logicalNodes) {
+    _removeDuplicatePlaybackWire(
+        wires,
+        duplicateIndex,
+        keeper,
+        duplicate,
+        logicalNodes,
+        wireCommands
+    ) {
         for (let index = 0; index < 2; ++index) {
             const source = duplicate.nodes[index];
             const target = keeper.nodes.find((node) => {
                 return this._playbackNodesSharePosition(node, source);
             });
             if (!target) continue;
-            this._transferPlaybackNodeConnections(
-                source,
-                target,
-                duplicate.nodes[1 - index],
-                logicalNodes
-            );
+            this._replacePlaybackLogicalNode(logicalNodes, source, target);
         }
-        disconnectNodes(duplicate.nodes[0], duplicate.nodes[1]);
-        duplicate.nodes[0].parent = null;
-        duplicate.nodes[1].parent = null;
+        const commandIndex = wireCommands.findIndex((command) => command.wire === duplicate);
+        if (commandIndex >= 0) wireCommands.splice(commandIndex, 1);
         wires.splice(duplicateIndex, 1);
     },
 
-    _trimPlaybackWireAtTap(outer, outerSharedIndex, inner, innerSharedIndex, logicalNodes) {
+    _trimPlaybackWireAtTap(
+        outer,
+        outerSharedIndex,
+        inner,
+        innerSharedIndex,
+        logicalNodes,
+        wireCommands
+    ) {
         const outerSharedNode = outer.nodes[outerSharedIndex];
-        const outerOtherNode = outer.nodes[1 - outerSharedIndex];
         const innerSharedNode = inner.nodes[innerSharedIndex];
         const innerTapNode = inner.nodes[1 - innerSharedIndex];
 
-        this._transferPlaybackNodeConnections(
-            outerSharedNode,
-            innerSharedNode,
-            outerOtherNode,
-            logicalNodes
-        );
-        disconnectNodes(outerSharedNode, outerOtherNode);
+        this._replacePlaybackLogicalNode(logicalNodes, outerSharedNode, innerSharedNode);
+        outerSharedNode.x = innerTapNode.x;
+        outerSharedNode.y = innerTapNode.y;
 
-        const tapNode = new Node();
-        tapNode.x = innerTapNode.x;
-        tapNode.y = innerTapNode.y;
-        tapNode.parent = outer;
-        tapNode.playbackNodeId = outer.playbackNodeId;
-        outer.nodes[outerSharedIndex] = tapNode;
-        connectNodes(outerOtherNode, tapNode, "0");
-        connectNodes(tapNode, innerTapNode, "0");
-        outerSharedNode.parent = null;
+        const command = wireCommands.find((item) => item.wire === outer);
+        if (!command) return;
+        if (outerSharedIndex === 0) {
+            command.x1 = outerSharedNode.x;
+            command.y1 = outerSharedNode.y;
+        } else {
+            command.x2 = outerSharedNode.x;
+            command.y2 = outerSharedNode.y;
+        }
     },
 
-    _transferPlaybackNodeConnections(source, target, excludedNode, logicalNodes) {
-        for (const connection of source.connections.slice()) {
-            if (connection.node === excludedNode) continue;
-            disconnectNodes(source, connection.node);
-            if (connection.node !== target) connectNodes(target, connection.node, connection.value);
-        }
+    _replacePlaybackLogicalNode(logicalNodes, source, target) {
         for (const connectedNodes of logicalNodes.values()) {
             for (let index = 0; index < connectedNodes.length; ++index) {
                 if (connectedNodes[index] === source) connectedNodes[index] = target;
@@ -1146,37 +1149,6 @@ const solutionPlayback = {
         if (Math.abs(cross) > 0.000001) return false;
         return point.x >= Math.min(start.x, end.x) && point.x <= Math.max(start.x, end.x) &&
             point.y >= Math.min(start.y, end.y) && point.y <= Math.max(start.y, end.y);
-    },
-
-    _addPlaybackCoordinateJunctions(components, wires, junctions) {
-        const groups = new Map();
-        const addNode = (node) => {
-            if (!node || node.playbackNodeId === undefined || node.playbackNodeId === null) return;
-            const key = `${node.playbackNodeId}:${node.x}:${node.y}`;
-            if (!groups.has(key)) groups.set(key, []);
-            if (!groups.get(key).includes(node)) groups.get(key).push(node);
-        };
-        for (const component of Object.values(components || {})) {
-            for (const node of component.nodes) addNode(node);
-        }
-        for (const wire of (wires || [])) {
-            for (const node of wire.nodes) addNode(node);
-        }
-
-        for (const nodes of groups.values()) {
-            if (nodes.length < 3) continue;
-            const position = nodes[0];
-            let junction = junctions.find((item) => {
-                return item.x === position.x && item.y === position.y;
-            });
-            if (!junction) {
-                junction = new Junction();
-                junction.x = position.x;
-                junction.y = position.y;
-                junctions.push(junction);
-            }
-            for (const node of nodes) connectJunctionNode(junction, node);
-        }
     },
 
     _snappedPathCandidates(start, end, componentAngle, usePortFanout = false) {
@@ -1432,136 +1404,6 @@ const solutionPlayback = {
         return fourth === 0 && onSegment(c, b, d);
     },
 
-    _layoutPlaybackComponentTexts(components, wires) {
-        const allComponents = Object.values(components || {});
-        for (const component of allComponents) {
-            component.value.displayValue = this._formatPlaybackValue(component.value.value);
-        }
-
-        const textLength = (component) => {
-            return String(component.name.value).length + String(component.value.displayValue).length;
-        };
-        const ordered = allComponents.slice().sort((left, right) => {
-            return textLength(right) - textLength(left) ||
-                left.rotationPointX() - right.rotationPointX() ||
-                left.rotationPointY() - right.rotationPointY();
-        });
-        const placedTextRectangles = [];
-
-        for (const component of ordered) {
-            const candidates = this._playbackTextCandidates(component);
-            const selected = candidates.map((candidate) => ({
-                candidate: candidate,
-                score: this._scorePlaybackTextLayout(
-                    candidate,
-                    component,
-                    allComponents,
-                    wires,
-                    placedTextRectangles
-                )
-            })).sort((left, right) => left.score - right.score)[0].candidate;
-            for (const item of selected.items) {
-                const text = item.kind === "name" ? component.name : component.value;
-                text.angle = 0;
-                text.flipX = 1;
-                text.flipY = 1;
-                text.align = item.align;
-                text.x = item.x;
-                text.y = item.y;
-                placedTextRectangles.push(this._playbackTextRectangle(text, item));
-            }
-        }
-    },
-
-    _formatPlaybackValue(value) {
-        const text = String(value);
-        const numeric = Number(text);
-        if (!Number.isFinite(numeric) || text.length <= 8) return text;
-        return String(Number(numeric.toPrecision(7)));
-    },
-
-    _playbackTextCandidates(component) {
-        const body = this._playbackComponentPolygon(component, 0);
-        const bounds = {
-            left: Math.min(...body.map((point) => point.x)),
-            right: Math.max(...body.map((point) => point.x)),
-            top: Math.min(...body.map((point) => point.y)),
-            bottom: Math.max(...body.map((point) => point.y))
-        };
-        const centerX = component.rotationPointX();
-        const centerY = component.rotationPointY();
-        const normalizedAngle = ((component.angle % 180) + 180) % 180;
-        const candidates = [];
-        const add = (type, layer, items) => {
-            let preference = layer * 6;
-            if (normalizedAngle === 90) {
-                preference += type === "right" ? 0 : type === "left" ? 1 : type === "split" ? 3 : 5;
-            } else {
-                preference += type === "split" ? 0 : type === "above" ? 2 :
-                    type === "below" ? 3 : 4;
-            }
-            candidates.push({ preference: preference, items: items });
-        };
-
-        for (let layer = 0; layer < 5; ++layer) {
-            const gap = cellSize / 2 + layer * cellSize;
-            add("split", layer, [
-                { kind: "name", x: centerX, y: bounds.top - gap, align: "center" },
-                { kind: "value", x: centerX, y: bounds.bottom + gap + 11, align: "center" }
-            ]);
-            add("above", layer, [
-                { kind: "name", x: centerX, y: bounds.top - gap - 15, align: "center" },
-                { kind: "value", x: centerX, y: bounds.top - gap, align: "center" }
-            ]);
-            add("below", layer, [
-                { kind: "name", x: centerX, y: bounds.bottom + gap + 11, align: "center" },
-                { kind: "value", x: centerX, y: bounds.bottom + gap + 26, align: "center" }
-            ]);
-            add("right", layer, [
-                { kind: "name", x: bounds.right + gap, y: centerY - 3, align: "left" },
-                { kind: "value", x: bounds.right + gap, y: centerY + 12, align: "left" }
-            ]);
-            add("left", layer, [
-                { kind: "name", x: bounds.left - gap, y: centerY - 3, align: "right" },
-                { kind: "value", x: bounds.left - gap, y: centerY + 12, align: "right" }
-            ]);
-        }
-        return candidates;
-    },
-
-    _scorePlaybackTextLayout(candidate, owner, components, wires, placedTextRectangles) {
-        let score = candidate.preference;
-        const rectangles = candidate.items.map((item) => {
-            const text = item.kind === "name" ? owner.name : owner.value;
-            return this._playbackTextRectangle(text, item);
-        });
-
-        for (const rectangle of rectangles) {
-            const polygon = this._playbackRectanglePolygon(rectangle);
-            for (const component of components) {
-                if (component === owner) continue;
-                if (this._playbackPolygonsOverlap(
-                    polygon,
-                    this._playbackComponentPolygon(component, 3)
-                )) score += 100000;
-                if (this._segmentIntersectsRectangle(
-                    component.nodes[0],
-                    component.nodes[1],
-                    rectangle
-                )) score += 5000;
-            }
-            for (const placed of placedTextRectangles) {
-                if (this._playbackRectanglesOverlap(rectangle, placed)) score += 30000;
-            }
-            for (const wire of wires) {
-                if (this._segmentIntersectsRectangle(wire.nodes[0], wire.nodes[1], rectangle)) {
-                    score += 2000;
-                }
-            }
-        }
-        return score;
-    },
-
     _playbackTextRectangle(text, position) {
         const value = text.displayValue === undefined ? text.value : text.displayValue;
         const width = Math.max(8, String(value).length * 7.2);
@@ -1704,10 +1546,8 @@ const solutionPlayback = {
         return false;
     },
 
-    _buildPlaybackLabels(nodes, logicalNodes) {
-        const startLabel = new LabelNode("StartNode");
-        const destLabel = new LabelNode("DestNode");
-        const labels = [startLabel, destLabel];
+    _buildPlaybackLabelTargets(nodes, logicalNodes) {
+        const labelTargets = new Map();
         let sharedTerminalNode = null;
 
         for (const node of nodes) {
@@ -1716,23 +1556,22 @@ const solutionPlayback = {
             if (!labelNode) continue;
 
             if (node.terminal === "start" || node.name === "StartNode") {
-                startLabel.node = labelNode;
+                labelTargets.set("StartNode", labelNode);
                 sharedTerminalNode = labelNode;
                 continue;
             }
             if (node.terminal === "end" || node.name === "DestNode") {
-                destLabel.node = labelNode;
+                labelTargets.set("DestNode", labelNode);
                 continue;
             }
 
-            const label = new LabelNode(node.name);
-            label.className = "GraphLabelNode";
-            label.node = labelNode;
-            labels.push(label);
+            labelTargets.set(node.name, labelNode);
         }
 
-        if (!destLabel.node && nodes.length === 1) destLabel.node = sharedTerminalNode;
-        return labels;
+        if (!labelTargets.has("DestNode") && nodes.length === 1 && sharedTerminalNode) {
+            labelTargets.set("DestNode", sharedTerminalNode);
+        }
+        return labelTargets;
     },
 
     _uniqueComponentName(preferredName, components) {
@@ -1741,15 +1580,6 @@ const solutionPlayback = {
         let suffix = 2;
         while (Object.prototype.hasOwnProperty.call(components, `${preferredName}.${suffix}`)) suffix++;
         return `${preferredName}.${suffix}`;
-    },
-
-    _nextPlaybackComponentNameCount(components) {
-        const componentType = typeof choosenComponent !== "undefined" && choosenComponent.shortName
-            ? choosenComponent.shortName
-            : "R";
-        let count = 1;
-        while (Object.prototype.hasOwnProperty.call(components, `${componentType}${count}`)) count++;
-        return count;
     },
 
     _snapshotStepIndexes() {

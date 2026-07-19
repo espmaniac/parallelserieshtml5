@@ -78,29 +78,52 @@ class DeleteElement extends Command {
 }
 
 class AddComponent extends Command {
-    constructor(x,y) {
+    constructor(x, y, options = null) {
         super();
         this.name = "AddComponent";
         this.x = x;
         this.y = y;
 
-        let pos = scheme.screenToWorldSpace(this.x, this.y);
+        const settings = options || {};
+        const pos = settings.worldSpace
+            ? { x: settings.x, y: settings.y }
+            : scheme.screenToWorldSpace(this.x, this.y);
+        const componentName = settings.name ||
+            choosenComponent.shortName + Component.nameCount.toString();
+        const componentValue = settings.value === undefined
+            ? choosenComponent.defaultValue
+            : settings.value;
         this.component = new Component(
-            choosenComponent.shortName + Component.nameCount.toString(), 
-            choosenComponent.defaultValue, 
-            snapToGrid(pos.x), 
-            snapToGrid(pos.y)
+            componentName,
+            componentValue,
+            snapToGrid(pos.x),
+            snapToGrid(pos.y),
+            settings.angle || 0
         );
+        this.componentKey = componentName;
 
         this.delete = null;
     }
+
+    static fromWorld(name, value, x, y, angle = 0) {
+        return new AddComponent(0, 0, {
+            worldSpace: true,
+            name: name,
+            value: value,
+            x: x,
+            y: y,
+            angle: angle
+        });
+    }
+
     execute() {
 
         if (this.delete) {
             this.delete.unexecute();
+            this.delete = null;
         }
         else {
-            scheme.components[choosenComponent.shortName + Component.nameCount.toString()] = this.component;
+            scheme.components[this.componentKey] = this.component;
             tryConnect(this.component);
         }
         Component.nameCount++;
@@ -163,15 +186,22 @@ class RotateComponent extends Command {
 }
 
 class DragComponent extends Command {
-    constructor(component) {
+    constructor(component, oldPosition = null) {
         super();
         this.name = "DragComponent";
         this.component = component;
-        this.oldPosX = this.component.x;
-        this.oldPosY = this.component.y;
+        this.oldPosX = oldPosition ? oldPosition.x : this.component.x;
+        this.oldPosY = oldPosition ? oldPosition.y : this.component.y;
         this.posX = null;
         this.posY = null;
     }
+
+    toWorld(x, y) {
+        this.posX = snapToGrid(x);
+        this.posY = snapToGrid(y);
+        return this;
+    }
+
     move(cursorX,cursorY, onMove) {
         this.posX = (cursorX / scheme.zoom) - cursor.offsetX;
         this.posY = (cursorY / scheme.zoom) - cursor.offsetY;
@@ -196,10 +226,10 @@ class DragComponent extends Command {
 };
 
 class DrawWire extends Command {
-    constructor(wire) {
+    constructor(wire = null) {
         super();
         this.name = "DrawWire";
-        this.wire = wire;
+        this.wire = wire || new Wire();
         this.x1= null;
         this.y1 = null;
         this.x2 = null;
@@ -214,6 +244,15 @@ class DrawWire extends Command {
         this.wire.nodes[0].y = this.y1;
 
     }
+
+    fromWorld(x, y) {
+        this.x1 = snapToGrid(x);
+        this.y1 = snapToGrid(y);
+        this.wire.nodes[0].x = this.x1;
+        this.wire.nodes[0].y = this.y1;
+        return this;
+    }
+
     to(x,y) {
         const virtualPos = scheme.screenToWorldSpace(x, y);
         let wire = this.wire;
@@ -230,10 +269,25 @@ class DrawWire extends Command {
 
     }
 
+    toWorld(x, y) {
+        this.x2 = snapToGrid(x);
+        this.y2 = snapToGrid(y);
+        this.wire.nodes[1].x = this.x2;
+        this.wire.nodes[1].y = this.y2;
+        return this;
+    }
+
+    static between(x1, y1, x2, y2) {
+        return new DrawWire().fromWorld(x1, y1).toWorld(x2, y2);
+    }
+
     execute() {
         if (this.delete) {
             this.delete.unexecute();
             this.delete = null;
+        }
+        else if (!scheme.wires.includes(this.wire)) {
+            scheme.wires.push(this.wire);
         }
 
         tryConnect(this.wire);
@@ -271,50 +325,25 @@ class SetLabelNode extends Command {
 }
 
 class AddLabelNode extends Command {
-    constructor(label) {
+    constructor(label, className = null) {
         super();
-        this.label = label
+        this.label = typeof label === "string" ? new LabelNode(label) : label;
+        if (className) this.label.className = className;
         this.name = "AddLabelNode";
+        this.index = null;
     }
 
     execute() {
+        if (scheme.labels.includes(this.label)) return;
+        this.index = scheme.labels.length;
         scheme.labels.push(this.label);
     }
 
     unexecute() {
-        scheme.labels.pop();
+        const index = scheme.labels.indexOf(this.label);
+        if (index >= 0) scheme.labels.splice(index, 1);
     }
 
-}
-
-class CircuitStateCommand extends Command {
-    constructor(beforeState, afterState, label = "Circuit state") {
-        super();
-        this.name = "CircuitStateCommand";
-        this.label = label;
-        this.beforeState = beforeState;
-        this.afterState = afterState;
-    }
-
-    applyState(state) {
-        if (!state) return;
-
-        scheme.components = state.components;
-        scheme.selectedComponents = state.selectedComponents;
-        scheme.wires = state.wires;
-        scheme.selectedWires = state.selectedWires;
-        scheme.junctions = state.junctions;
-        scheme.labels = state.labels;
-        Component.nameCount = state.componentNameCount;
-    }
-
-    execute() {
-        this.applyState(this.afterState);
-    }
-
-    unexecute() {
-        this.applyState(this.beforeState);
-    }
 }
 
 class MacroCommand extends Command {
@@ -329,6 +358,16 @@ class MacroCommand extends Command {
 
     addCommand(cmd) {
         this.cmds.push(cmd);
+    }
+
+    insertExecutedCommands(commands) {
+        if (!Array.isArray(commands) || commands.length === 0) return;
+
+        this.cmds.splice(this.appliedCount, 0, ...commands);
+        this.appliedCount += commands.length;
+        if (this.executionLimit !== null) {
+            this.executionLimit += commands.length;
+        }
     }
 
     setExecutionLimit(count) {
