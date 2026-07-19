@@ -226,6 +226,7 @@ const solutionPlayback = {
             }
         }
 
+        this._coalescePlaybackWireOverlaps(wires, logicalNodes);
         this._layoutPlaybackComponentTexts(components, wires);
         if (!useStructuredLayout && this._playbackLayoutHasCollisions(components, wires)) {
             return this._buildSchemeState(snapshot, true);
@@ -253,6 +254,8 @@ const solutionPlayback = {
                 junctions.push(junction);
             }
         }
+
+        this._addPlaybackCoordinateJunctions(components, wires, junctions);
 
         const labels = this._buildPlaybackLabels(snapshot.nodes, logicalNodes);
         return {
@@ -708,7 +711,8 @@ const solutionPlayback = {
             wires,
             component.angle,
             components,
-            component
+            component,
+            startId
         );
         this._wireSnappedPath(
             component.nodes[1],
@@ -717,7 +721,8 @@ const solutionPlayback = {
             wires,
             component.angle,
             components,
-            component
+            component,
+            endId
         );
     },
 
@@ -741,6 +746,12 @@ const solutionPlayback = {
                 other.nodes[0],
                 other.nodes[1]
             )) score += 500000;
+            if (this._segmentsCollinearlyOverlap(
+                component.nodes[0],
+                component.nodes[1],
+                other.nodes[0],
+                other.nodes[1]
+            )) score += 750000;
             if (this._segmentIntersectsComponentBody(
                 component.nodes[0],
                 component.nodes[1],
@@ -761,6 +772,12 @@ const solutionPlayback = {
                 wire.nodes[0],
                 wire.nodes[1]
             )) score += 200000;
+            if (this._segmentsCollinearlyOverlap(
+                component.nodes[0],
+                component.nodes[1],
+                wire.nodes[0],
+                wire.nodes[1]
+            )) score += 400000;
             if (this._segmentIntersectsComponentBody(
                 wire.nodes[0],
                 wire.nodes[1],
@@ -809,17 +826,27 @@ const solutionPlayback = {
         component.value.y = snapToGrid(laneY + cellSize);
         components[name] = component;
 
-        this._wireOrthogonalPath(
+        this._wireSnappedPath(
             component.nodes[0],
             worldLayout.get(startId),
             logicalNodes.get(startId),
-            wires
+            wires,
+            component.angle,
+            components,
+            component,
+            startId,
+            true
         );
-        this._wireOrthogonalPath(
+        this._wireSnappedPath(
             component.nodes[1],
             worldLayout.get(endId),
             logicalNodes.get(endId),
-            wires
+            wires,
+            component.angle,
+            components,
+            component,
+            endId,
+            true
         );
     },
 
@@ -854,35 +881,6 @@ const solutionPlayback = {
         return candidates[0];
     },
 
-    _wireOrthogonalPath(componentNode, logicalPosition, connectedNodes, wires) {
-        if (!componentNode || !logicalPosition || !connectedNodes || !wires) return;
-
-        const points = [{ x: componentNode.x, y: componentNode.y }];
-        if (componentNode.y !== logicalPosition.y) {
-            points.push({ x: logicalPosition.x, y: componentNode.y });
-        }
-        points.push({ x: logicalPosition.x, y: logicalPosition.y });
-
-        const compactPoints = points.filter((point, index) => {
-            return index === 0 || point.x !== points[index - 1].x || point.y !== points[index - 1].y;
-        });
-        let previousNode = componentNode;
-        for (let index = 1; index < compactPoints.length; ++index) {
-            const start = compactPoints[index - 1];
-            const end = compactPoints[index];
-            const wire = new Wire();
-            wire.nodes[0].x = snapToGrid(start.x);
-            wire.nodes[0].y = snapToGrid(start.y);
-            wire.nodes[1].x = snapToGrid(end.x);
-            wire.nodes[1].y = snapToGrid(end.y);
-            connectNodes(previousNode, wire.nodes[0], "0");
-            wires.push(wire);
-            previousNode = wire.nodes[1];
-        }
-
-        connectedNodes.push(previousNode);
-    },
-
     _wireSnappedPath(
         componentNode,
         logicalPosition,
@@ -890,9 +888,12 @@ const solutionPlayback = {
         wires,
         componentAngle,
         components,
-        ownComponent
+        ownComponent,
+        logicalNodeId,
+        usePortFanout = false
     ) {
         if (!componentNode || !logicalPosition || !connectedNodes || !wires) return;
+        componentNode.playbackNodeId = logicalNodeId;
         if (componentNode.x === logicalPosition.x && componentNode.y === logicalPosition.y) {
             connectedNodes.push(componentNode);
             return;
@@ -901,7 +902,8 @@ const solutionPlayback = {
         const candidates = this._snappedPathCandidates(
             componentNode,
             logicalPosition,
-            componentAngle
+            componentAngle,
+            usePortFanout
         );
         const compactPoints = candidates.map((points) => ({
             points: points,
@@ -912,6 +914,9 @@ const solutionPlayback = {
             const start = compactPoints[index - 1];
             const end = compactPoints[index];
             const wire = new Wire();
+            wire.playbackNodeId = logicalNodeId;
+            wire.nodes[0].playbackNodeId = logicalNodeId;
+            wire.nodes[1].playbackNodeId = logicalNodeId;
             wire.nodes[0].x = snapToGrid(start.x);
             wire.nodes[0].y = snapToGrid(start.y);
             wire.nodes[1].x = snapToGrid(end.x);
@@ -923,7 +928,192 @@ const solutionPlayback = {
         connectedNodes.push(previousNode);
     },
 
-    _snappedPathCandidates(start, end, componentAngle) {
+    _coalescePlaybackWireOverlaps(wires, logicalNodes) {
+        if (!Array.isArray(wires) || wires.length < 2) return;
+
+        let changed = true;
+        let pass = 0;
+        const maximumPasses = wires.length * wires.length;
+        while (changed && pass++ < maximumPasses) {
+            changed = false;
+            overlapSearch:
+            for (let leftIndex = 0; leftIndex < wires.length; ++leftIndex) {
+                const left = wires[leftIndex];
+                if (left.playbackNodeId === undefined || left.playbackNodeId === null) continue;
+
+                for (let rightIndex = leftIndex + 1; rightIndex < wires.length; ++rightIndex) {
+                    const right = wires[rightIndex];
+                    if (left.playbackNodeId !== right.playbackNodeId) continue;
+                    if (!this._segmentsCollinearlyOverlap(
+                        left.nodes[0],
+                        left.nodes[1],
+                        right.nodes[0],
+                        right.nodes[1]
+                    )) continue;
+
+                    const sharedEndpoints = [];
+                    for (let leftNodeIndex = 0; leftNodeIndex < 2; ++leftNodeIndex) {
+                        for (let rightNodeIndex = 0; rightNodeIndex < 2; ++rightNodeIndex) {
+                            if (this._playbackNodesSharePosition(
+                                left.nodes[leftNodeIndex],
+                                right.nodes[rightNodeIndex]
+                            )) sharedEndpoints.push({ left: leftNodeIndex, right: rightNodeIndex });
+                        }
+                    }
+
+                    if (sharedEndpoints.length >= 2) {
+                        this._removeDuplicatePlaybackWire(
+                            wires,
+                            rightIndex,
+                            left,
+                            right,
+                            logicalNodes
+                        );
+                        changed = true;
+                        break overlapSearch;
+                    }
+                    if (sharedEndpoints.length !== 1) continue;
+
+                    const shared = sharedEndpoints[0];
+                    const leftLength = Math.hypot(
+                        left.nodes[1].x - left.nodes[0].x,
+                        left.nodes[1].y - left.nodes[0].y
+                    );
+                    const rightLength = Math.hypot(
+                        right.nodes[1].x - right.nodes[0].x,
+                        right.nodes[1].y - right.nodes[0].y
+                    );
+                    const outer = leftLength > rightLength ? left : right;
+                    const inner = outer === left ? right : left;
+                    const outerSharedIndex = outer === left ? shared.left : shared.right;
+                    const innerSharedIndex = inner === left ? shared.left : shared.right;
+                    const innerTapNode = inner.nodes[1 - innerSharedIndex];
+                    if (!this._playbackPointOnSegment(
+                        innerTapNode,
+                        outer.nodes[0],
+                        outer.nodes[1]
+                    )) continue;
+
+                    this._trimPlaybackWireAtTap(
+                        outer,
+                        outerSharedIndex,
+                        inner,
+                        innerSharedIndex,
+                        logicalNodes
+                    );
+                    changed = true;
+                    break overlapSearch;
+                }
+            }
+        }
+        for (const connectedNodes of logicalNodes.values()) {
+            const uniqueNodes = Array.from(new Set(connectedNodes));
+            connectedNodes.splice(0, connectedNodes.length, ...uniqueNodes);
+        }
+    },
+
+    _removeDuplicatePlaybackWire(wires, duplicateIndex, keeper, duplicate, logicalNodes) {
+        for (let index = 0; index < 2; ++index) {
+            const source = duplicate.nodes[index];
+            const target = keeper.nodes.find((node) => {
+                return this._playbackNodesSharePosition(node, source);
+            });
+            if (!target) continue;
+            this._transferPlaybackNodeConnections(
+                source,
+                target,
+                duplicate.nodes[1 - index],
+                logicalNodes
+            );
+        }
+        disconnectNodes(duplicate.nodes[0], duplicate.nodes[1]);
+        duplicate.nodes[0].parent = null;
+        duplicate.nodes[1].parent = null;
+        wires.splice(duplicateIndex, 1);
+    },
+
+    _trimPlaybackWireAtTap(outer, outerSharedIndex, inner, innerSharedIndex, logicalNodes) {
+        const outerSharedNode = outer.nodes[outerSharedIndex];
+        const outerOtherNode = outer.nodes[1 - outerSharedIndex];
+        const innerSharedNode = inner.nodes[innerSharedIndex];
+        const innerTapNode = inner.nodes[1 - innerSharedIndex];
+
+        this._transferPlaybackNodeConnections(
+            outerSharedNode,
+            innerSharedNode,
+            outerOtherNode,
+            logicalNodes
+        );
+        disconnectNodes(outerSharedNode, outerOtherNode);
+
+        const tapNode = new Node();
+        tapNode.x = innerTapNode.x;
+        tapNode.y = innerTapNode.y;
+        tapNode.parent = outer;
+        tapNode.playbackNodeId = outer.playbackNodeId;
+        outer.nodes[outerSharedIndex] = tapNode;
+        connectNodes(outerOtherNode, tapNode, "0");
+        connectNodes(tapNode, innerTapNode, "0");
+        outerSharedNode.parent = null;
+    },
+
+    _transferPlaybackNodeConnections(source, target, excludedNode, logicalNodes) {
+        for (const connection of source.connections.slice()) {
+            if (connection.node === excludedNode) continue;
+            disconnectNodes(source, connection.node);
+            if (connection.node !== target) connectNodes(target, connection.node, connection.value);
+        }
+        for (const connectedNodes of logicalNodes.values()) {
+            for (let index = 0; index < connectedNodes.length; ++index) {
+                if (connectedNodes[index] === source) connectedNodes[index] = target;
+            }
+        }
+    },
+
+    _playbackNodesSharePosition(left, right) {
+        return left && right && left.x === right.x && left.y === right.y;
+    },
+
+    _playbackPointOnSegment(point, start, end) {
+        const cross = (end.x - start.x) * (point.y - start.y) -
+            (end.y - start.y) * (point.x - start.x);
+        if (Math.abs(cross) > 0.000001) return false;
+        return point.x >= Math.min(start.x, end.x) && point.x <= Math.max(start.x, end.x) &&
+            point.y >= Math.min(start.y, end.y) && point.y <= Math.max(start.y, end.y);
+    },
+
+    _addPlaybackCoordinateJunctions(components, wires, junctions) {
+        const groups = new Map();
+        const addNode = (node) => {
+            if (!node || node.playbackNodeId === undefined || node.playbackNodeId === null) return;
+            const key = `${node.playbackNodeId}:${node.x}:${node.y}`;
+            if (!groups.has(key)) groups.set(key, []);
+            if (!groups.get(key).includes(node)) groups.get(key).push(node);
+        };
+        for (const component of Object.values(components || {})) {
+            for (const node of component.nodes) addNode(node);
+        }
+        for (const wire of (wires || [])) {
+            for (const node of wire.nodes) addNode(node);
+        }
+
+        for (const nodes of groups.values()) {
+            if (nodes.length < 3) continue;
+            const position = nodes[0];
+            let junction = junctions.find((item) => {
+                return item.x === position.x && item.y === position.y;
+            });
+            if (!junction) {
+                junction = new Junction();
+                junction.x = position.x;
+                junction.y = position.y;
+                junctions.push(junction);
+            }
+            for (const node of nodes) connectJunctionNode(junction, node);
+        }
+    },
+
+    _snappedPathCandidates(start, end, componentAngle, usePortFanout = false) {
         const dx = end.x - start.x;
         const dy = end.y - start.y;
         const diagonalDistance = Math.min(Math.abs(dx), Math.abs(dy));
@@ -988,14 +1178,69 @@ const solutionPlayback = {
             }
         }
 
+        if (usePortFanout) {
+            // Give every structured branch several independent ways to approach
+            // a busy node. Eight snapped port directions prevent incident
+            // branches from sharing the same final wire segment.
+            const portDirections = [
+                { x: 1, y: 0 },
+                { x: -1, y: 0 },
+                { x: 0, y: 1 },
+                { x: 0, y: -1 },
+                { x: 1, y: 1 },
+                { x: 1, y: -1 },
+                { x: -1, y: 1 },
+                { x: -1, y: -1 }
+            ];
+            const addApproachPaths = (approach) => {
+                const approachDx = approach.x - start.x;
+                const approachDy = approach.y - start.y;
+                const approachDiagonal = Math.min(Math.abs(approachDx), Math.abs(approachDy));
+                const prefixes = [
+                    [start, { x: approach.x, y: start.y }, approach],
+                    [start, { x: start.x, y: approach.y }, approach],
+                    [
+                        start,
+                        {
+                            x: start.x + Math.sign(approachDx) * approachDiagonal,
+                            y: start.y + Math.sign(approachDy) * approachDiagonal
+                        },
+                        approach
+                    ],
+                    [
+                        start,
+                        {
+                            x: approach.x - Math.sign(approachDx) * approachDiagonal,
+                            y: approach.y - Math.sign(approachDy) * approachDiagonal
+                        },
+                        approach
+                    ]
+                ];
+                if (approachDx === 0 || approachDy === 0 || Math.abs(approachDx) === Math.abs(approachDy)) {
+                    prefixes.unshift([start, approach]);
+                }
+                for (const prefix of prefixes) addPath(prefix.concat([end]));
+            };
+            for (const reach of [cellSize * 2, cellSize * 4, cellSize * 6, cellSize * 8]) {
+                for (const direction of portDirections) {
+                    addApproachPaths({
+                        x: snapToGrid(end.x - direction.x * reach),
+                        y: snapToGrid(end.y - direction.y * reach)
+                    });
+                }
+            }
+        }
+
         return paths.map((path) => path.points);
     },
 
     _scorePlaybackPath(points, components, wires, ownComponent) {
         let score = Math.max(0, points.length - 2) * 8;
+        const pathSegments = [];
         for (let index = 1; index < points.length; ++index) {
             const start = points[index - 1];
             const end = points[index];
+            pathSegments.push({ start: start, end: end });
             score += Math.hypot(end.x - start.x, end.y - start.y) / cellSize;
 
             for (const name in (components || {})) {
@@ -1005,9 +1250,34 @@ const solutionPlayback = {
                 if (this._segmentsProperlyCross(start, end, component.nodes[0], component.nodes[1])) {
                     score += 50000;
                 }
+                if (this._segmentsCollinearlyOverlap(
+                    start,
+                    end,
+                    component.nodes[0],
+                    component.nodes[1]
+                )) score += 150000;
             }
             for (const wire of (wires || [])) {
                 if (this._segmentsProperlyCross(start, end, wire.nodes[0], wire.nodes[1])) score += 20000;
+                if (this._segmentsCollinearlyOverlap(start, end, wire.nodes[0], wire.nodes[1])) {
+                    score += 250000;
+                }
+            }
+        }
+        for (let left = 0; left < pathSegments.length; ++left) {
+            for (let right = left + 1; right < pathSegments.length; ++right) {
+                if (this._segmentsProperlyCross(
+                    pathSegments[left].start,
+                    pathSegments[left].end,
+                    pathSegments[right].start,
+                    pathSegments[right].end
+                )) score += 300000;
+                if (this._segmentsCollinearlyOverlap(
+                    pathSegments[left].start,
+                    pathSegments[left].end,
+                    pathSegments[right].start,
+                    pathSegments[right].end
+                )) score += 350000;
             }
         }
         return score;
@@ -1053,6 +1323,25 @@ const solutionPlayback = {
         const secondA = cross(c, d, a);
         const secondB = cross(c, d, b);
         return firstA * firstB < 0 && secondA * secondB < 0;
+    },
+
+    _segmentsCollinearlyOverlap(a, b, c, d) {
+        const abX = b.x - a.x;
+        const abY = b.y - a.y;
+        const length = Math.hypot(abX, abY);
+        if (length <= 0.000001) return false;
+
+        const cross = (point) => abX * (point.y - a.y) - abY * (point.x - a.x);
+        if (Math.abs(cross(c)) > 0.000001 || Math.abs(cross(d)) > 0.000001) return false;
+
+        const projection = (point) => {
+            return ((point.x - a.x) * abX + (point.y - a.y) * abY) / length;
+        };
+        const cProjection = projection(c);
+        const dProjection = projection(d);
+        const overlapStart = Math.max(0, Math.min(cProjection, dProjection));
+        const overlapEnd = Math.min(length, Math.max(cProjection, dProjection));
+        return overlapEnd - overlapStart > 0.000001;
     },
 
     _segmentsIntersect(a, b, c, d) {
@@ -1311,6 +1600,12 @@ const solutionPlayback = {
         for (let left = 0; left < segments.length; ++left) {
             for (let right = left + 1; right < segments.length; ++right) {
                 if (this._segmentsProperlyCross(
+                    segments[left].start,
+                    segments[left].end,
+                    segments[right].start,
+                    segments[right].end
+                )) return true;
+                if (this._segmentsCollinearlyOverlap(
                     segments[left].start,
                     segments[left].end,
                     segments[right].start,
