@@ -1394,6 +1394,7 @@ body.solution-inspector-resizing #solutionInspectorResizeHandle::after {
 
 .solutionMethodSection,
 .solutionSummary,
+.solutionPlaybackSection,
 .solutionProcessSection {
     width: 100%;
     margin: 0;
@@ -1405,6 +1406,7 @@ body.solution-inspector-resizing #solutionInspectorResizeHandle::after {
 }
 
 .solutionMethodSection h4,
+.solutionPlaybackSection h4,
 .solutionProcessSection h4 {
     margin: 0 0 10px 0;
     color: #f3f3f3;
@@ -1485,6 +1487,63 @@ body.solution-inspector-resizing #solutionInspectorResizeHandle::after {
     font-weight: 600;
 }
 
+.solutionPlaybackHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.solutionPlaybackHeader h4 {
+    margin-bottom: 5px;
+}
+
+#solutionPlaybackStatus {
+    margin: 0;
+    color: #d2d2d2;
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.solutionPlaybackControls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+}
+
+.solutionPlaybackControls button {
+    min-width: 34px;
+    min-height: 34px;
+    padding: 0 10px;
+    border: 1px solid #575757;
+    border-radius: 9px;
+    background: #292929;
+    color: #ededed;
+    font: inherit;
+    cursor: pointer;
+}
+
+.solutionPlaybackControls button:hover:not(:disabled),
+.solutionPlaybackControls button:focus-visible:not(:disabled) {
+    border-color: #8e8e8e;
+    background: #202020;
+    outline: none;
+}
+
+.solutionPlaybackControls button:disabled {
+    cursor: default;
+    opacity: 0.42;
+}
+
+.solutionPlaybackHint {
+    margin: 10px 0 0;
+    color: #adadad;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
 #solutionSteps {
     display: flex;
     flex-direction: column;
@@ -1502,6 +1561,24 @@ body.solution-inspector-resizing #solutionInspectorResizeHandle::after {
     border-left: 3px solid var(--step-color);
     border-radius: 10px;
     background: #3f3f3f;
+}
+
+.solutionStep[data-has-snapshot="true"] {
+    cursor: pointer;
+    transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.solutionStep[data-has-snapshot="true"]:hover,
+.solutionStep[data-has-snapshot="true"]:focus-visible {
+    border-color: #797979;
+    background: #444444;
+    outline: none;
+}
+
+.solutionStep[data-has-snapshot="true"].active {
+    border-color: var(--step-color);
+    background: #454545;
+    box-shadow: 0 0 0 1px var(--step-color);
 }
 
 .solutionStep[data-step-type="series"] {
@@ -1548,6 +1625,14 @@ body.solution-inspector-resizing #solutionInspectorResizeHandle::after {
     color: #f3f3f3;
     font-size: 14px;
     font-weight: 600;
+}
+
+.solutionStepAction {
+    margin-left: auto;
+    color: #bcbcbc;
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
 }
 
 .solutionStep p {

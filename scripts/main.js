@@ -152,8 +152,8 @@ window.onload = function() {
     let del = confirm("Do you want to clear the circuit?");
     
     if (del) {
-      scheme.clear();
       setSolutionInspectorOpen(false);
+      scheme.clear();
     }
 
     scheme.renderAll();
@@ -171,6 +171,8 @@ window.onload = function() {
 
 
   document.getElementById("equivalent").addEventListener("click", function(e) {
+    setSolutionInspectorOpen(false);
+
     // Ensure both labels are attached to nodes
     if (!scheme.labels[0].node || !scheme.labels[1].node) return;
 
@@ -255,6 +257,7 @@ function solveCircuitWithSelectedMethod() {
   let solution;
   let answer = "error";
 
+  solutionPlayback.close();
   removeGeneratedGraphLabels();
 
   if (!scheme.labels[0].node || !scheme.labels[1].node) {
@@ -296,6 +299,7 @@ function solveCircuitWithSelectedMethod() {
   }
 
   renderSolutionInspector(method, solution, answer);
+  solutionPlayback.configure(solution);
   setSolutionInspectorOpen(true);
 }
 
@@ -321,6 +325,8 @@ function renderSolutionInspector(method, solution, answer) {
     const item = document.createElement("li");
     item.className = "solutionStep";
     item.dataset.stepType = step.type || "analysis";
+    item.dataset.stepIndex = String(i);
+    item.dataset.hasSnapshot = step.snapshot ? "true" : "false";
 
     const heading = document.createElement("div");
     heading.className = "solutionStepHeading";
@@ -333,6 +339,12 @@ function renderSolutionInspector(method, solution, answer) {
     title.textContent = step.title;
 
     heading.append(number, title);
+    if (step.snapshot) {
+      const action = document.createElement("span");
+      action.className = "solutionStepAction";
+      action.textContent = "View";
+      heading.appendChild(action);
+    }
     item.appendChild(heading);
 
     const details = document.createElement("p");
@@ -363,6 +375,20 @@ function renderSolutionInspector(method, solution, answer) {
       }
 
       item.appendChild(equation);
+    }
+
+    if (step.snapshot) {
+      item.tabIndex = 0;
+      item.setAttribute("role", "button");
+      item.setAttribute("aria-label", `Show circuit after step ${i + 1}: ${step.title}`);
+      item.addEventListener("click", function() {
+        solutionPlayback.showStep(i);
+      });
+      item.addEventListener("keydown", function(event) {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        solutionPlayback.showStep(i);
+      });
     }
 
     stepsElement.appendChild(item);
@@ -407,6 +433,7 @@ function setSolutionInspectorOpen(open) {
   if (!inspector) return;
 
   const wasOpen = !inspector.hidden;
+  if (!open) solutionPlayback.close();
   inspector.hidden = !open;
   if (calculateButton) calculateButton.setAttribute("aria-expanded", open ? "true" : "false");
   if (typeof context_menu !== "undefined" && context_menu.element && !context_menu.hidden()) {
@@ -425,7 +452,10 @@ function initSolutionInspector() {
   const closeButton = document.getElementById("solutionInspectorClose");
   const handle = document.getElementById("solutionInspectorResizeHandle");
   const methodSelect = document.getElementById("solutionMethodSelect");
-  if (!inspector || !closeButton || !handle || !methodSelect) return;
+  const originalButton = document.getElementById("solutionPlaybackOriginal");
+  const previousButton = document.getElementById("solutionPlaybackPrevious");
+  const nextButton = document.getElementById("solutionPlaybackNext");
+  if (!inspector || !closeButton || !handle || !methodSelect || !originalButton || !previousButton || !nextButton) return;
 
   const methods = solutionMethodRegistry.list();
   methodSelect.replaceChildren();
@@ -442,6 +472,18 @@ function initSolutionInspector() {
 
   methodSelect.addEventListener("change", function() {
     solveCircuitWithSelectedMethod();
+  });
+
+  originalButton.addEventListener("click", function() {
+    solutionPlayback.showOriginal();
+  });
+
+  previousButton.addEventListener("click", function() {
+    solutionPlayback.previous();
+  });
+
+  nextButton.addEventListener("click", function() {
+    solutionPlayback.next();
   });
 
   closeButton.addEventListener("click", function() {
@@ -805,11 +847,13 @@ function initModals() {
   modalInit(editValueModal);
 
   save.addEventListener("click", function() {
+    setSolutionInspectorOpen(false);
     saveModal.style.display="flex";
     document.getElementById("saveText").value = scheme.serialize();
   });
 
   headerUtility.addEventListener("click", function() {
+    setSolutionInspectorOpen(false);
     updateComponentModalState();
     syncExpressionToggleFromView();
     settingsModal.style.display = "flex";

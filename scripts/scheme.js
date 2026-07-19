@@ -71,7 +71,7 @@ var scheme = {
     renderAll() {
         ctx.setTransform(getCanvasPixelRatio(), 0, 0, getCanvasPixelRatio(), 0, 0);
         ctx.clearRect(0, 0, getCanvasWidth(), getCanvasHeight());
-        this._drawGrid(); 
+        this._drawGrid();
         
         ctx.scale(this.zoom, this.zoom);
         ctx.translate(this.offsetX, this.offsetY);   

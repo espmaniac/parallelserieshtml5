@@ -16,7 +16,7 @@ class Text {
     width() {
         ctx.save();
         ctx.font = this.font;
-        let w = ctx.measureText(this.value).width; 
+        let w = ctx.measureText(this.displayValue === undefined ? this.value : this.displayValue).width;
         ctx.restore();
         return w;
     }
@@ -77,7 +77,7 @@ class Text {
             drawY += height;
         }
         
-        ctx.fillText(this.value, drawX, drawY);
+        ctx.fillText(this.displayValue === undefined ? this.value : this.displayValue, drawX, drawY);
         
         ctx.restore(); 
     }

@@ -17,7 +17,7 @@
     <link rel="shortcut icon" href="logo/favicon96x96.ico" type="image/x-icon">
     <link rel="shortcut icon" href="logo/favicon180x180.ico" type="image/x-icon">
     <link rel="shortcut icon" href="logo/favicon512x512.ico" type="image/x-icon">
-    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/main.css?v=solution-playback-10">
 </head>
 <body>
 
@@ -134,6 +134,21 @@
                     </div>
                 </section>
 
+                <section class="solutionPlaybackSection" aria-labelledby="solutionPlaybackHeading">
+                    <div class="solutionPlaybackHeader">
+                        <div>
+                            <h4 id="solutionPlaybackHeading">Circuit playback</h4>
+                            <p id="solutionPlaybackStatus" aria-live="polite">Original circuit</p>
+                        </div>
+                        <div class="solutionPlaybackControls" aria-label="Circuit playback controls">
+                            <button id="solutionPlaybackOriginal" type="button" disabled>Original</button>
+                            <button id="solutionPlaybackPrevious" type="button" aria-label="Previous circuit state" title="Previous circuit state" disabled>←</button>
+                            <button id="solutionPlaybackNext" type="button" aria-label="Next circuit state" title="Next circuit state" disabled>→</button>
+                        </div>
+                    </div>
+                    <p class="solutionPlaybackHint">The original circuit and every solution step are live circuit states on the main canvas. Complex reduced states are rearranged on the grid for clarity. Changes are temporary; close the inspector to restore the saved circuit.</p>
+                </section>
+
                 <section class="solutionProcessSection" aria-labelledby="solutionProcessHeading">
                     <h4 id="solutionProcessHeading">Solution process</h4>
                     <ol id="solutionSteps" aria-live="polite"></ol>
@@ -221,15 +236,15 @@
     
     <script src="scripts/parallelseries.js" defer></script>
     <script src="scripts/solution_methods.js" defer></script>
-    <script src="scripts/main.js" defer></script>
-    <script src="scripts/text.js" defer></script>
+    <script src="scripts/main.js?v=solution-playback-10" defer></script>
+    <script src="scripts/text.js?v=solution-playback-10" defer></script>
     <script src="scripts/labelnode.js" defer></script>
     <script src="scripts/scheme.js" defer></script>
     
     <script src="scripts/tool_manager.js" defer></script>
     <script src="scripts/context_menu.js" defer></script>
     <script src="scripts/connector.js" defer></script>
-    <script src="scripts/command.js" defer></script>
+    <script src="scripts/command.js?v=solution-playback-10" defer></script>
     
     <script src="scripts/component.js" defer></script>
     <script src="scripts/junction.js" defer></script>
@@ -239,6 +254,7 @@
 
     <script src="scripts/equivalent.js" defer></script>
 
-    <script src="scripts/graph.js" defer></script>
+    <script src="scripts/graph.js?v=solution-playback-10" defer></script>
+    <script src="scripts/solution_playback.js?v=solution-playback-10" defer></script>
 </body>
 </html>
