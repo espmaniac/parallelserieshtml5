@@ -118,17 +118,20 @@ class ChangeComponentValue extends Command {
         this.name = "ChangeComponentValue";
         this.newValue = value;
         this.oldValue = null;
+        this.oldDisplayValue = undefined;
         this.component = component;
     }
 
     execute() {
-        this.oldValue = this.component.value.value;    
-        
+        this.oldValue = this.component.value.value;
+        this.oldDisplayValue = this.component.value.displayValue;
         this.component.value.value = this.newValue;
+        this.component.value.displayValue = undefined;
     }
 
     unexecute() {
         this.component.value.value = this.oldValue;
+        this.component.value.displayValue = this.oldDisplayValue;
     }
 
 }

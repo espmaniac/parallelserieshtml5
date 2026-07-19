@@ -208,6 +208,7 @@ const solutionPlayback = {
                 );
             }
         } else {
+            const branchAnchors = this._playbackBranchAnchors(edgeGroups, worldLayout);
             for (const group of edgeGroups) {
                 for (let index = 0; index < group.length; ++index) {
                     const edge = group[index];
@@ -218,10 +219,16 @@ const solutionPlayback = {
                         worldLayout,
                         components,
                         wires,
-                        logicalNodes
+                        logicalNodes,
+                        branchAnchors.get(edge) || null
                     );
                 }
             }
+        }
+
+        this._layoutPlaybackComponentTexts(components, wires);
+        if (!useStructuredLayout && this._playbackLayoutHasCollisions(components, wires)) {
+            return this._buildSchemeState(snapshot, true);
         }
 
         for (const node of snapshot.nodes) {
@@ -519,7 +526,86 @@ const solutionPlayback = {
         };
     },
 
-    _addPlaybackBranch(edge, offset, worldLayout, components, wires, logicalNodes) {
+    _playbackBranchAnchors(edgeGroups, worldLayout) {
+        const incident = new Map();
+        const descriptors = new Map();
+        const candidates = [];
+        const starts = new Map();
+        const ends = new Map();
+
+        for (const group of edgeGroups) {
+            for (const edge of group) {
+                const a = worldLayout.get(edge.a);
+                const b = worldLayout.get(edge.b);
+                if (!a || !b) continue;
+                const dx = b.x - a.x;
+                const dy = b.y - a.y;
+                const descriptor = {
+                    edge: edge,
+                    groupSize: group.length,
+                    axis: Math.abs(dx) >= Math.abs(dy) ? "horizontal" : "vertical",
+                    cardinal: dx === 0 || dy === 0
+                };
+                descriptors.set(edge, descriptor);
+                for (const nodeId of [edge.a, edge.b]) {
+                    if (!incident.has(nodeId)) incident.set(nodeId, []);
+                    incident.get(nodeId).push(descriptor);
+                }
+            }
+        }
+
+        for (const descriptor of descriptors.values()) {
+            if (descriptor.groupSize !== 1) continue;
+            const edge = descriptor.edge;
+            let startId = edge.a;
+            let endId = edge.b;
+            let start = worldLayout.get(startId);
+            let end = worldLayout.get(endId);
+
+            if (end.x < start.x || (end.x === start.x && end.y < start.y)) {
+                [startId, endId] = [endId, startId];
+                [start, end] = [end, start];
+            }
+
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
+            const distance = Math.hypot(dx, dy);
+            const rawAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+            const angle = Math.round(rawAngle / snapAngle) * snapAngle;
+            if (Math.abs(angle % 90) !== 45 || distance > cellSize * 8) continue;
+
+            candidates.push({
+                edge: edge,
+                axis: descriptor.axis,
+                startId: startId,
+                endId: endId
+            });
+            starts.set(startId, (starts.get(startId) || 0) + 1);
+            ends.set(endId, (ends.get(endId) || 0) + 1);
+        }
+
+        const anchors = new Map();
+        for (const candidate of candidates) {
+            const trunkScore = (nodeId) => (incident.get(nodeId) || []).reduce((score, descriptor) => {
+                if (descriptor.edge === candidate.edge) return score;
+                return score + (descriptor.cardinal && descriptor.axis === candidate.axis ? 1 : 0);
+            }, 0);
+            const startTrunks = trunkScore(candidate.startId);
+            const endTrunks = trunkScore(candidate.endId);
+            if (startTrunks !== endTrunks) {
+                anchors.set(candidate.edge, startTrunks > endTrunks ? "start" : "end");
+                continue;
+            }
+
+            const fanOut = starts.get(candidate.startId) || 0;
+            const fanIn = ends.get(candidate.endId) || 0;
+            if (fanOut < 2 && fanIn < 2) continue;
+            anchors.set(candidate.edge, fanIn > fanOut ? "end" : "start");
+        }
+        return anchors;
+    },
+
+    _addPlaybackBranch(edge, offset, worldLayout, components, wires, logicalNodes, anchor = null) {
         let startId = edge.a;
         let endId = edge.b;
         let start = worldLayout.get(startId);
@@ -550,33 +636,69 @@ const solutionPlayback = {
             ? choosenComponent.shortName
             : "R";
         const name = this._uniqueComponentName(edge.name || `${componentType}eq`, components);
-        let component = new Component(
-            name,
-            String(edge.value || "0"),
-            snapToGrid(center.x - cellSize),
-            snapToGrid(center.y - cellSize / 2),
-            angle
-        );
+        const value = String(edge.value || "0");
+        const candidates = [];
+        const candidateKeys = new Set();
+        const addCandidate = (candidateCenter, candidateAngle, preference) => {
+            const snappedCenter = {
+                x: snapToGrid(candidateCenter.x),
+                y: snapToGrid(candidateCenter.y)
+            };
+            const key = `${snappedCenter.x}:${snappedCenter.y}:${candidateAngle}`;
+            if (candidateKeys.has(key)) return;
+            candidateKeys.add(key);
+            candidates.push({
+                component: new Component(
+                    name,
+                    value,
+                    snapToGrid(snappedCenter.x - cellSize),
+                    snapToGrid(snappedCenter.y - cellSize / 2),
+                    candidateAngle
+                ),
+                preference: preference
+            });
+        };
 
-        // A short diagonal can be shallower than its snapped component angle.
-        // Anchor the component at the shared end node so its return lead stays
-        // on the outside of the branch instead of crossing a sibling branch.
-        const missesEndNode = component.nodes[1].x !== end.x || component.nodes[1].y !== end.y;
-        if (offset === 0 && distance <= cellSize * 8 && missesEndNode) {
+        addCandidate(center, angle, anchor ? 3 : 0);
+
+        // Short diagonal fans look cleanest when every component terminal meets
+        // the shared node directly. Anchor at the common fan-in/fan-out node;
+        // anchoring every branch at the same spatial side can overlap the bodies.
+        if (anchor && offset === 0 && distance <= cellSize * 8) {
+            const anchorPosition = anchor === "start" ? start : end;
             const radians = angle * Math.PI / 180;
             const terminalReach = cellSize * 3;
             const anchoredCenter = {
-                x: end.x - Math.cos(radians) * terminalReach,
-                y: end.y - Math.sin(radians) * terminalReach
+                x: anchorPosition.x + (anchor === "start" ? 1 : -1) * Math.cos(radians) * terminalReach,
+                y: anchorPosition.y + (anchor === "start" ? 1 : -1) * Math.sin(radians) * terminalReach
             };
-            component = new Component(
-                name,
-                String(edge.value || "0"),
-                snapToGrid(anchoredCenter.x - cellSize),
-                snapToGrid(anchoredCenter.y - cellSize / 2),
-                angle
-            );
+            addCandidate(anchoredCenter, angle, 0);
         }
+
+        const cardinalAngle = Math.abs(dx) >= Math.abs(dy) ? 0 : 90;
+        addCandidate(center, cardinalAngle, angle === cardinalAngle ? 0 : 7);
+        addCandidate(center, cardinalAngle === 0 ? 90 : 0, 13);
+        if (offset === 0) {
+            for (const direction of [-1, 1]) {
+                const shiftedCenter = {
+                    x: center.x + normalX * cellSize * 2 * direction,
+                    y: center.y + normalY * cellSize * 2 * direction
+                };
+                addCandidate(shiftedCenter, angle, 10);
+                addCandidate(shiftedCenter, cardinalAngle, 12);
+            }
+        }
+
+        const component = candidates.map((candidate) => ({
+            candidate: candidate,
+            score: this._scorePlaybackComponentCandidate(
+                candidate,
+                start,
+                end,
+                components,
+                wires
+            )
+        })).sort((left, right) => left.score - right.score)[0].candidate.component;
         components[name] = component;
 
         this._wireSnappedPath(
@@ -584,15 +706,69 @@ const solutionPlayback = {
             worldLayout.get(startId),
             logicalNodes.get(startId),
             wires,
-            component.angle
+            component.angle,
+            components,
+            component
         );
         this._wireSnappedPath(
             component.nodes[1],
             worldLayout.get(endId),
             logicalNodes.get(endId),
             wires,
-            component.angle
+            component.angle,
+            components,
+            component
         );
+    },
+
+    _scorePlaybackComponentCandidate(candidate, start, end, components, wires) {
+        const component = candidate.component;
+        let score = candidate.preference;
+        score += (
+            Math.hypot(component.nodes[0].x - start.x, component.nodes[0].y - start.y) +
+            Math.hypot(component.nodes[1].x - end.x, component.nodes[1].y - end.y)
+        ) / (cellSize * 8);
+
+        for (const name in (components || {})) {
+            const other = components[name];
+            if (this._playbackPolygonsOverlap(
+                this._playbackComponentPolygon(component, 5),
+                this._playbackComponentPolygon(other, 5)
+            )) score += 1000000;
+            if (this._segmentsProperlyCross(
+                component.nodes[0],
+                component.nodes[1],
+                other.nodes[0],
+                other.nodes[1]
+            )) score += 500000;
+            if (this._segmentIntersectsComponentBody(
+                component.nodes[0],
+                component.nodes[1],
+                other,
+                3
+            )) score += 300000;
+            if (this._segmentIntersectsComponentBody(
+                other.nodes[0],
+                other.nodes[1],
+                component,
+                3
+            )) score += 300000;
+        }
+        for (const wire of (wires || [])) {
+            if (this._segmentsProperlyCross(
+                component.nodes[0],
+                component.nodes[1],
+                wire.nodes[0],
+                wire.nodes[1]
+            )) score += 200000;
+            if (this._segmentIntersectsComponentBody(
+                wire.nodes[0],
+                wire.nodes[1],
+                component,
+                3
+            )) score += 200000;
+        }
+        return score;
     },
 
     _addStructuredPlaybackBranch(edge, laneY, worldLayout, components, wires, logicalNodes) {
@@ -611,7 +787,13 @@ const solutionPlayback = {
             end = savedPosition;
         }
 
-        const centerX = snapToGrid((start.x + end.x) / 2);
+        const centerX = this._structuredComponentCenterX(
+            start,
+            end,
+            laneY,
+            worldLayout,
+            components
+        );
         const componentType = typeof choosenComponent !== "undefined" && choosenComponent.shortName
             ? choosenComponent.shortName
             : "R";
@@ -639,6 +821,37 @@ const solutionPlayback = {
             logicalNodes.get(endId),
             wires
         );
+    },
+
+    _structuredComponentCenterX(start, end, laneY, worldLayout, components) {
+        const leftX = Math.min(start.x, end.x);
+        const rightX = Math.max(start.x, end.x);
+        const columns = Array.from(new Set(
+            Array.from(worldLayout.values())
+                .map((position) => position.x)
+                .filter((x) => x >= leftX && x <= rightX)
+        )).sort((left, right) => left - right);
+        const candidates = [];
+        for (let index = 1; index < columns.length; ++index) {
+            candidates.push(snapToGrid((columns[index - 1] + columns[index]) / 2));
+        }
+        if (candidates.length === 0) return snapToGrid((leftX + rightX) / 2);
+
+        const midpoint = (leftX + rightX) / 2;
+        candidates.sort((left, right) => {
+            const score = (x) => {
+                let value = Math.abs(x - midpoint) / cellSize;
+                for (const name in components) {
+                    const component = components[name];
+                    if (Math.abs(component.rotationPointY() - laneY) > cellSize) continue;
+                    const separation = Math.abs(component.rotationPointX() - x);
+                    if (separation < cellSize * 6) value += 1000;
+                }
+                return value;
+            };
+            return score(left) - score(right) || left - right;
+        });
+        return candidates[0];
     },
 
     _wireOrthogonalPath(componentNode, logicalPosition, connectedNodes, wires) {
@@ -670,39 +883,30 @@ const solutionPlayback = {
         connectedNodes.push(previousNode);
     },
 
-    _wireSnappedPath(componentNode, logicalPosition, connectedNodes, wires, componentAngle) {
+    _wireSnappedPath(
+        componentNode,
+        logicalPosition,
+        connectedNodes,
+        wires,
+        componentAngle,
+        components,
+        ownComponent
+    ) {
         if (!componentNode || !logicalPosition || !connectedNodes || !wires) return;
         if (componentNode.x === logicalPosition.x && componentNode.y === logicalPosition.y) {
             connectedNodes.push(componentNode);
             return;
         }
 
-        const dx = logicalPosition.x - componentNode.x;
-        const dy = logicalPosition.y - componentNode.y;
-        const points = [{ x: componentNode.x, y: componentNode.y }];
-        const isSnappedDirection = dx === 0 || dy === 0 || Math.abs(dx) === Math.abs(dy);
-
-        if (!isSnappedDirection) {
-            const normalizedAngle = ((componentAngle % 180) + 180) % 180;
-            let elbow;
-            if (normalizedAngle === 0) {
-                elbow = { x: logicalPosition.x, y: componentNode.y };
-            } else if (normalizedAngle === 90) {
-                elbow = { x: componentNode.x, y: logicalPosition.y };
-            } else {
-                const diagonalDistance = Math.min(Math.abs(dx), Math.abs(dy));
-                elbow = {
-                    x: componentNode.x + Math.sign(dx) * diagonalDistance,
-                    y: componentNode.y + Math.sign(dy) * diagonalDistance
-                };
-            }
-            points.push({ x: snapToGrid(elbow.x), y: snapToGrid(elbow.y) });
-        }
-        points.push({ x: logicalPosition.x, y: logicalPosition.y });
-
-        const compactPoints = points.filter((point, index) => {
-            return index === 0 || point.x !== points[index - 1].x || point.y !== points[index - 1].y;
-        });
+        const candidates = this._snappedPathCandidates(
+            componentNode,
+            logicalPosition,
+            componentAngle
+        );
+        const compactPoints = candidates.map((points) => ({
+            points: points,
+            score: this._scorePlaybackPath(points, components, wires, ownComponent)
+        })).sort((left, right) => left.score - right.score)[0].points;
         let previousNode = componentNode;
         for (let index = 1; index < compactPoints.length; ++index) {
             const start = compactPoints[index - 1];
@@ -717,6 +921,426 @@ const solutionPlayback = {
             previousNode = wire.nodes[1];
         }
         connectedNodes.push(previousNode);
+    },
+
+    _snappedPathCandidates(start, end, componentAngle) {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const diagonalDistance = Math.min(Math.abs(dx), Math.abs(dy));
+        const directIsSnapped = dx === 0 || dy === 0 || Math.abs(dx) === Math.abs(dy);
+        const paths = [];
+        const addPath = (points) => {
+            const compact = points
+                .map((point) => ({ x: snapToGrid(point.x), y: snapToGrid(point.y) }))
+                .filter((point, index, all) => {
+                    return index === 0 || point.x !== all[index - 1].x || point.y !== all[index - 1].y;
+                });
+            if (compact.length < 2) return;
+            const key = compact.map((point) => `${point.x},${point.y}`).join(";");
+            if (!paths.some((path) => path.key === key)) paths.push({ key: key, points: compact });
+        };
+
+        if (directIsSnapped) addPath([start, end]);
+
+        const horizontalFirst = [start, { x: end.x, y: start.y }, end];
+        const verticalFirst = [start, { x: start.x, y: end.y }, end];
+        const diagonalFirst = [
+            start,
+            {
+                x: start.x + Math.sign(dx) * diagonalDistance,
+                y: start.y + Math.sign(dy) * diagonalDistance
+            },
+            end
+        ];
+        const diagonalLast = [
+            start,
+            {
+                x: end.x - Math.sign(dx) * diagonalDistance,
+                y: end.y - Math.sign(dy) * diagonalDistance
+            },
+            end
+        ];
+        const normalizedAngle = ((componentAngle % 180) + 180) % 180;
+        if (normalizedAngle === 0) addPath(horizontalFirst);
+        else if (normalizedAngle === 90) addPath(verticalFirst);
+        else addPath(diagonalFirst);
+        addPath(horizontalFirst);
+        addPath(verticalFirst);
+        addPath(diagonalFirst);
+        addPath(diagonalLast);
+
+        for (const distance of [cellSize * 2, cellSize * 4]) {
+            for (const direction of [-1, 1]) {
+                const laneY = snapToGrid((start.y + end.y) / 2 + distance * direction);
+                addPath([
+                    start,
+                    { x: start.x, y: laneY },
+                    { x: end.x, y: laneY },
+                    end
+                ]);
+                const laneX = snapToGrid((start.x + end.x) / 2 + distance * direction);
+                addPath([
+                    start,
+                    { x: laneX, y: start.y },
+                    { x: laneX, y: end.y },
+                    end
+                ]);
+            }
+        }
+
+        return paths.map((path) => path.points);
+    },
+
+    _scorePlaybackPath(points, components, wires, ownComponent) {
+        let score = Math.max(0, points.length - 2) * 8;
+        for (let index = 1; index < points.length; ++index) {
+            const start = points[index - 1];
+            const end = points[index];
+            score += Math.hypot(end.x - start.x, end.y - start.y) / cellSize;
+
+            for (const name in (components || {})) {
+                const component = components[name];
+                if (component === ownComponent) continue;
+                if (this._segmentIntersectsComponentBody(start, end, component, 3)) score += 100000;
+                if (this._segmentsProperlyCross(start, end, component.nodes[0], component.nodes[1])) {
+                    score += 50000;
+                }
+            }
+            for (const wire of (wires || [])) {
+                if (this._segmentsProperlyCross(start, end, wire.nodes[0], wire.nodes[1])) score += 20000;
+            }
+        }
+        return score;
+    },
+
+    _segmentIntersectsComponentBody(start, end, component, margin = 0) {
+        const center = { x: component.rotationPointX(), y: component.rotationPointY() };
+        const localStart = rotatePoint(start, center, -component.angle);
+        const localEnd = rotatePoint(end, center, -component.angle);
+        const left = component.x - margin;
+        const right = component.x + component.width + margin;
+        const top = component.y - margin;
+        const bottom = component.y + component.height + margin;
+        const inside = (point) => {
+            return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
+        };
+        if (inside(localStart) || inside(localEnd)) return true;
+
+        const corners = [
+            { x: left, y: top },
+            { x: right, y: top },
+            { x: right, y: bottom },
+            { x: left, y: bottom }
+        ];
+        for (let index = 0; index < corners.length; ++index) {
+            if (this._segmentsIntersect(
+                localStart,
+                localEnd,
+                corners[index],
+                corners[(index + 1) % corners.length]
+            )) return true;
+        }
+        return false;
+    },
+
+    _segmentsProperlyCross(a, b, c, d) {
+        const cross = (left, middle, right) => {
+            return (middle.x - left.x) * (right.y - left.y) -
+                (middle.y - left.y) * (right.x - left.x);
+        };
+        const firstA = cross(a, b, c);
+        const firstB = cross(a, b, d);
+        const secondA = cross(c, d, a);
+        const secondB = cross(c, d, b);
+        return firstA * firstB < 0 && secondA * secondB < 0;
+    },
+
+    _segmentsIntersect(a, b, c, d) {
+        const orientation = (left, middle, right) => {
+            const value = (middle.y - left.y) * (right.x - middle.x) -
+                (middle.x - left.x) * (right.y - middle.y);
+            if (Math.abs(value) < 0.000001) return 0;
+            return value > 0 ? 1 : 2;
+        };
+        const onSegment = (left, middle, right) => {
+            return middle.x <= Math.max(left.x, right.x) && middle.x >= Math.min(left.x, right.x) &&
+                middle.y <= Math.max(left.y, right.y) && middle.y >= Math.min(left.y, right.y);
+        };
+        const first = orientation(a, b, c);
+        const second = orientation(a, b, d);
+        const third = orientation(c, d, a);
+        const fourth = orientation(c, d, b);
+        if (first !== second && third !== fourth) return true;
+        if (first === 0 && onSegment(a, c, b)) return true;
+        if (second === 0 && onSegment(a, d, b)) return true;
+        if (third === 0 && onSegment(c, a, d)) return true;
+        return fourth === 0 && onSegment(c, b, d);
+    },
+
+    _layoutPlaybackComponentTexts(components, wires) {
+        const allComponents = Object.values(components || {});
+        for (const component of allComponents) {
+            component.value.displayValue = this._formatPlaybackValue(component.value.value);
+        }
+
+        const textLength = (component) => {
+            return String(component.name.value).length + String(component.value.displayValue).length;
+        };
+        const ordered = allComponents.slice().sort((left, right) => {
+            return textLength(right) - textLength(left) ||
+                left.rotationPointX() - right.rotationPointX() ||
+                left.rotationPointY() - right.rotationPointY();
+        });
+        const placedTextRectangles = [];
+
+        for (const component of ordered) {
+            const candidates = this._playbackTextCandidates(component);
+            const selected = candidates.map((candidate) => ({
+                candidate: candidate,
+                score: this._scorePlaybackTextLayout(
+                    candidate,
+                    component,
+                    allComponents,
+                    wires,
+                    placedTextRectangles
+                )
+            })).sort((left, right) => left.score - right.score)[0].candidate;
+            for (const item of selected.items) {
+                const text = item.kind === "name" ? component.name : component.value;
+                text.angle = 0;
+                text.flipX = 1;
+                text.flipY = 1;
+                text.align = item.align;
+                text.x = item.x;
+                text.y = item.y;
+                placedTextRectangles.push(this._playbackTextRectangle(text, item));
+            }
+        }
+    },
+
+    _formatPlaybackValue(value) {
+        const text = String(value);
+        const numeric = Number(text);
+        if (!Number.isFinite(numeric) || text.length <= 8) return text;
+        return String(Number(numeric.toPrecision(7)));
+    },
+
+    _playbackTextCandidates(component) {
+        const body = this._playbackComponentPolygon(component, 0);
+        const bounds = {
+            left: Math.min(...body.map((point) => point.x)),
+            right: Math.max(...body.map((point) => point.x)),
+            top: Math.min(...body.map((point) => point.y)),
+            bottom: Math.max(...body.map((point) => point.y))
+        };
+        const centerX = component.rotationPointX();
+        const centerY = component.rotationPointY();
+        const normalizedAngle = ((component.angle % 180) + 180) % 180;
+        const candidates = [];
+        const add = (type, layer, items) => {
+            let preference = layer * 6;
+            if (normalizedAngle === 90) {
+                preference += type === "right" ? 0 : type === "left" ? 1 : type === "split" ? 3 : 5;
+            } else {
+                preference += type === "split" ? 0 : type === "above" ? 2 :
+                    type === "below" ? 3 : 4;
+            }
+            candidates.push({ preference: preference, items: items });
+        };
+
+        for (let layer = 0; layer < 5; ++layer) {
+            const gap = cellSize / 2 + layer * cellSize;
+            add("split", layer, [
+                { kind: "name", x: centerX, y: bounds.top - gap, align: "center" },
+                { kind: "value", x: centerX, y: bounds.bottom + gap + 11, align: "center" }
+            ]);
+            add("above", layer, [
+                { kind: "name", x: centerX, y: bounds.top - gap - 15, align: "center" },
+                { kind: "value", x: centerX, y: bounds.top - gap, align: "center" }
+            ]);
+            add("below", layer, [
+                { kind: "name", x: centerX, y: bounds.bottom + gap + 11, align: "center" },
+                { kind: "value", x: centerX, y: bounds.bottom + gap + 26, align: "center" }
+            ]);
+            add("right", layer, [
+                { kind: "name", x: bounds.right + gap, y: centerY - 3, align: "left" },
+                { kind: "value", x: bounds.right + gap, y: centerY + 12, align: "left" }
+            ]);
+            add("left", layer, [
+                { kind: "name", x: bounds.left - gap, y: centerY - 3, align: "right" },
+                { kind: "value", x: bounds.left - gap, y: centerY + 12, align: "right" }
+            ]);
+        }
+        return candidates;
+    },
+
+    _scorePlaybackTextLayout(candidate, owner, components, wires, placedTextRectangles) {
+        let score = candidate.preference;
+        const rectangles = candidate.items.map((item) => {
+            const text = item.kind === "name" ? owner.name : owner.value;
+            return this._playbackTextRectangle(text, item);
+        });
+
+        for (const rectangle of rectangles) {
+            const polygon = this._playbackRectanglePolygon(rectangle);
+            for (const component of components) {
+                if (component === owner) continue;
+                if (this._playbackPolygonsOverlap(
+                    polygon,
+                    this._playbackComponentPolygon(component, 3)
+                )) score += 100000;
+                if (this._segmentIntersectsRectangle(
+                    component.nodes[0],
+                    component.nodes[1],
+                    rectangle
+                )) score += 5000;
+            }
+            for (const placed of placedTextRectangles) {
+                if (this._playbackRectanglesOverlap(rectangle, placed)) score += 30000;
+            }
+            for (const wire of wires) {
+                if (this._segmentIntersectsRectangle(wire.nodes[0], wire.nodes[1], rectangle)) {
+                    score += 2000;
+                }
+            }
+        }
+        return score;
+    },
+
+    _playbackTextRectangle(text, position) {
+        const value = text.displayValue === undefined ? text.value : text.displayValue;
+        const width = Math.max(8, String(value).length * 7.2);
+        const left = position.align === "left" ? position.x :
+            position.align === "right" ? position.x - width : position.x - width / 2;
+        return {
+            left: left,
+            right: left + width,
+            top: position.y - 11,
+            bottom: position.y + 3
+        };
+    },
+
+    _playbackComponentPolygon(component, margin = 0) {
+        const center = { x: component.rotationPointX(), y: component.rotationPointY() };
+        return [
+            { x: component.x - margin, y: component.y - margin },
+            { x: component.x + component.width + margin, y: component.y - margin },
+            { x: component.x + component.width + margin, y: component.y + component.height + margin },
+            { x: component.x - margin, y: component.y + component.height + margin }
+        ].map((point) => rotatePoint(point, center, component.angle));
+    },
+
+    _playbackRectanglePolygon(rectangle) {
+        return [
+            { x: rectangle.left, y: rectangle.top },
+            { x: rectangle.right, y: rectangle.top },
+            { x: rectangle.right, y: rectangle.bottom },
+            { x: rectangle.left, y: rectangle.bottom }
+        ];
+    },
+
+    _playbackPolygonsOverlap(left, right) {
+        const axes = (polygon) => polygon.map((point, index) => {
+            const next = polygon[(index + 1) % polygon.length];
+            const dx = next.x - point.x;
+            const dy = next.y - point.y;
+            const length = Math.hypot(dx, dy) || 1;
+            return { x: -dy / length, y: dx / length };
+        });
+        for (const axis of axes(left).concat(axes(right))) {
+            const leftProjection = left.map((point) => point.x * axis.x + point.y * axis.y);
+            const rightProjection = right.map((point) => point.x * axis.x + point.y * axis.y);
+            if (Math.max(...leftProjection) <= Math.min(...rightProjection) ||
+                Math.max(...rightProjection) <= Math.min(...leftProjection)) return false;
+        }
+        return true;
+    },
+
+    _playbackRectanglesOverlap(left, right) {
+        return left.left < right.right && left.right > right.left &&
+            left.top < right.bottom && left.bottom > right.top;
+    },
+
+    _segmentIntersectsRectangle(start, end, rectangle) {
+        const inside = (point) => {
+            return point.x >= rectangle.left && point.x <= rectangle.right &&
+                point.y >= rectangle.top && point.y <= rectangle.bottom;
+        };
+        if (inside(start) || inside(end)) return true;
+        const polygon = this._playbackRectanglePolygon(rectangle);
+        for (let index = 0; index < polygon.length; ++index) {
+            if (this._segmentsIntersect(start, end, polygon[index], polygon[(index + 1) % polygon.length])) {
+                return true;
+            }
+        }
+        return false;
+    },
+
+    _playbackLayoutHasCollisions(components, wires) {
+        const allComponents = Object.values(components || {});
+        const segments = allComponents.map((component) => ({
+            owner: component,
+            start: component.nodes[0],
+            end: component.nodes[1]
+        })).concat((wires || []).map((wire) => ({
+            owner: wire,
+            start: wire.nodes[0],
+            end: wire.nodes[1]
+        })));
+
+        for (let left = 0; left < allComponents.length; ++left) {
+            const component = allComponents[left];
+            for (let right = left + 1; right < allComponents.length; ++right) {
+                const other = allComponents[right];
+                if (this._playbackPolygonsOverlap(
+                    this._playbackComponentPolygon(component, 5),
+                    this._playbackComponentPolygon(other, 5)
+                )) return true;
+            }
+            for (const segment of segments) {
+                if (segment.owner === component) continue;
+                if (this._segmentIntersectsComponentBody(
+                    segment.start,
+                    segment.end,
+                    component,
+                    2
+                )) return true;
+            }
+        }
+
+        for (let left = 0; left < segments.length; ++left) {
+            for (let right = left + 1; right < segments.length; ++right) {
+                if (this._segmentsProperlyCross(
+                    segments[left].start,
+                    segments[left].end,
+                    segments[right].start,
+                    segments[right].end
+                )) return true;
+            }
+        }
+
+        const textRectangles = [];
+        for (const component of allComponents) {
+            for (const text of [component.name, component.value]) {
+                const rectangle = this._playbackTextRectangle(text, text);
+                for (const other of allComponents) {
+                    if (other === component) continue;
+                    if (this._playbackPolygonsOverlap(
+                        this._playbackRectanglePolygon(rectangle),
+                        this._playbackComponentPolygon(other, 2)
+                    )) return true;
+                }
+                for (const segment of segments) {
+                    if (segment.owner === component) continue;
+                    if (this._segmentIntersectsRectangle(segment.start, segment.end, rectangle)) return true;
+                }
+                if (textRectangles.some((placed) => {
+                    return this._playbackRectanglesOverlap(rectangle, placed);
+                })) return true;
+                textRectangles.push(rectangle);
+            }
+        }
+        return false;
     },
 
     _buildPlaybackLabels(nodes, logicalNodes) {
