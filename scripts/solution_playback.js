@@ -1,6 +1,7 @@
 const solutionPlayback = {
     solution: null,
     originalSchemeState: null,
+    stepSchemeStates: new Map(),
     currentStepIndex: -1,
 
     configure(solution) {
@@ -10,6 +11,7 @@ const solutionPlayback = {
 
         this.solution = solution || null;
         this.originalSchemeState = this.solution ? this._captureSchemeState() : null;
+        this.stepSchemeStates = new Map();
         this.currentStepIndex = -1;
         if (document.body) {
             document.body.classList.toggle("solution-playback-mode", Boolean(this.solution));
@@ -27,6 +29,7 @@ const solutionPlayback = {
 
         this.solution = null;
         this.originalSchemeState = null;
+        this.stepSchemeStates = new Map();
         this.currentStepIndex = -1;
         if (document.body) {
             document.body.classList.remove("solution-playback-mode");
@@ -42,6 +45,7 @@ const solutionPlayback = {
 
         this._hideContextMenu();
         this._cancelActiveInteraction();
+        this._saveActivePlaybackState();
         this._restoreOriginalScheme(false);
         this.currentStepIndex = -1;
         if (document.body) document.body.classList.remove("solution-playback-step");
@@ -54,8 +58,15 @@ const solutionPlayback = {
         if (!this._stepHasSnapshot(stepIndex) || !this.originalSchemeState) return;
 
         this._cancelActiveInteraction();
+        this._saveActivePlaybackState();
         const step = this.solution.steps[stepIndex];
-        const playbackState = this._buildSchemeState(step.snapshot);
+        let playbackState = this.stepSchemeStates.get(stepIndex);
+        if (!playbackState) {
+            playbackState = step.type === "analysis"
+                ? this._cloneOriginalSchemeState()
+                : this._buildSchemeState(step.snapshot);
+            if (playbackState) this.stepSchemeStates.set(stepIndex, playbackState);
+        }
         if (!playbackState) return;
 
         this._hideContextMenu();
@@ -133,8 +144,23 @@ const solutionPlayback = {
         if (render) scheme.renderAll();
     },
 
+    _saveActivePlaybackState() {
+        if (!this.isActive()) return;
+        this.stepSchemeStates.set(this.currentStepIndex, this._captureSchemeState());
+    },
+
     _cancelActiveInteraction() {
-        if (typeof toolmgr !== "undefined") toolmgr.activeCmd = null;
+        if (typeof toolmgr !== "undefined" && toolmgr.activeCmd) {
+            const activeCommand = toolmgr.activeCmd;
+            if (activeCommand.name === "DrawWire" && activeCommand.wire && typeof scheme !== "undefined") {
+                const wireIndex = scheme.wires.indexOf(activeCommand.wire);
+                if (wireIndex >= 0) scheme.wires.splice(wireIndex, 1);
+                activeCommand.wire.onDelete();
+            } else if (activeCommand.name === "DragComponent" && typeof activeCommand.unexecute === "function") {
+                activeCommand.unexecute();
+            }
+            toolmgr.activeCmd = null;
+        }
         if (typeof scheme !== "undefined") {
             scheme.isDragging = false;
             scheme.isPanning = false;
@@ -150,10 +176,12 @@ const solutionPlayback = {
     _buildSchemeState(snapshot) {
         if (!snapshot || !Array.isArray(snapshot.nodes) || !Array.isArray(snapshot.edges)) return null;
 
-        const screenLayout = this._layoutNodes(snapshot.nodes, getCanvasWidth(), getCanvasHeight());
         const worldLayout = new Map();
-        for (const [nodeId, position] of screenLayout.entries()) {
-            worldLayout.set(nodeId, scheme.screenToWorldSpace(position.x, position.y));
+        for (const node of snapshot.nodes) {
+            worldLayout.set(node.id, {
+                x: snapToGrid(node.x),
+                y: snapToGrid(node.y)
+            });
         }
 
         const components = {};
@@ -167,11 +195,10 @@ const solutionPlayback = {
         for (const group of edgeGroups) {
             for (let index = 0; index < group.length; ++index) {
                 const edge = group[index];
-                const offset = (index - (group.length - 1) / 2) * 48;
+                const offset = (index - (group.length - 1) / 2) * cellSize * 2;
                 this._addPlaybackBranch(
                     edge,
                     offset,
-                    screenLayout,
                     worldLayout,
                     components,
                     wires,
@@ -217,11 +244,100 @@ const solutionPlayback = {
         };
     },
 
-    _addPlaybackBranch(edge, offset, screenLayout, worldLayout, components, wires, logicalNodes) {
+    _cloneOriginalSchemeState() {
+        if (!this.originalSchemeState) return null;
+
+        const components = {};
+        const wires = [];
+        const junctions = [];
+        const nodeMap = new Map();
+        const componentMap = new Map();
+
+        for (const key in this.originalSchemeState.components) {
+            const original = this.originalSchemeState.components[key];
+            const component = new Component(
+                original.name.value,
+                original.value.value,
+                original.x,
+                original.y,
+                original.angle
+            );
+            component.select(original.selected);
+            components[key] = component;
+            componentMap.set(original, component);
+            nodeMap.set(original.nodes[0], component.nodes[0]);
+            nodeMap.set(original.nodes[1], component.nodes[1]);
+        }
+
+        for (const original of this.originalSchemeState.wires) {
+            const wire = new Wire();
+            wire.nodes[0].x = original.nodes[0].x;
+            wire.nodes[0].y = original.nodes[0].y;
+            wire.nodes[1].x = original.nodes[1].x;
+            wire.nodes[1].y = original.nodes[1].y;
+            wire.selected = original.selected;
+            wires.push(wire);
+            nodeMap.set(original.nodes[0], wire.nodes[0]);
+            nodeMap.set(original.nodes[1], wire.nodes[1]);
+        }
+
+        for (const [originalNode, clonedNode] of nodeMap.entries()) {
+            for (const connection of originalNode.connections) {
+                const connectedNode = nodeMap.get(connection.node);
+                if (!connectedNode) continue;
+
+                let value = connection.value;
+                if (value && typeof value === "object" && value.parent) {
+                    const clonedParent = componentMap.get(value.parent);
+                    if (clonedParent) value = clonedParent.value;
+                }
+                connectNodes(clonedNode, connectedNode, value);
+            }
+        }
+
+        for (const original of this.originalSchemeState.junctions) {
+            const junction = new Junction();
+            junction.x = original.x;
+            junction.y = original.y;
+            for (const originalNode of original.nodes) {
+                const clonedNode = nodeMap.get(originalNode);
+                if (clonedNode) connectJunctionNode(junction, clonedNode);
+            }
+            junctions.push(junction);
+        }
+
+        const labels = this.originalSchemeState.labels.map((original) => {
+            const label = new LabelNode(original.label.value);
+            label.className = original.className;
+            label.node = nodeMap.get(original.node) || null;
+            label.offX = original.offX;
+            label.offY = original.offY;
+            label.radius = original.radius;
+            label.label.rotate(original.label.angle);
+            label.select(original.selected);
+            return label;
+        });
+
+        return {
+            components: components,
+            selectedComponents: this.originalSchemeState.selectedComponents
+                .map((component) => componentMap.get(component))
+                .filter(Boolean),
+            wires: wires,
+            selectedWires: this.originalSchemeState.selectedWires.slice(),
+            junctions: junctions,
+            labels: labels,
+            undoStack: [],
+            redoStack: [],
+            componentNameCount: this.originalSchemeState.componentNameCount
+        };
+    },
+
+    _addPlaybackBranch(edge, offset, worldLayout, components, wires, logicalNodes) {
         let startId = edge.a;
         let endId = edge.b;
-        let start = screenLayout.get(startId);
-        let end = screenLayout.get(endId);
+        let start = worldLayout.get(startId);
+        let end = worldLayout.get(endId);
         if (!start || !end) return;
 
         if (end.x < start.x || (end.x === start.x && end.y < start.y)) {
@@ -238,12 +354,12 @@ const solutionPlayback = {
         const distance = Math.max(1, Math.hypot(dx, dy));
         const normalX = -dy / distance;
         const normalY = dx / distance;
-        const centerScreen = {
-            x: (start.x + end.x) / 2 + normalX * offset,
-            y: (start.y + end.y) / 2 + normalY * offset
+        const center = {
+            x: snapToGrid((start.x + end.x) / 2 + normalX * offset),
+            y: snapToGrid((start.y + end.y) / 2 + normalY * offset)
         };
-        const center = scheme.screenToWorldSpace(centerScreen.x, centerScreen.y);
-        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        const rawAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+        const angle = Math.round(rawAngle / snapAngle) * snapAngle;
         const componentType = typeof choosenComponent !== "undefined" && choosenComponent.shortName
             ? choosenComponent.shortName
             : "R";
@@ -251,8 +367,8 @@ const solutionPlayback = {
         const component = new Component(
             name,
             String(edge.value || "0"),
-            center.x - cellSize,
-            center.y - cellSize / 2,
+            snapToGrid(center.x - cellSize),
+            snapToGrid(center.y - cellSize / 2),
             angle
         );
         components[name] = component;
@@ -373,76 +489,6 @@ const solutionPlayback = {
             if (selected) item.setAttribute("aria-current", "step");
             else item.removeAttribute("aria-current");
         }
-    },
-
-    _layoutNodes(nodes, width, height) {
-        const positions = new Map();
-        if (!Array.isArray(nodes) || nodes.length === 0) return positions;
-
-        const paddingX = Math.min(130, Math.max(82, width * 0.15));
-        const paddingY = Math.min(115, Math.max(88, height * 0.17));
-        const availableWidth = Math.max(160, width - paddingX * 2);
-        const availableHeight = Math.max(160, height - paddingY * 2);
-        const minX = Math.min(...nodes.map((node) => node.x));
-        const maxX = Math.max(...nodes.map((node) => node.x));
-        const minY = Math.min(...nodes.map((node) => node.y));
-        const maxY = Math.max(...nodes.map((node) => node.y));
-        const sourceWidth = maxX - minX;
-        const sourceHeight = maxY - minY;
-
-        if (nodes.length === 1) {
-            positions.set(nodes[0].id, { x: width / 2, y: height / 2 });
-            return positions;
-        }
-
-        let scale = Math.min(
-            sourceWidth > 0 ? availableWidth / sourceWidth : Infinity,
-            sourceHeight > 0 ? availableHeight / sourceHeight : Infinity
-        );
-        if (!Number.isFinite(scale)) scale = 1;
-        scale = Math.min(2, scale);
-
-        const renderedWidth = sourceWidth * scale;
-        const renderedHeight = sourceHeight * scale;
-        const startX = (width - renderedWidth) / 2;
-        const startY = (height - renderedHeight) / 2;
-
-        for (let index = 0; index < nodes.length; ++index) {
-            const node = nodes[index];
-            let x = startX + (node.x - minX) * scale;
-            let y = startY + (node.y - minY) * scale;
-            if (sourceWidth === 0) x = width / 2;
-            if (sourceHeight === 0) y = height / 2;
-            positions.set(node.id, { x: x, y: y });
-        }
-
-        if (nodes.length === 2) {
-            const left = positions.get(nodes[0].id);
-            const right = positions.get(nodes[1].id);
-            const dx = right.x - left.x;
-            const dy = right.y - left.y;
-            const distance = Math.hypot(dx, dy);
-            if (distance < 320) {
-                const angle = distance > 0 ? Math.atan2(dy, dx) : 0;
-                const centerX = (left.x + right.x) / 2;
-                const centerY = (left.y + right.y) / 2;
-                const cosine = Math.abs(Math.cos(angle));
-                const sine = Math.abs(Math.sin(angle));
-                const horizontalCapacity = cosine > 0.001 ? availableWidth / cosine : Infinity;
-                const verticalCapacity = sine > 0.001 ? availableHeight / sine : Infinity;
-                const half = Math.max(90, Math.min(210, horizontalCapacity / 2, verticalCapacity / 2));
-                positions.set(nodes[0].id, {
-                    x: centerX - Math.cos(angle) * half,
-                    y: centerY - Math.sin(angle) * half
-                });
-                positions.set(nodes[1].id, {
-                    x: centerX + Math.cos(angle) * half,
-                    y: centerY + Math.sin(angle) * half
-                });
-            }
-        }
-
-        return positions;
     },
 
     _edgeGroups(edges) {

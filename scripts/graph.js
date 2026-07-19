@@ -586,7 +586,7 @@ class Graph {
         const nodes = Array.from(network.nodes);
         const nodeIds = new Map();
         const highlighted = new Set(highlightedEdges);
-        for (let i = 0; i < nodes.length; ++i) nodeIds.set(nodes[i], `N${i}`);
+        for (const node of nodes) nodeIds.set(node, this._nodeName(node));
 
         return {
             componentType: this._componentType(),
