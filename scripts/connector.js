@@ -182,7 +182,6 @@ function splitWireAtNode(wire, node) {
     connectNodes(w2.nodes[0], endNode, "0");
 
     scheme.execute(drawW2);
-    scheme.wires.push(w2);
 
     tryConnect(wire);
     tryConnect(w2);
